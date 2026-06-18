@@ -14,7 +14,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-
+import 'package:flutter_markdown/flutter_markdown.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -347,116 +347,248 @@ Future<String> getAIResponse(String text) async {
     return "ERROR: $e";
   }
 }
+Future<void> streamText(
+  String fullText,
+  int index,
+) async {
+
+  for (int i = 0; i < fullText.length; i += 5) {
+
+    await Future.delayed(
+      const Duration(milliseconds: 15),
+    );
+
+    if (!mounted) return;
+
+    int end = i + 5;
+
+    if (end > fullText.length) {
+      end = fullText.length;
+    }
+
+    setState(() {
+
+      allChats[currentChatIndex]["messages"][index]["text"] +=
+
+          fullText.substring(i, end);
+
+      messages = List<Map<String, dynamic>>.from(
+
+        allChats[currentChatIndex]["messages"],
+
+      );
+
+    });
+
+    scrollToBottom();
+
+  }
+
+  await saveChat();
+
+}
 void sendMessage() async {
+
   if (controller.text.trim().isEmpty) return;
 
   String userText = controller.text.trim();
 
-  // first message title set
+
+  // First message title
   if ((allChats[currentChatIndex]["messages"] as List).isEmpty) {
+
     allChats[currentChatIndex]["title"] =
+
         userText.length > 25
+
             ? "${userText.substring(0, 25)}..."
+
             : userText;
+
   }
 
+
   setState(() {
+
+    // USER MESSAGE
     allChats[currentChatIndex]["messages"].add({
+
       "role": "user",
+
       "text": userText,
+
       "pinned": false,
+
     });
 
+
     messages = List<Map<String, dynamic>>.from(
+
       allChats[currentChatIndex]["messages"],
+
     );
 
+
     controller.clear();
+
     isLoading = true;
+
   });
+
 
   await saveChat();
 
-  try {
-    // ✅ ONLY userText send to backend
-    String aiText = await getAIResponse(userText);
 
-    // clean response
-    aiText = aiText
-        .replaceAll("**", "")
-        .replaceAll("###", "")
-        .replaceAll("##", "")
-        .replaceAll("#", "")
-        .replaceAll("```", "")
-        .trim();
+  try {
+
+
+    String aiText = await getAIResponse(
+
+      userText,
+
+    );
+
+
+    aiText = aiText.trim();
+
 
     String aiImage = "";
 
-    // Architecture
-    if (userText.toLowerCase().contains("architecture") ||
-        userText.toLowerCase().contains("diagram")) {
-      aiImage = "https://picsum.photos/800/400";
-    }
-
-    // Machine Learning
-    if (userText.toLowerCase().contains("machine learning") ||
-        userText.toLowerCase().contains("what is ml")) {
-      aiImage =
-          "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800";
-    }
-
+    
     setState(() {
-      allChats[currentChatIndex]["messages"].add({
+
+
+      // EMPTY AI MESSAGE
+
+      allChats[currentChatIndex]["messages"]
+
+          .add({
+
         "role": "ai",
-        "text": aiText,
+
+        "text": "",
+
         "image": aiImage,
+
         "pinned": false,
+
       });
 
-      messages = List<Map<String, dynamic>>.from(
-        allChats[currentChatIndex]["messages"],
+
+
+      messages =
+
+          List<Map<String, dynamic>>.from(
+
+        allChats[currentChatIndex]
+
+            ["messages"],
+
       );
 
+
       isLoading = false;
+
     });
 
-    await saveChat();
+
+
+    int index =
+
+        allChats[currentChatIndex]
+
+                    ["messages"]
+
+                .length -
+
+            1;
+
+
+
+    await streamText(
+
+      aiText,
+
+      index,
+
+    );
+
+
+
     scrollToBottom();
+
+
   } catch (e) {
-    String offlineReply = getOfflineResponse(userText);
+
+
+    String offlineReply =
+
+        getOfflineResponse(
+
+      userText,
+
+    );
+
+
 
     setState(() {
-      allChats[currentChatIndex]["messages"].add({
+
+
+      allChats[currentChatIndex]
+
+              ["messages"]
+
+          .add({
+
         "role": "ai",
+
         "text": offlineReply,
+
         "pinned": false,
+
       });
 
-      messages = List<Map<String, dynamic>>.from(
-        allChats[currentChatIndex]["messages"],
+
+
+      messages =
+
+          List<Map<String, dynamic>>.from(
+
+        allChats[currentChatIndex]
+
+            ["messages"],
+
       );
 
+
       isLoading = false;
+
     });
+
 
     await saveChat();
+
     scrollToBottom();
+
   }
+
+}
+void scrollToBottom() {
+
+  if (!scrollController.hasClients) return;
+
+  scrollController.animateTo(
+
+    scrollController.position.maxScrollExtent,
+
+    duration: const Duration(milliseconds: 200),
+
+    curve: Curves.easeOut,
+
+  );
+
 }
 
- void scrollToBottom() {
-  Future.delayed(const Duration(milliseconds: 100), () {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (scrollController.hasClients) {
-        scrollController.animateTo(
-          scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  });
-}
 
 Future<void> startListening() async {
   bool available = await speech.initialize();
@@ -511,7 +643,6 @@ Widget chatBubble(Map<String, dynamic> msg) {
           return Wrap(
             children: [
 
-              // COPY
               ListTile(
                 leading: const Icon(Icons.copy),
                 title: const Text("Copy"),
@@ -525,7 +656,6 @@ Widget chatBubble(Map<String, dynamic> msg) {
                 },
               ),
 
-              // SPEAK
               ListTile(
                 leading: const Icon(Icons.volume_up),
                 title: const Text("Speak"),
@@ -535,7 +665,6 @@ Widget chatBubble(Map<String, dynamic> msg) {
                 },
               ),
 
-              // SHARE
               ListTile(
                 leading: const Icon(Icons.share),
                 title: const Text("Share"),
@@ -545,7 +674,6 @@ Widget chatBubble(Map<String, dynamic> msg) {
                 },
               ),
 
-              // EDIT
               ListTile(
                 leading: const Icon(Icons.edit),
                 title: const Text("Edit"),
@@ -586,7 +714,6 @@ Widget chatBubble(Map<String, dynamic> msg) {
                 },
               ),
 
-              // PIN
               ListTile(
                 leading: const Icon(Icons.push_pin),
                 title: const Text("Pin / Unpin"),
@@ -602,7 +729,6 @@ Widget chatBubble(Map<String, dynamic> msg) {
                 },
               ),
 
-              // DELETE
               ListTile(
                 leading: const Icon(Icons.delete),
                 title: const Text("Delete"),
@@ -630,146 +756,128 @@ Widget chatBubble(Map<String, dynamic> msg) {
       );
     },
 
-    child: Align(
-      alignment: isUser
-          ? Alignment.centerRight
-          : Alignment.centerLeft,
+    child: Container(
+      width: double.infinity,
 
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-          vertical: 4,
-          horizontal: 8,
-        ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 14,
+      ),
 
-        padding: const EdgeInsets.symmetric(
-          vertical: 10,
-          horizontal: 14,
-        ),
+      decoration: BoxDecoration(
+        color: isUser
+            ? (isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.grey.shade100)
+            : (isDarkMode
+                ? const Color(0xFF2A2A2A)
+                : Colors.white),
+      ),
 
-        constraints: BoxConstraints(
-          maxWidth:
-              MediaQuery.of(context).size.width * 0.75,
-        ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
 
-        decoration: BoxDecoration(
-          color: isUser
-              ? const Color(0xFFDCF8C6)
-              : (isDarkMode
-                  ? Colors.grey[800]
-                  : Colors.white),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(15),
-            topRight: const Radius.circular(15),
-            bottomLeft:
-                Radius.circular(isUser ? 15 : 0),
-            bottomRight:
-                Radius.circular(isUser ? 0 : 15),
+        children: [
+
+          Text(
+            isUser ? "You" : "VedaAI",
+
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+
+              color: isDarkMode
+                  ? Colors.white
+                  : Colors.black,
+            ),
           ),
 
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
+          const SizedBox(height: 8),
 
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
+          MarkdownBody(
+            data: msg["text"] ?? "",
 
-            // TEXT
-            SelectableText(
-              msg["text"] ?? "",
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: isUser
-                    ? Colors.black87
-                    : (isDarkMode
-                        ? Colors.white
-                        : Colors.black),
+            selectable: true,
+
+            styleSheet: MarkdownStyleSheet(
+              p: TextStyle(
+                fontSize: 16,
+                height: 1.7,
+
+                color: isDarkMode
+                    ? Colors.white
+                    : Colors.black,
+              ),
+
+              h1: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+
+              h2: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+
+              h3: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
+          ),
 
-            // IMAGE
-            if (msg["image"] != null &&
-                msg["image"]
-                    .toString()
-                    .isNotEmpty)
-              Padding(
-                padding:
-                    const EdgeInsets.only(top: 10),
-                child: ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(12),
-                  child: Image.network(
-                    msg["image"],
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+          if (msg["image"] != null &&
+              msg["image"].toString().isNotEmpty)
+            Padding(
+              padding:
+                  const EdgeInsets.only(top: 12),
 
-                    loadingBuilder:
-                        (context, child, progress) {
-                      if (progress == null)
-                        return child;
+              child: ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(12),
 
-                      return const Padding(
-                        padding:
-                            EdgeInsets.all(20),
-                        child: Center(
-                          child:
-                              CircularProgressIndicator(),
-                        ),
-                      );
-                    },
+                child: Image.network(
+                  msg["image"],
 
-                    errorBuilder:
-                        (context, error, stackTrace) {
-                      return Container(
-                        padding:
-                            const EdgeInsets.all(12),
-                        color:
-                            Colors.grey.shade200,
-                        child: const Text(
-                          "❌ Image not available",
-                          style: TextStyle(
-                            color: Colors.red,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                  height: 220,
+
+                  fit: BoxFit.cover,
                 ),
               ),
+            ),
 
-            // PINNED
-            if (msg["pinned"] == true)
-              const Padding(
-                padding:
-                    EdgeInsets.only(top: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.push_pin,
-                      size: 14,
+          if (msg["pinned"] == true)
+            const Padding(
+              padding:
+                  EdgeInsets.only(top: 8),
+
+              child: Row(
+                children: [
+
+                  Icon(
+                    Icons.push_pin,
+
+                    size: 14,
+
+                    color: Colors.orange,
+                  ),
+
+                  SizedBox(width: 4),
+
+                  Text(
+                    "Pinned",
+
+                    style: TextStyle(
+                      fontSize: 11,
+
                       color: Colors.orange,
                     ),
-                    SizedBox(width: 4),
-                    Text(
-                      "Pinned",
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     ),
   );
@@ -779,19 +887,25 @@ Widget chatBubble(Map<String, dynamic> msg) {
 Widget build(BuildContext context) {
   return Scaffold(
     
-    drawer: Drawer(
-  backgroundColor:
-      isDarkMode ? Colors.black : Colors.white,
+   drawer: Drawer(
+  backgroundColor: isDarkMode ? Colors.black : Colors.white,
+
   child: Column(
     children: [
 
       DrawerHeader(
-        child: Text(
-          "VedaAI Chats 💬",
-          style: TextStyle(
-            color: isDarkMode ? Colors.white : Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.black : Colors.white,
+        ),
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          child: Text(
+            "VedaAI Chats 💬",
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
@@ -923,7 +1037,7 @@ Widget build(BuildContext context) {
     // 🔝 APP BAR
     appBar: AppBar(
   elevation: 0,
-  backgroundColor: isDarkMode ? Colors.black : Colors.white,
+  backgroundColor: Colors.white,
 
   title: Row(
     children: [
