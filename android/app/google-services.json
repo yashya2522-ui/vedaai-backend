@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "219256927005",
+    "project_id": "vedaai-c2428",
+    "storage_bucket": "vedaai-c2428.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:219256927005:android:e9d6a36d4d8dab3ca5a7f4",
+        "android_client_info": {
+          "package_name": "com.example.vedaai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiXvf_QhUXUZTK0d0e45yphkUVzgpSpgY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

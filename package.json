@@ -1,10 +1,27 @@
 {
+<<<<<<< HEAD
   "name": "vedaai-backend",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+=======
+  "name": "vedaai",
+  "version": "1.0.0",
+  "description": "A new Flutter project.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+>>>>>>> 9135141 (VedaAI backend ready)
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.18.0",
@@ -12,4 +29,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 9135141 (VedaAI backend ready)
