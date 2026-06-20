@@ -2,6 +2,7 @@ const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
 const fs = require("fs");
+const wiki = require("wikipedia");
 require("dotenv").config();
 
 const app = express();
@@ -162,6 +163,25 @@ BEHAVIOR
 
 `;
 
+async function searchWikipedia(query){
+
+try{
+
+const page = await wiki.page(query);
+
+const summary = await page.summary();
+
+return summary.extract.slice(0,1500);
+
+}
+
+catch{
+
+return "";
+
+}
+
+}
 
 // ================= HOME =================
 
@@ -199,10 +219,14 @@ app.post("/chat", async (req, res) => {
     }
 
     // final prompt
-    const finalPrompt = `
+    // final prompt
+const finalPrompt = `
 CURRENT_YEAR = ${CURRENT_YEAR}
 
 ${SYSTEM_PROMPT}
+
+Wikipedia Information:
+${wikiText}
 
 Conversation History:
 ${history}
