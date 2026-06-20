@@ -320,7 +320,7 @@ Please connect to the internet for a full AI response.
 Future<String> getAIResponse(String text) async {
   try {
     final url = Uri.parse(
-      "https://vedaai-backend-25.onrender.com/chat",
+      "https://vedaai-backend-5.onrender.com/chat",
     );
 
     final res = await http.post(
