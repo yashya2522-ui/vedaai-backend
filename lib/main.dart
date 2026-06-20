@@ -47,7 +47,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool isDarkMode = false;
   bool isLoading = false;
   bool isListening = false;
-
+bool showScrollButton = false;
   int currentChatIndex = 0;
 
   List<Map<String, dynamic>> messages = [];
@@ -75,8 +75,29 @@ class _ChatScreenState extends State<ChatScreen> {
 @override
 void initState() {
   super.initState();
+
   loadChat();
-} 
+
+  scrollController.addListener(() {
+
+    if (scrollController.offset <
+        scrollController.position.maxScrollExtent - 200) {
+
+      setState(() {
+        showScrollButton = true;
+      });
+
+    } else {
+
+      setState(() {
+        showScrollButton = false;
+      });
+
+    }
+
+  });
+
+}
 
 Future<void> exportChat() async {
   try {
@@ -347,6 +368,7 @@ Future<String> getAIResponse(String text) async {
     return "ERROR: $e";
   }
 }
+
 Future<void> streamText(
   String fullText,
   int index,
@@ -886,7 +908,22 @@ Widget chatBubble(Map<String, dynamic> msg) {
   @override
 Widget build(BuildContext context) {
   return Scaffold(
-    
+
+    floatingActionButton:
+showScrollButton
+?
+FloatingActionButton(
+
+mini: true,
+
+onPressed: scrollToBottom,
+
+child: Icon(Icons.arrow_downward),
+
+)
+
+: null,
+
    drawer: Drawer(
   backgroundColor: isDarkMode ? Colors.black : Colors.white,
 
@@ -912,11 +949,25 @@ Widget build(BuildContext context) {
 
       // 🆕 NEW CHAT
       ListTile(
-        leading: const Icon(Icons.add),
-        title: const Text("New Chat"),
-        onTap: newChat,
-      ),
+  leading: Icon(
+    Icons.add,
+    color: isDarkMode
+        ? Colors.white
+        : Colors.black,
+  ),
 
+  title: Text(
+    "New Chat",
+
+    style: TextStyle(
+      color: isDarkMode
+          ? Colors.white
+          : Colors.black,
+    ),
+  ),
+
+  onTap: newChat,
+),
       const Divider(),
       
       // 💬 CHAT LIST
@@ -926,22 +977,40 @@ Widget build(BuildContext context) {
     itemBuilder: (context, index) {
       return ListTile(
         leading: Icon(
-          allChats[index]["favorite"] == true
-              ? Icons.star
-              : Icons.chat,
-          color: allChats[index]["favorite"] == true
-              ? Colors.orange
-              : null,
-        ),
+  allChats[index]["favorite"] == true
+      ? Icons.star
+      : Icons.chat,
 
-        title: Text(
-          allChats[index]["title"] ?? "New Chat",
-          overflow: TextOverflow.ellipsis,
-        ),
+  color: allChats[index]["favorite"] == true
+      ? Colors.orange
+      : (isDarkMode
+          ? Colors.white
+          : Colors.black),
+),
 
-        selected: index == currentChatIndex,
+title: Text(
 
-        onTap: () {
+  allChats[index]["title"] ?? "New Chat",
+
+  overflow: TextOverflow.ellipsis,
+
+  style: TextStyle(
+
+    color: isDarkMode
+        ? Colors.white
+        : Colors.black,
+
+  ),
+
+),
+
+      selected: index == currentChatIndex,
+
+selectedTileColor: isDarkMode
+    ? Colors.white12
+    : Colors.black12,
+
+onTap: () {
           setState(() {
             currentChatIndex = index;
 
@@ -996,14 +1065,17 @@ Widget build(BuildContext context) {
                         allChats.removeAt(index);
 
                         if (allChats.isEmpty) {
-                          allChats.add({
-                            "title": "New Chat",
-                            "messages": [],
-                            "favorite": false,
-                          });
+                          allChats.insert(
+  0,
+  {
+    "title": "New Chat",
+    "messages": [],
+    "favorite": false,
+  },
+);
 
-                          currentChatIndex = 0;
-                          messages = [];
+currentChatIndex = 0;
+messages = [];
                         } else {
                           currentChatIndex = 0;
 
@@ -1123,44 +1195,67 @@ Widget build(BuildContext context) {
   ),
 
           // 💬 INPUT BOX
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-  children: [
-    Expanded(
-      child: TextField(
-        controller: controller,
-        decoration: const InputDecoration(
-          hintText: "Ask anything...",
-          border: OutlineInputBorder(),
-        ),
-      ),
-    ),
+         Padding(
+  padding: const EdgeInsets.all(10),
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
 
-    IconButton(
-      icon: Icon(
-        isListening
-            ? Icons.mic
-            : Icons.mic_none,
-      ),
-      onPressed: () {
-        if (isListening) {
-          stopListening();
-        } else {
-          startListening();
-        }
-      },
-    ),
-
-    IconButton(
-      icon: const Icon(Icons.send),
-      onPressed: sendMessage,
-    ),
-  ],
-)
-        
+      Expanded(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: 300,
           ),
 
+          child: TextField(
+            controller: controller,
+
+            minLines: 1,
+            maxLines: null,
+
+            keyboardType: TextInputType.multiline,
+
+            decoration: InputDecoration(
+              hintText: "Ask anything...",
+
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ),
+      ),
+
+      const SizedBox(width: 5),
+
+      IconButton(
+        icon: Icon(
+          isListening
+              ? Icons.mic
+              : Icons.mic_none,
+        ),
+        onPressed: () {
+          if (isListening) {
+            stopListening();
+          } else {
+            startListening();
+          }
+        },
+      ),
+
+      IconButton(
+        icon: const Icon(Icons.send),
+        onPressed: sendMessage,
+      ),
+
+    ],
+  ),
+),
         ],
       ),
     ),
