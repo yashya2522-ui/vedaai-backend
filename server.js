@@ -1,6 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+const fs = require("fs");
 require("dotenv").config();
 
 const app = express();
@@ -8,478 +9,156 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-const fs = require("fs");
-let memory = {};
-
-if (fs.existsSync("memory.json")) {
-
-  memory = JSON.parse(
-
-    fs.readFileSync(
-
-      "memory.json",
-
-      "utf8"
-
-    )
-
-  );
-
-}
-// 🔑 API KEY
-require("dotenv").config();
+// ================= API KEY =================
 
 const API_KEY = process.env.GEMINI_API_KEY;
 
-console.log("API KEY LOADED:", !!API_KEY);
-
-// 🌐 Home route (for testing)
-app.get("/", (req, res) => {
-  res.send("VedaAI backend running 🚀");
-});
-
-function saveMemory() {
-
-  fs.writeFileSync(
-
-    "memory.json",
-
-    JSON.stringify(
-
-      memory,
-
-      null,
-
-      2
-
-    )
-
-  );
-
+if (!API_KEY) {
+  console.error("❌ GEMINI API KEY NOT FOUND");
+  process.exit(1);
 }
+
+console.log("✅ API KEY LOADED");
+
+// ================= MEMORY =================
+
+let memory = {};
+
+const MEMORY_FILE = "memory.json";
+
+// Load memory
+if (fs.existsSync(MEMORY_FILE)) {
+  try {
+    memory = JSON.parse(fs.readFileSync(MEMORY_FILE, "utf8"));
+  } catch (err) {
+    memory = {};
+  }
+}
+
+// Save memory
+function saveMemory() {
+  fs.writeFileSync(
+    MEMORY_FILE,
+    JSON.stringify(memory, null, 2)
+  );
+}
+
+// ================= SYSTEM PROMPT =================
+
 const SYSTEM_PROMPT = `
-You are VedaAI, an advanced AI assistant similar to ChatGPT.
-
-CAPABILITIES
-
-You can answer questions from ANY domain, subject, or field.
-
-Examples include but are not limited to:
-
-• General Knowledge
-• Current Affairs
-• Science
-• Technology
-• Artificial Intelligence
-• Machine Learning
-• IoT
-• DBMS
-• Networking
-• Operating Systems
-• Cyber Security
-• Mathematics
-• Physics
-• Chemistry
-• Biology
-• History
-• Geography
-• Politics
-• Sports
-• Business
-• Finance
-• Health
-• Medicine
-• Literature
-• Movies
-• Music
-• Travel
-• Food
-• Recipes
-• Programming
-• Algorithms
-• Data Structures
-• Interview Questions
-• Essays
-• Research Topics
-• Laws
-• Biography
-• Translation
-• Casual Conversation
-• Jokes
-• Astrology
-• Any other topic
-
-
-LANGUAGE RULES
-
-- Reply ONLY in the language requested by the user.
-
-- If the user does not request a language,
-reply in the same language used by the user.
-
-- Never mix multiple languages.
-
-Examples:
-
-User:
-Marathi madhe bol
-
-Assistant:
-(Answer only in Marathi)
-
-
-User:
-Speak in English
-
-Assistant:
-(Answer only in English)
-
-
-User:
-ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರಿಸಿ
-
-Assistant:
-(Answer only in Kannada)
-
-
-
-FORMAT RULES
-
-Never answer everything in one paragraph.
-
-Always choose the best structure automatically
-according to the topic.
-
-Use markdown formatting.
-
-Use headings.
-
-Use subheadings.
-
-Use bullet points.
-
-Use numbered lists.
-
-Use tables when useful.
-
-Use examples when useful.
-
-
-
-Educational Concepts
-
-# Title
-
-## Definition
-
-## Explanation
-
-## Types
-(only if applicable)
-
-## Working / Architecture / Process
-(only if applicable)
-
-## Advantages
-(only if applicable)
-
-## Disadvantages
-(only if applicable)
-
-## Applications
-(only if applicable)
-
-## Example
-(only if applicable)
-
-## Conclusion
-
-
-
-Programming
-
-# Title
-
-## Syntax
-
-## Explanation
-
-## Example Code
-
-## Output
-
-## Notes
-
-
-
-Algorithms
-
-# Title
-
-## Definition
-
-## Algorithm
-
-## Steps
-
-## Time Complexity
-
-## Space Complexity
-
-## Example
-
-## Conclusion
-
-
-
-History
-
-# Title
-
-## Introduction
-
-## Causes
-
-## Major Events
-
-## Effects
-
-## Conclusion
-
-
-
-Biography
-
-# Name
-
-## Early Life
-
-## Education
-
-## Career
-
-## Achievements
-
-## Awards
-
-## Legacy
-
-
-
-Diseases
-
-# Title
-
-## Definition
-
-## Causes
-
-## Symptoms
-
-## Diagnosis
-
-## Treatment
-
-## Prevention
-
-
-
-Current Affairs
-
-# Title
-
-## Overview
-
-## Important Facts
-
-## Impact
-
-## Latest Information
-
-## Conclusion
-
-
-
-Mathematics
-
-# Problem
-
-## Formula
-
-## Solution Steps
-
-## Final Answer
-
-
-
-Comparison Questions
-
-# Title
-
-| Feature | Item 1 | Item 2 |
-
-## Key Differences
-
-## Conclusion
-
-
-
-Translation Requests
-
-Return ONLY translated text.
-
-
-
-Greetings
-
-Reply naturally and briefly.
-
-
-
-IMPORTANT RULES
-
-Only include sections that are relevant.
-
-Do NOT force sections.
-
-Do NOT show Advantages
-if they do not exist.
-
-Do NOT show Types
-if they do not exist.
-
-Do NOT show Examples
-if they do not exist.
-
-Do NOT show Conclusion
-if it adds no value.
-
-Do NOT hallucinate.
-
-Do NOT invent facts.
-
-If information may be outdated,
-mention that newer information may exist.
-
-If uncertain say:
-
-"I don't know."
-
-Always return answers in clean Markdown format.
+You are VedaAI, a helpful AI assistant.
+
+Rules:
+- Reply in same language as user
+- Use Markdown
+- Be accurate
+- If unsure say "I don't know"
 `;
 
-// 💬 CHAT ROUTE
+// ================= HOME =================
+
+app.get("/", (req, res) => {
+  res.send("🔥 VedaAI backend running");
+});
+
+// ================= CHAT =================
+
 app.post("/chat", async (req, res) => {
-
   try {
-
     const userMessage = req.body.message;
-
     const userId = req.body.userId || "default";
 
+    if (!userMessage) {
+      return res.status(400).json({ error: "Message required" });
+    }
+
+    // init memory
     if (!memory[userId]) {
       memory[userId] = [];
     }
 
-
+    // last 10 messages
     const history = memory[userId]
-
+      .slice(-10)
       .map(m => `${m.role}: ${m.text}`)
-
       .join("\n");
 
+    const CURRENT_YEAR = new Date().getFullYear();
 
-    const prompt = `
+    // safe year shortcut
+    if (userMessage.toLowerCase() === "current year") {
+      return res.json({ reply: String(CURRENT_YEAR) });
+    }
+
+    // final prompt
+    const finalPrompt = `
+CURRENT_YEAR = ${CURRENT_YEAR}
 
 ${SYSTEM_PROMPT}
 
-Previous Conversation
-
+Conversation History:
 ${history}
 
-
 User:
-
 ${userMessage}
 
-
 Assistant:
-
 `;
 
-    // Gemini API call खाली येईल
-
-   const response = await axios.post(
+    // GEMINI CALL
+    const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
       {
         contents: [
           {
-            role: "user",
-            parts: [
-              {
-                text: finalPrompt
-              }
-            ]
+            parts: [{ text: finalPrompt }]
           }
         ]
       }
     );
 
-    const aiText =
-      response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response from AI";
+    let aiText =
+      response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
+    if (!aiText) {
+      aiText = "No response from AI";
+    }
 
-memory[userId].push({
+    // replace wrong years
+    aiText = aiText.replace(/\b(2023|2024|2025)\b/g, CURRENT_YEAR);
 
-  role: "user",
+    // save memory
+    memory[userId].push(
+      { role: "user", text: userMessage },
+      { role: "assistant", text: aiText }
+    );
 
-  text: userMessage
+    // limit memory
+    if (memory[userId].length > 40) {
+      memory[userId] = memory[userId].slice(-40);
+    }
 
-});
+    saveMemory();
 
+    return res.json({
+      reply: aiText
+    });
 
-memory[userId].push({
+  } catch (err) {
+    console.log("❌ ERROR:");
+    console.log(err?.response?.data || err.message);
 
-  role: "assistant",
-
-  text: aiText
-
-});
-
-
-if (memory[userId].length > 40) {
-
-  memory[userId] = memory[userId].slice(-40);
-
-}
-
-
-saveMemory();
-
-
-
-res.json({
-
-  reply: aiText
-
-});
-
-  } catch (error) {
-    console.log("Status:", error.response?.status);
-    console.log("Data:", error.response?.data);
-    console.log("Message:", error.message);
-
-    res.status(500).json({
+    return res.status(500).json({
       error: "Server Error",
+      details: err?.response?.data || err.message
     });
   }
 });
 
-// 🚀 SERVER START
+// ================= SERVER =================
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🔥 VedaAI Server running on port ${PORT}`);
+  console.log(`🔥 VedaAI running on port ${PORT}`);
 });
