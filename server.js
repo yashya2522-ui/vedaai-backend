@@ -211,6 +211,16 @@ app.post("/chat", async (req, res) => {
       .map(m => `${m.role}: ${m.text}`)
       .join("\n");
 
+      const history = memory[userId]
+  .slice(-10)
+  .map(m => `${m.role}: ${m.text}`)
+  .join("\n");
+
+let wikiText = "";
+
+wikiText = await searchWikipedia(userMessage);
+
+
     const CURRENT_YEAR = new Date().getFullYear();
 
     // safe year shortcut
