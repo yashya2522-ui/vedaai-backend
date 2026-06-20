@@ -206,10 +206,6 @@ app.post("/chat", async (req, res) => {
     }
 
     // last 10 messages
-    const history = memory[userId]
-      .slice(-10)
-      .map(m => `${m.role}: ${m.text}`)
-      .join("\n");
 
       const history = memory[userId]
   .slice(-10)
