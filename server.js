@@ -6,24 +6,18 @@ const wiki = require("wikipedia");
 const NewsAPI = require("newsapi");
 require("dotenv").config();
 
-const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// ================= API KEY =================
-
 const API_KEY = process.env.GEMINI_API_KEY;
+const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 if (!API_KEY) {
   console.error("❌ GEMINI API KEY NOT FOUND");
   process.exit(1);
 }
-const newsapi = new NewsAPI(
-  process.env.NEWS_API_KEY
-);
 
 console.log("✅ API KEY LOADED");
 
@@ -168,62 +162,45 @@ BEHAVIOR
 
 
 `;
-
-async function searchWikipedia(query){
-
-try{
-
-const page = await wiki.page(query);
-
-const summary = await page.summary();
-
-return summary.extract.slice(0,1500);
-
-}
-
-catch{
-
-return "";
-
-}
-
-}
-async function getNews(query) {
-
+async function searchWikipedia(query) {
   try {
+    const page = await wiki.page(query);
+    const summary = await page.summary();
 
-    const response =
-      await newsapi.v2.everything({
+    return summary?.extract?.slice(0, 1500) || "";
+  } catch {
+    return "";
+  }
+}
 
-        q: query,
-        language: "en",
-        pageSize: 3
-
-      });
+async function getNews(query) {
+  try {
+    const response = await newsapi.v2.everything({
+      q: query,
+      language: "en",
+      pageSize: 3
+    });
 
     return response.articles
-      .map(a =>
-        `${a.title}
-
-${a.description}`
-      )
+      .map(a => {
+        const title = a.title || "";
+        const desc = a.description || "";
+        return `${title}\n${desc}`;
+      })
       .join("\n\n");
-
   } catch {
-
     return "";
-
   }
-
 }
+
 async function webSearch(query) {
   try {
-    const url = `https://api.duckduckgo.com/?q=${query}&format=json`;
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`;
 
     const res = await axios.get(url);
 
-    return res.data.AbstractText || "";
-  } catch (err) {
+    return res.data?.AbstractText || "";
+  } catch {
     return "";
   }
 }
@@ -235,7 +212,6 @@ app.get("/", (req, res) => {
 });
 
 // ================= CHAT =================
-
 app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
@@ -250,42 +226,25 @@ app.post("/chat", async (req, res) => {
       memory[userId] = [];
     }
 
-    let wikiText = "";
-let webText = "";
+    // ⚡ SINGLE CLEAN PARALLEL CALL
+    const [wikiText, webText, newsText] = await Promise.all([
+      searchWikipedia(userMessage),
+      webSearch(userMessage),
+      getNews(userMessage)
+    ]);
 
-try {
-  wikiText = await searchWikipedia(userMessage);
-} catch (e) {
-  wikiText = "";
-}
-
-try {
-  webText = await webSearch(userMessage);
-} catch (e) {
-  webText = "";
-}
-
-    // last 10 messages
-const history = memory[userId]
-  .slice(-10)
-  .map(m => `${m.role}: ${m.text}`)
-  .join("\n");
-
-let wikiText = "";
-wikiText = await searchWikipedia(userMessage);
-
-let newsText = "";
-newsText = await getNews(userMessage);
-      
+    // history
+    const history = memory[userId]
+      .slice(-10)
+      .map(m => `${m.role}: ${m.text}`)
+      .join("\n");
 
     const CURRENT_YEAR = new Date().getFullYear();
 
-    // safe year shortcut
     if (userMessage.toLowerCase() === "current year") {
       return res.json({ reply: String(CURRENT_YEAR) });
     }
 
-    // final prompt
     const finalPrompt = `
 CURRENT_YEAR = ${CURRENT_YEAR}
 
@@ -294,10 +253,13 @@ ${SYSTEM_PROMPT}
 Wikipedia:
 ${wikiText}
 
-Web Search:
+Web:
 ${webText}
 
-Conversation History:
+News:
+${newsText}
+
+History:
 ${history}
 
 User:
@@ -305,6 +267,7 @@ ${userMessage}
 
 Assistant:
 `;
+
 
 
     // GEMINI CALL
