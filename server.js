@@ -70,6 +70,12 @@ app.use(cors({
 
 app.use(express.json());
 
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: "Too many requests, please try again later."
+});
+
 app.use(limiter);
 
 app.use((req, res, next) => {
@@ -81,7 +87,6 @@ app.use((req, res, next) => {
 
   next();
 });
-
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
