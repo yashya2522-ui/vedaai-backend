@@ -23,31 +23,27 @@ mongoose.connect(
   console.log("❌ MongoDB Error:", err);
 });
 
-const MemorySchema = new mongoose.Schema(
-{
+const MemorySchema = new mongoose.Schema({
+
   userId: String,
 
+  profile: {
+    name: String,
+    city: String,
+    birthday: String,
+    favoriteColor: String
+  },
+
   messages: [
-
     {
-
       role: String,
-
       text: String
-
     }
-
   ]
 
-},
-
-{
-
-timestamps:true
-
-}
-
-);
+}, {
+  timestamps: true
+});
 
 const Memory = mongoose.model("Memory", MemorySchema);
 
@@ -205,9 +201,20 @@ REASONING RULES
 "I don't know."
 
 MEMORY RULES
-- Use previous conversation context when available.
-- Remember user preferences during the conversation.
-- Maintain consistency with previous answers.
+- The conversation history is extremely important.
+- Always use information from History when answering.
+- If the user's name appears in History, remember it and use it.
+- Never ignore facts stored in History.
+- Example:
+History:
+user: My name is John
+
+User:
+What is my name?
+
+Assistant:
+Your name is John.
+
 
 CODING RULES
 - Generate clean, working and well-commented code.
@@ -275,6 +282,36 @@ app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
     const userId = req.body.userId || "default";
+    const lower = userMessage.toLowerCase();
+
+if (
+  lower.includes("my name is") ||
+  userMessage.includes("माझं नाव")
+) {
+
+  let name = "";
+
+  if (lower.includes("my name is")) {
+    name = userMessage.split(/my name is/i)[1]?.trim();
+  }
+
+  if (userMessage.includes("माझं नाव")) {
+    name = userMessage.split("माझं नाव")[1]
+      ?.replace("आहे", "")
+      .trim();
+  }
+
+  if (name) {
+    userMemory.profile.name = name;
+
+    await userMemory.save();
+
+    return res.json({
+      reply: `Okay! I'll remember that your name is ${name}.`
+    });
+  }
+
+}
 
 if (!userMessage) {
   return res.status(400).json({
@@ -307,12 +344,13 @@ if (userMessage.length > 1000) {
     // history
     let userMemory = await Memory.findOne({ userId });
 
-if (!userMemory) {
   userMemory = new Memory({
-    userId,
-    messages: []
-  });
-}
+  userId,
+
+  profile: {},
+
+  messages: []
+});
 
 const history = userMemory.messages
   .slice(-10)
@@ -324,6 +362,52 @@ const history = userMemory.messages
     if (userMessage.toLowerCase() === "current year") {
       return res.json({ reply: String(CURRENT_YEAR) });
     }
+    let userMemory = await Memory.findOne({ userId });
+
+if (!userMemory) {
+  userMemory = new Memory({
+    userId,
+    profile: {},
+    messages: []
+  });
+}
+
+const lower = userMessage.toLowerCase();
+
+if (
+
+lower.includes("what is my name") ||
+
+lower.includes("what's my name") ||
+
+lower.includes("tell me my name") ||
+
+userMessage.includes("माझं नाव काय")
+
+) {
+
+if (userMemory.profile.name) {
+
+return res.json({
+
+reply: `Your name is ${userMemory.profile.name}`
+
+});
+
+}
+
+return res.json({
+
+reply: "I don't know your name yet."
+
+});
+
+}
+
+const history = userMemory.messages
+  .slice(-10)
+  .map(m => `${m.role}: ${m.text}`)
+  .join("\n");
 
     const finalPrompt = `
 CURRENT_YEAR = ${CURRENT_YEAR}
