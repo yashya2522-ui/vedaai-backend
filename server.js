@@ -1,11 +1,12 @@
 const express = require("express");
-const axios = require("axios");
 const cors = require("cors");
 const fs = require("fs");
+const axios = require("axios");
 const wiki = require("wikipedia");
 const NewsAPI = require("newsapi");
-const axios = require("axios");
 require("dotenv").config();
+
+const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 const app = express();
 
