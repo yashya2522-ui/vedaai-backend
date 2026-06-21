@@ -1,14 +1,65 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
 const axios = require("axios");
 const wiki = require("wikipedia");
 const NewsAPI = require("newsapi");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const winston = require("winston");
+const mongoose = require("mongoose");
+
 require("dotenv").config();
 
+mongoose.connect(
+  process.env.MONGODB_URI,
+  {
+    serverSelectionTimeoutMS: 5000
+  }
+)
+.then(() => {
+  console.log("✅ MongoDB Connected");
+})
+.catch(err => {
+  console.log("❌ MongoDB Error:", err);
+});
+
+const MemorySchema = new mongoose.Schema(
+{
+  userId: String,
+
+  messages: [
+
+    {
+
+      role: String,
+
+      text: String
+
+    }
+
+  ]
+
+},
+
+{
+
+timestamps:true
+
+}
+
+);
+
+const Memory = mongoose.model("Memory", MemorySchema);
+
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({
+      filename: "logs.log"
+    })
+  ]
+});
 const app = express();
 
 app.use(helmet());
@@ -18,6 +69,8 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.use(limiter);
 
 app.use((req, res, next) => {
   logger.info({
@@ -35,18 +88,12 @@ const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // 10 requests per minute
-  message: "Too many requests, try again later."
+  message: "Too many requests, please try again later."
 });
 
 app.use(limiter);
 
-const logger = winston.createLogger({
-  level: "info",
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.File({ filename: "logs.log" })
-  ]
-});
+
 
 if (!API_KEY) {
   console.error("❌ GEMINI API KEY NOT FOUND");
@@ -57,26 +104,7 @@ console.log("✅ API KEY LOADED");
 
 // ================= MEMORY =================
 
-let memory = {};
 
-const MEMORY_FILE = "memory.json";
-
-// Load memory
-if (fs.existsSync(MEMORY_FILE)) {
-  try {
-    memory = JSON.parse(fs.readFileSync(MEMORY_FILE, "utf8"));
-  } catch (err) {
-    memory = {};
-  }
-}
-
-// Save memory
-function saveMemory() {
-  fs.writeFileSync(
-    MEMORY_FILE,
-    JSON.stringify(memory, null, 2)
-  );
-}
 
 // ================= SYSTEM PROMPT =================
 
@@ -270,9 +298,7 @@ if (userMessage.length > 1000) {
 }
     
     // init memory
-    if (!memory[userId]) {
-      memory[userId] = [];
-    }
+    
 
     // ⚡ SINGLE CLEAN PARALLEL CALL
     const [wikiText, webText, newsText] = await Promise.all([
@@ -282,10 +308,19 @@ if (userMessage.length > 1000) {
     ]);
 
     // history
-    const history = memory[userId]
-      .slice(-10)
-      .map(m => `${m.role}: ${m.text}`)
-      .join("\n");
+    let userMemory = await Memory.findOne({ userId });
+
+if (!userMemory) {
+  userMemory = new Memory({
+    userId,
+    messages: []
+  });
+}
+
+const history = userMemory.messages
+  .slice(-10)
+  .map(m => `${m.role}: ${m.text}`)
+  .join("\n");
 
     const CURRENT_YEAR = new Date().getFullYear();
 
@@ -340,22 +375,29 @@ Assistant:
     // replace wrong years
     aiText = aiText.replace(/\b(2023|2024|2025)\b/g, CURRENT_YEAR);
 
-    // save memory
-    memory[userId].push(
-      { role: "user", text: userMessage },
-      { role: "assistant", text: aiText }
-    );
+userMemory.messages.push(
+  {
+    role: "user",
+    text: userMessage
+  },
+  {
+    role: "assistant",
+    text: aiText
+  }
+);
 
-    // limit memory
-    if (memory[userId].length > 40) {
-      memory[userId] = memory[userId].slice(-40);
-    }
+if (userMemory.messages.length > 40) {
+  userMemory.messages =
+    userMemory.messages.slice(-40);
+}
 
-    saveMemory();
+await userMemory.save();
 
-    return res.json({
-      reply: aiText
-    });
+return res.json({
+  reply: aiText
+});
+    
+    
 
   } catch (err) {
     console.log("❌ ERROR:");
