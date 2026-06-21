@@ -4,15 +4,49 @@ const fs = require("fs");
 const axios = require("axios");
 const wiki = require("wikipedia");
 const NewsAPI = require("newsapi");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const winston = require("winston");
 require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+app.use(helmet());
+
+app.use(cors({
+  origin: "*"
+}));
+
 app.use(express.json());
+
+app.use((req, res, next) => {
+  logger.info({
+    method: req.method,
+    url: req.url,
+    time: new Date().toISOString()
+  });
+
+  next();
+});
+
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute
+  message: "Too many requests, try again later."
+});
+
+app.use(limiter);
+
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: "logs.log" })
+  ]
+});
 
 if (!API_KEY) {
   console.error("❌ GEMINI API KEY NOT FOUND");
@@ -217,10 +251,24 @@ app.post("/chat", async (req, res) => {
     const userMessage = req.body.message;
     const userId = req.body.userId || "default";
 
-    if (!userMessage) {
-      return res.status(400).json({ error: "Message required" });
-    }
+if (!userMessage) {
+  return res.status(400).json({
+    error: "Message is required"
+  });
+}
 
+if (typeof userMessage !== "string") {
+  return res.status(400).json({
+    error: "Invalid message format"
+  });
+}
+
+if (userMessage.length > 1000) {
+  return res.status(400).json({
+    error: "Message too long (max 1000 characters)"
+  });
+}
+    
     // init memory
     if (!memory[userId]) {
       memory[userId] = [];
