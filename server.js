@@ -342,15 +342,6 @@ if (userMessage.length > 1000) {
     ]);
 
     // history
-    let userMemory = await Memory.findOne({ userId });
-
-  userMemory = new Memory({
-  userId,
-
-  profile: {},
-
-  messages: []
-});
 
 const history = userMemory.messages
   .slice(-10)
@@ -362,7 +353,7 @@ const history = userMemory.messages
     if (userMessage.toLowerCase() === "current year") {
       return res.json({ reply: String(CURRENT_YEAR) });
     }
-    
+
    let userMemory = await Memory.findOne({ userId });
 
 if (!userMemory) {
