@@ -3,6 +3,8 @@ const axios = require("axios");
 const cors = require("cors");
 const fs = require("fs");
 const wiki = require("wikipedia");
+const NewsAPI = require("newsapi");
+const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
@@ -18,6 +20,9 @@ if (!API_KEY) {
   console.error("❌ GEMINI API KEY NOT FOUND");
   process.exit(1);
 }
+const newsapi = new NewsAPI(
+  process.env.NEWS_API_KEY
+);
 
 console.log("✅ API KEY LOADED");
 
@@ -182,6 +187,45 @@ return "";
 }
 
 }
+async function getNews(query) {
+
+  try {
+
+    const response =
+      await newsapi.v2.everything({
+
+        q: query,
+        language: "en",
+        pageSize: 3
+
+      });
+
+    return response.articles
+      .map(a =>
+        `${a.title}
+
+${a.description}`
+      )
+      .join("\n\n");
+
+  } catch {
+
+    return "";
+
+  }
+
+}
+async function webSearch(query) {
+  try {
+    const url = `https://api.duckduckgo.com/?q=${query}&format=json`;
+
+    const res = await axios.get(url);
+
+    return res.data.AbstractText || "";
+  } catch (err) {
+    return "";
+  }
+}
 
 // ================= HOME =================
 
@@ -205,17 +249,33 @@ app.post("/chat", async (req, res) => {
       memory[userId] = [];
     }
 
-    // last 10 messages
+    let wikiText = "";
+let webText = "";
 
-      const history = memory[userId]
+try {
+  wikiText = await searchWikipedia(userMessage);
+} catch (e) {
+  wikiText = "";
+}
+
+try {
+  webText = await webSearch(userMessage);
+} catch (e) {
+  webText = "";
+}
+
+    // last 10 messages
+const history = memory[userId]
   .slice(-10)
   .map(m => `${m.role}: ${m.text}`)
   .join("\n");
 
 let wikiText = "";
-
 wikiText = await searchWikipedia(userMessage);
 
+let newsText = "";
+newsText = await getNews(userMessage);
+      
 
     const CURRENT_YEAR = new Date().getFullYear();
 
@@ -225,14 +285,16 @@ wikiText = await searchWikipedia(userMessage);
     }
 
     // final prompt
-    // final prompt
-const finalPrompt = `
+    const finalPrompt = `
 CURRENT_YEAR = ${CURRENT_YEAR}
 
 ${SYSTEM_PROMPT}
 
-Wikipedia Information:
+Wikipedia:
 ${wikiText}
+
+Web Search:
+${webText}
 
 Conversation History:
 ${history}
@@ -242,6 +304,7 @@ ${userMessage}
 
 Assistant:
 `;
+
 
     // GEMINI CALL
     const response = await axios.post(
