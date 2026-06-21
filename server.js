@@ -90,14 +90,6 @@ app.use((req, res, next) => {
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 requests per minute
-  message: "Too many requests, please try again later."
-});
-
-app.use(limiter);
-
 
 
 if (!API_KEY) {
