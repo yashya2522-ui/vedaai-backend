@@ -280,126 +280,100 @@ app.get("/", (req, res) => {
 // ================= CHAT =================
 app.post("/chat", async (req, res) => {
   try {
+
     const userMessage = req.body.message;
     const userId = req.body.userId || "default";
+
+    // ================= VALIDATION =================
+    if (!userMessage) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    if (typeof userMessage !== "string") {
+      return res.status(400).json({ error: "Invalid message format" });
+    }
+
+    if (userMessage.length > 1000) {
+      return res.status(400).json({ error: "Message too long (max 1000 characters)" });
+    }
+
+    // ================= MEMORY INIT =================
+    let userMemory = await Memory.findOne({ userId });
+
+    if (!userMemory) {
+      userMemory = new Memory({
+        userId,
+        profile: {},
+        messages: []
+      });
+    }
+
     const lower = userMessage.toLowerCase();
 
-if (
-  lower.includes("my name is") ||
-  userMessage.includes("माझं नाव")
-) {
+    // ================= SAVE NAME (PROFILE MEMORY) =================
+    if (
+      lower.includes("my name is") ||
+      userMessage.includes("माझं नाव")
+    ) {
+      let name = "";
 
-  let name = "";
+      if (lower.includes("my name is")) {
+        name = userMessage.split(/my name is/i)[1]?.trim();
+      }
 
-  if (lower.includes("my name is")) {
-    name = userMessage.split(/my name is/i)[1]?.trim();
-  }
+      if (userMessage.includes("माझं नाव")) {
+        name = userMessage.split("माझं नाव")[1]
+          ?.replace("आहे", "")
+          .trim();
+      }
 
-  if (userMessage.includes("माझं नाव")) {
-    name = userMessage.split("माझं नाव")[1]
-      ?.replace("आहे", "")
-      .trim();
-  }
+      if (name) {
+        userMemory.profile.name = name;
+        await userMemory.save();
 
-  if (name) {
-    userMemory.profile.name = name;
+        return res.json({
+          reply: `Okay! I'll remember that your name is ${name}.`
+        });
+      }
+    }
 
-    await userMemory.save();
+    // ================= GET NAME =================
+    if (
+      lower.includes("what is my name") ||
+      lower.includes("what's my name") ||
+      lower.includes("tell me my name") ||
+      userMessage.includes("माझं नाव काय")
+    ) {
+      if (userMemory.profile.name) {
+        return res.json({
+          reply: `Your name is ${userMemory.profile.name}`
+        });
+      }
 
-    return res.json({
-      reply: `Okay! I'll remember that your name is ${name}.`
-    });
-  }
+      return res.json({
+        reply: "I don't know your name yet."
+      });
+    }
 
-}
+    // ================= SPECIAL CASE =================
+    const CURRENT_YEAR = new Date().getFullYear();
 
-if (!userMessage) {
-  return res.status(400).json({
-    error: "Message is required"
-  });
-}
+    if (lower === "current year") {
+      return res.json({ reply: String(CURRENT_YEAR) });
+    }
 
-if (typeof userMessage !== "string") {
-  return res.status(400).json({
-    error: "Invalid message format"
-  });
-}
+    // ================= HISTORY =================
+    const history = userMemory.messages
+      .slice(-10)
+      .map(m => `${m.role}: ${m.text}`)
+      .join("\n");
 
-if (userMessage.length > 1000) {
-  return res.status(400).json({
-    error: "Message too long (max 1000 characters)"
-  });
-}
-    
-    // init memory
-    
-
-    // ⚡ SINGLE CLEAN PARALLEL CALL
+    // ================= API CALLS =================
     const [wikiText, webText, newsText] = await Promise.all([
       searchWikipedia(userMessage),
       webSearch(userMessage),
       getNews(userMessage)
     ]);
-
-    // history
-
-const history = userMemory.messages
-  .slice(-10)
-  .map(m => `${m.role}: ${m.text}`)
-  .join("\n");
-
-    const CURRENT_YEAR = new Date().getFullYear();
-
-    if (userMessage.toLowerCase() === "current year") {
-      return res.json({ reply: String(CURRENT_YEAR) });
-    }
-
-   let userMemory = await Memory.findOne({ userId });
-
-if (!userMemory) {
-  userMemory = new Memory({
-    userId,
-    profile: {},
-    messages: []
-  });
-}
-
-const lower = userMessage.toLowerCase();
-
-if (
-
-lower.includes("what is my name") ||
-
-lower.includes("what's my name") ||
-
-lower.includes("tell me my name") ||
-
-userMessage.includes("माझं नाव काय")
-
-) {
-
-if (userMemory.profile.name) {
-
-return res.json({
-
-reply: `Your name is ${userMemory.profile.name}`
-
-});
-
-}
-
-return res.json({
-
-reply: "I don't know your name yet."
-
-});
-
-}
-
-const history = userMemory.messages
-.slice(-10)
-.map(m => `${m.role}: ${m.text}`)
-.join("\n");
 
     const finalPrompt = `
 CURRENT_YEAR = ${CURRENT_YEAR}
