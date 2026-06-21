@@ -362,7 +362,8 @@ const history = userMemory.messages
     if (userMessage.toLowerCase() === "current year") {
       return res.json({ reply: String(CURRENT_YEAR) });
     }
-    let userMemory = await Memory.findOne({ userId });
+    
+   let userMemory = await Memory.findOne({ userId });
 
 if (!userMemory) {
   userMemory = new Memory({
@@ -405,9 +406,9 @@ reply: "I don't know your name yet."
 }
 
 const history = userMemory.messages
-  .slice(-10)
-  .map(m => `${m.role}: ${m.text}`)
-  .join("\n");
+.slice(-10)
+.map(m => `${m.role}: ${m.text}`)
+.join("\n");
 
     const finalPrompt = `
 CURRENT_YEAR = ${CURRENT_YEAR}
