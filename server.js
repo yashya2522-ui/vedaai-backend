@@ -84,6 +84,12 @@ app.use((req, res, next) => {
   next();
 });
 
+const APP_INFO = {
+  name: "VedaAI",
+  owner: "Yash Krishnat Patil",
+  version: "1.0.0"
+};
+
 const API_KEY = process.env.GEMINI_API_KEY;
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
@@ -354,7 +360,18 @@ app.post("/chat", async (req, res) => {
         reply: "I don't know your name yet."
       });
     }
+function isOwnerQuery(text) {
+  const lower = text.toLowerCase();
 
+  return (
+    lower.includes("owner") ||
+    lower.includes("who created") ||
+    lower.includes("who made") ||
+    lower.includes("chat gpt owner") ||
+    text.includes("कोणी बनवले") ||
+    text.includes("मालक कोण")
+  );
+}
     // ================= SPECIAL CASE =================
     const CURRENT_YEAR = new Date().getFullYear();
 
@@ -432,7 +449,11 @@ userMemory.messages.push(
     text: aiText
   }
 );
-
+if (isOwnerQuery(userMessage)) {
+  return res.json({
+    reply: "VedaAI is created by Yash Krishnat Patil."
+  });
+} 
 if (userMemory.messages.length > 40) {
   userMemory.messages =
     userMemory.messages.slice(-40);
