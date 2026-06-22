@@ -7,8 +7,13 @@ const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const winston = require("winston");
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const User = require("./models/User");
 
 require("dotenv").config();
+
+const JWT_SECRET = process.env.JWT_SECRET || "vedaai_secret_key";
 
 mongoose.connect(
   process.env.MONGODB_URI,
@@ -284,12 +289,128 @@ app.get("/", (req, res) => {
 });
 
 // ================= CHAT =================
-app.post("/chat", async (req, res) => {
+app.post("/chat", auth, async (req, res) => {
   try {
 
     const userMessage = req.body.message;
-    const userId = req.body.userId || "default";
+    if (!userMessage) {
+      return res.status(400).json({
+        error: "Message is required"
+      });
+    }
 
+   const userId = req.userId;
+
+    app.post("/signup", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // 1. Validation
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "Email and password required"
+      });
+    }
+
+    // 2. Check user already exists
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: "User already exists"
+      });
+    }
+
+    // 3. Password hash
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 4. Create user
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword
+    });
+
+    // 5. JWT Token
+    const token = jwt.sign(
+      { userId: user._id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 6. Response
+    res.json({
+      message: "Signup successful",
+      token,
+      userId: user._id
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ error: "Wrong password" });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Login successful",
+      token,
+      userId: user._id
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function auth(req, res, next) {
+  try {
+    const token = req.headers.authorization;
+
+    // 1. Token check
+    if (!token) {
+      return res.status(401).json({
+        error: "No token provided"
+      });
+    }
+
+    // 2. Verify token
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // 3. userId request मध्ये store करा
+    req.userId = decoded.userId;
+
+    next();
+
+  } catch (err) {
+    return res.status(401).json({
+      error: "Invalid token"
+    });
+  }
+}
+
+   
     // ================= VALIDATION =================
     if (!userMessage) {
       return res.status(400).json({ error: "Message is required" });
