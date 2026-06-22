@@ -1,2 +1,0 @@
-vscode://Postman.postman-for-vscode?code=3c3776966dee7665b0af7a8701d848c65c7ec4073dca01f3eaef2b8f006fa6df   
-token for postman 
