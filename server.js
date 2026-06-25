@@ -64,23 +64,34 @@ const Memory = mongoose.model("Memory", MemorySchema);
 
 // ================= AUTH MIDDLEWARE =================
 function auth(req, res, next) {
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({ error: "No token provided" });
+    return res.status(401).json({
+      error: "No token provided"
+    });
   }
 
+  const token = authHeader.split(" ")[1];
+
   try {
-    const token = authHeader.split(" ")[1];
+
     const decoded = jwt.verify(token, JWT_SECRET);
 
     req.userId = decoded.userId;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: "Invalid token" });
-  }
-}
 
+    next();
+
+  } catch (err) {
+
+    return res.status(401).json({
+      error: "Invalid token"
+    });
+
+  }
+
+}
 // ================= SIGNUP =================
 app.post("/signup", async (req, res) => {
   try {
@@ -119,18 +130,35 @@ app.post("/signup", async (req, res) => {
 // ================= LOGIN =================
 app.post("/login", async (req, res) => {
   try {
+
+    console.log("BODY =", req.body);
+
+    const users = await User.find();
+
+    console.log("===== ALL USERS =====");
+    console.log(users);
+
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
 
+    console.log("FOUND USER =", user);
+
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({
+        error: "User not found"
+      });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const match = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!match) {
-      return res.status(400).json({ error: "Wrong password" });
+      return res.status(400).json({
+        error: "Wrong password"
+      });
     }
 
     const token = jwt.sign(
@@ -139,17 +167,20 @@ app.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({
+    return res.json({
       message: "Login successful",
       token,
       userId: user._id
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    return res.status(500).json({
+      error: err.message
+    });
+
   }
 });
-
 // ================= WIKIPEDIA =================
 async function searchWikipedia(query) {
   try {
@@ -180,7 +211,7 @@ async function getNews(query) {
 }
 
 // ================= CHAT =================
-app.post("/chat", auth, async (req, res) => {
+app.post("/chat", async (req, res) => {
   try {
 
     const userMessage = req.body.message;
