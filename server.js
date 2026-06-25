@@ -215,8 +215,8 @@ app.post("/chat", async (req, res) => {
   try {
 
     const userMessage = req.body.message;
-    const userId = req.userId;
-
+    const userId = req.userId || "guest";
+    
     if (!userMessage) {
       return res.status(400).json({ error: "Message required" });
     }
@@ -246,7 +246,7 @@ app.post("/chat", async (req, res) => {
       .map(m => `${m.role}: ${m.text}`)
       .join("\n");
 
-   const SYSTEM_PROMPT = `
+const SYSTEM_PROMPT = `
 You are VedaAI, an advanced AI assistant similar to ChatGPT.
 
 IDENTITY
@@ -348,18 +348,6 @@ REASONING RULES
 MEMORY RULES
 - The conversation history is extremely important.
 - Always use information from History when answering.
-- If the user's name appears in History, remember it and use it.
-- Never ignore facts stored in History.
-- Example:
-History:
-user: My name is John
-
-User:
-What is my name?
-
-Assistant:
-Your name is John.
-
 
 CODING RULES
 - Generate clean, working and well-commented code.
@@ -370,8 +358,11 @@ BEHAVIOR
 - Stay helpful, respectful and neutral.
 - Avoid unnecessary refusals.
 - Provide the best possible answer with available knowledge.
+`;
 
 
+const finalPrompt = `
+${SYSTEM_PROMPT}
 
 Wikipedia:
 ${wikiText}
@@ -387,6 +378,8 @@ ${userMessage}
 
 Assistant:
 `;
+
+
 
     // ================= GEMINI =================
     const response = await axios.post(
