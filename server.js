@@ -383,7 +383,7 @@ Assistant:
 
     // ================= GEMINI =================
     const response = await axios.post(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
   {
     contents: [
       {
@@ -407,13 +407,23 @@ Assistant:
 
     return res.json({ reply: aiText });
 
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      error: "Server Error",
-      details: err.message
-    });
-  }
+  }  catch (err) {
+
+  console.log("ERROR MESSAGE:");
+  console.log(err.message);
+
+  console.log("ERROR STATUS:");
+  console.log(err.response?.status);
+
+  console.log("ERROR DATA:");
+  console.log(err.response?.data);
+
+  return res.status(500).json({
+    error: "Server Error",
+    details: err.message
+  });
+
+}
 });
 
 // ================= HOME =================
