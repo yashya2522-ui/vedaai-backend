@@ -372,6 +372,7 @@ BEHAVIOR
 - Provide the best possible answer with available knowledge.
 
 
+
 Wikipedia:
 ${wikiText}
 
@@ -384,22 +385,22 @@ ${history}
 User:
 ${userMessage}
 
-Answer:
+Assistant:
 `;
 
     // ================= GEMINI =================
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+  {
+    contents: [
       {
-        contents: [
-          { parts: [
-                     { text: finalPrompt }
-                  ] 
-                }
+        parts: [
+          { text: finalPrompt }
         ]
       }
-    );
-
+    ]
+  }
+);
     let aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiText) aiText = "No response from AI";
