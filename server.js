@@ -20,7 +20,10 @@ const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || "vedaai_secret_key";
 const API_KEY = process.env.GEMINI_API_KEY;
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
-
+console.log(
+  "RENDER KEY =",
+  API_KEY ? API_KEY.substring(0, 15) : "NOT FOUND"
+);
 // ================= CHECK API =================
 if (!API_KEY) {
   console.error("❌ GEMINI API KEY NOT FOUND");
@@ -417,6 +420,7 @@ Assistant:
 
   console.log("ERROR DATA:");
   console.log(err.response?.data);
+console.log("RENDER KEY =", JSON.stringify(API_KEY));
 
   return res.status(500).json({
     error: "Server Error",
