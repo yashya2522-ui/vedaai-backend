@@ -9,12 +9,17 @@ const winston = require("winston");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const multer = require("multer");
+const fs = require("fs");
 
 require("dotenv").config();
 
 const User = require("./models/User");
 
 const app = express();
+const upload = multer({
+  dest: "uploads/"
+});
 
 // ================= CONFIG =================
 const JWT_SECRET = process.env.JWT_SECRET || "vedaai_secret_key";
@@ -209,6 +214,73 @@ async function getNews(query) {
     return "";
   }
 }
+// ================= IMAGE UPLOAD =================
+app.post("/image", upload.single("image"), async (req, res) => {
+
+  try {
+
+    console.log("IMAGE RECEIVED:");
+    console.log(req.file);
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No image uploaded"
+      });
+    }
+
+    const imageBuffer = fs.readFileSync(req.file.path);
+
+    const imageBase64 = imageBuffer.toString("base64");
+
+    const response = await axios.post(
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+  {
+    contents: [
+      {
+        parts: [
+          {
+            text: "Describe this image in detail."
+          },
+          {
+            inline_data: {
+              mime_type: req.file.mimetype,
+              data: imageBase64
+            }
+          }
+        ]
+      }
+    ]
+  }
+);
+
+const aiText =
+  response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+  "No response from AI";
+
+return res.json({
+  reply: aiText
+});
+
+  } catch (err) {
+
+  if (err.response?.status === 503) {
+    return res.status(503).json({
+      error: "AI Vision is temporarily busy. Please try again."
+    });
+  }
+
+  console.log("IMAGE ERROR:");
+  console.log(err.message);
+  console.log(err.response?.data);
+
+  return res.status(500).json({
+    error: "Image upload failed",
+    details: err.response?.data || err.message
+  });
+
+}
+
+});
 
 // ================= CHAT =================
 app.post("/chat", async (req, res) => {

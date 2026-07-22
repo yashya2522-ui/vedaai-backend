@@ -119,6 +119,38 @@ Future<void> pickImage() async {
   }
 
 }
+Future<void> uploadImage() async {
+
+  if (selectedImage == null) {
+    return;
+  }
+
+  var request = http.MultipartRequest(
+    "POST",
+    Uri.parse(
+      "https://vedaai-backend-5.onrender.com/image"
+    ),
+  );
+
+  request.files.add(
+    await http.MultipartFile.fromPath(
+      "image",
+      selectedImage!.path,
+    ),
+  );
+
+  var response = await request.send();
+
+  if (response.statusCode == 200) {
+
+    print("Image uploaded successfully");
+
+  } else {
+
+    print("Image upload failed");
+
+  }
+} 
 Future<void> exportChat() async {
   try {
     if (messages.isEmpty) {
@@ -1281,10 +1313,22 @@ IconButton(
         },
       ),
 
-      IconButton(
-        icon: const Icon(Icons.send),
-        onPressed: sendMessage,
-      ),
+     IconButton(
+  icon: const Icon(Icons.send),
+  onPressed: () {
+
+    if (selectedImage != null) {
+
+      uploadImage();
+
+    } else {
+
+      sendMessage();
+
+    }
+
+  },
+),
 
     ],
   ),
