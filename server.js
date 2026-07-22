@@ -382,16 +382,53 @@ Assistant:
 
 
     // ================= GEMINI =================
-   const response = await axios.post(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-  {
-    contents: [
-      {
-        parts: [{ text: finalPrompt }]
+  async function callGemini(finalPrompt) {
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+
+  let retries = 3;
+
+  while (retries > 0) {
+    try {
+      const response = await axios.post(url, {
+        contents: [
+          {
+            parts: [
+              {
+                text: finalPrompt
+              }
+            ]
+          }
+        ]
+      });
+
+      return response;
+
+    } catch (err) {
+
+      if (err.response?.status === 503) {
+
+        retries--;
+
+        console.log(`Retrying... Remaining: ${retries}`);
+
+        if (retries === 0) {
+          throw err;
+        }
+
+        await new Promise(resolve =>
+          setTimeout(resolve, 2000)
+        );
+
+      } else {
+
+        throw err;
+
       }
-    ]
+
+    }
   }
-);
+}
 
 let aiText =
   response.data?.candidates?.[0]?.content?.parts?.[0]?.text;

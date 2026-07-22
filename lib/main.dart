@@ -15,7 +15,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -66,6 +66,10 @@ bool showScrollButton = false;
 
   final stt.SpeechToText speech = stt.SpeechToText();
   final FlutterTts flutterTts = FlutterTts();
+  final ImagePicker picker = ImagePicker();
+
+ File? selectedImage;
+
 
   @override
   void dispose() {
@@ -100,7 +104,21 @@ void initState() {
   });
 
 }
+Future<void> pickImage() async {
 
+  final XFile? image = await picker.pickImage(
+    source: ImageSource.gallery,
+  );
+
+  if (image != null) {
+
+    setState(() {
+      selectedImage = File(image.path);
+    });
+
+  }
+
+}
 Future<void> exportChat() async {
   try {
     if (messages.isEmpty) {
@@ -1195,7 +1213,17 @@ messages = [];
       size: 30,
     ),
   ),
-
+if (selectedImage != null)
+  Padding(
+    padding: const EdgeInsets.all(8),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.file(
+        selectedImage!,
+        height: 150,
+      ),
+    ),
+  ),
           // 💬 INPUT BOX
          Padding(
   padding: const EdgeInsets.all(10),
@@ -1234,7 +1262,10 @@ messages = [];
       ),
 
       const SizedBox(width: 5),
-
+IconButton(
+  icon: const Icon(Icons.image),
+  onPressed: pickImage,
+), 
       IconButton(
         icon: Icon(
           isListening
