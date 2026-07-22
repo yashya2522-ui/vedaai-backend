@@ -382,18 +382,31 @@ Assistant:
 
 
     // ================= GEMINI =================
-    const response = await axios.post(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${API_KEY}`,
-  {
-    contents: [
-      {
-        parts: [
-          { text: finalPrompt }
-        ]
-      }
-    ]
+    try {
+  const response = await axios.post(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${API_KEY}`,
+    {
+      contents: [
+        {
+          parts: [{ text: finalPrompt }]
+        }
+      ]
+    }
+  );
+
+  // success...
+} catch (error) {
+  if (error.response?.status === 503) {
+    return res.status(503).json({
+      error: "Gemini API is temporarily busy. Please try again in a few moments."
+    });
   }
-);
+
+  return res.status(500).json({
+    error: "Server Error",
+    details: error.response?.data || error.message
+  });
+}
     let aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiText) aiText = "No response from AI";
