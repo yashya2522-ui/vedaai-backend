@@ -11,7 +11,9 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const fs = require("fs");
-
+const pdfParse = require("pdf-parse");
+const FormData = require("form-data");
+const { GoogleGenAI } = require("@google/genai");
 require("dotenv").config();
 
 const User = require("./models/User");
@@ -21,9 +23,15 @@ const upload = multer({
   dest: "uploads/"
 });
 
+let currentPdfText = "";
+let chatHistory = [];
+
 // ================= CONFIG =================
 const JWT_SECRET = process.env.JWT_SECRET || "vedaai_secret_key";
 const API_KEY = process.env.GEMINI_API_KEY;
+const ai = new GoogleGenAI({
+  apiKey: API_KEY,
+});
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 // ================= CHECK API =================
@@ -61,8 +69,28 @@ mongoose.connect(process.env.MONGODB_URI)
 // ================= MEMORY =================
 const MemorySchema = new mongoose.Schema({
   userId: String,
-  profile: { name: String },
-  messages: [{ role: String, text: String }]
+
+  profile: {
+    name: String
+  },
+
+  pdfUri: {
+    type: String,
+    default: ""
+  },
+
+  pdfMimeType: {
+    type: String,
+    default: ""
+  },
+
+  messages: [
+    {
+      role: String,
+      text: String
+    }
+  ]
+
 }, { timestamps: true });
 
 const Memory = mongoose.model("Memory", MemorySchema);
@@ -282,6 +310,249 @@ return res.json({
 
 });
 
+app.post("/pdf", upload.single("pdf"), async (req, res) => {
+console.log(req.file);
+  try {
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No PDF uploaded"
+      });
+    }
+const pdfBuffer = fs.readFileSync(req.file.path);
+
+
+const pdfData = await pdfParse(pdfBuffer);
+
+currentPdfText = pdfData.text;
+
+console.log("PDF TEXT LENGTH:", pdfData.text.length);
+console.log(pdfData.text.substring(0, 300));
+console.log(pdfData.info);
+console.log(pdfData.metadata);
+console.log(JSON.stringify(pdfData, null, 2));
+
+const response = await axios.post(
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+  {
+    contents: [
+      {
+        parts: [
+          {
+            text: `
+You are VedaAI, an intelligent AI assistant.
+
+Analyze the uploaded PDF carefully.
+
+PDF Content:
+${pdfData.text}
+
+Instructions:
+
+1. Detect what type of PDF it is.
+   - Notes
+   - Question Paper
+   - Resume
+   - Research Paper
+   - Invoice/Bill
+   - Assignment
+   - Report
+   - Book
+   - Other
+
+2. Based on the PDF type:
+
+- If Notes:
+  • Give a chapter-wise summary.
+  • Highlight important concepts.
+  • List important exam questions.
+
+- If Question Paper:
+  • Solve every question.
+  • Explain answers in simple language.
+
+- If Resume:
+  • Review the resume.
+  • Suggest improvements.
+
+- If Research Paper:
+  • Explain in simple language.
+  • Mention key findings.
+
+- If Invoice/Bill:
+  • Extract important details like date, amount, company, GST, etc.
+
+- If Assignment:
+  • Answer all questions.
+
+3. If the user asks in Marathi, answer in Marathi.
+If the user asks in English, answer in English.
+If the user asks in Hindi, answer in Hindi.
+
+Always give a well-structured response using headings and bullet points.
+`
+          }
+        ]
+      }
+    ]
+  }
+);
+
+const aiText =
+  response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+  "No response from AI";
+
+return res.json({
+  reply: aiText
+});
+  } catch (err) {
+
+  console.log("PDF ERROR:");
+  console.log(err.message);
+  console.log(err.response?.status);
+  console.log(err.response?.data);
+
+  return res.status(500).json({
+    error: "PDF parsing failed",
+    details: err.response?.data || err.message
+  });
+
+}
+
+});
+app.post("/upload-pdf", auth, upload.single("pdf"), async (req, res) => {
+const prompt = req.body.prompt || "Summarize this PDF.";
+  try {
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No PDF uploaded"
+      });
+    }
+
+    const uploadedFile = await ai.files.upload({
+      file: req.file.path,
+      config: {
+        mimeType: "application/pdf",
+      },
+    });
+
+    console.log("Uploaded File:");
+    console.log(uploadedFile);
+    
+    const userId = req.userId || "guest";
+
+let memory = await Memory.findOne({ userId });
+
+if (!memory) {
+  memory = new Memory({
+    userId,
+    messages: []
+  });
+}
+
+memory.pdfUri = uploadedFile.uri;
+memory.pdfMimeType = uploadedFile.mimeType;
+
+await memory.save();
+
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              fileData: {
+                fileUri: uploadedFile.uri,
+                mimeType: uploadedFile.mimeType,
+              },
+            },
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ],
+    });
+
+    const aiReply = result.text;
+    
+   fs.unlinkSync(req.file.path);
+
+    return res.json({
+      reply: aiReply,
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    return res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+app.post("/pdf-chat", async (req, res) => {
+
+  try {
+
+    const { message } = req.body;
+
+    if (!currentPdfText) {
+      return res.status(400).json({
+        error: "No PDF uploaded"
+      });
+    }
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: `
+You are VedaAI.
+
+PDF Content:
+
+${currentPdfText.substring(0, 15000)}
+
+User Question:
+
+${message}
+
+Answer only using the PDF.
+`
+              }
+            ]
+          }
+        ]
+      }
+    );
+
+    const aiText =
+      response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response";
+
+    return res.json({
+      reply: aiText
+    });
+
+  } catch (err) {
+
+    console.log(err.message);
+
+    return res.status(500).json({
+      error: "PDF Chat failed"
+    });
+
+  }
+
+});
 // ================= CHAT =================
 app.post("/chat", async (req, res) => {
   try {
