@@ -243,185 +243,107 @@ async function getNews(query) {
   }
 }
 // ================= IMAGE UPLOAD =================
-app.post("/image", upload.single("image"), async (req, res) => {
+app.post("/image", auth, upload.single("image"), async(req,res)=>{
 
-  try {
+try {
 
-    console.log("IMAGE RECEIVED:");
-    console.log(req.file);
+console.log("IMAGE RECEIVED:");
+console.log(req.file);
 
-    if (!req.file) {
-      return res.status(400).json({
-        error: "No image uploaded"
-      });
-    }
 
-    const imageBuffer = fs.readFileSync(req.file.path);
+if(!req.file){
+ return res.status(400).json({
+  error:"No image uploaded"
+ });
+}
 
-    const imageBase64 = imageBuffer.toString("base64");
 
-    const response = await axios.post(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+const imageBuffer = fs.readFileSync(req.file.path);
+
+const imageBase64 = imageBuffer.toString("base64");
+await Memory.findOneAndUpdate(
   {
-    contents: [
-      {
-        parts: [
-          {
-            text: "Describe this image in detail."
-          },
-          {
-            inline_data: {
-              mime_type: req.file.mimetype,
-              data: imageBase64
-            }
-          }
-        ]
-      }
-    ]
+    userId: req.userId
+  },
+  {
+    imageMimeType: req.file.mimetype,
+    imageName: req.file.originalname
+  },
+  {
+    upsert:true
   }
 );
 
-const aiText =
-  response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-  "No response from AI";
-
-return res.json({
-  reply: aiText
-});
-
-  } catch (err) {
-
-  if (err.response?.status === 503) {
-    return res.status(503).json({
-      error: "AI Vision is temporarily busy. Please try again."
-    });
-  }
-
-  console.log("IMAGE ERROR:");
-  console.log(err.message);
-  console.log(err.response?.data);
-
-  return res.status(500).json({
-    error: "Image upload failed",
-    details: err.response?.data || err.message
-  });
-
-}
-
-});
-
-app.post("/pdf", upload.single("pdf"), async (req, res) => {
-console.log(req.file);
-  try {
-
-    if (!req.file) {
-      return res.status(400).json({
-        error: "No PDF uploaded"
-      });
-    }
-const pdfBuffer = fs.readFileSync(req.file.path);
-
-
-const pdfData = await pdfParse(pdfBuffer);
-
-currentPdfText = pdfData.text;
-
-console.log("PDF TEXT LENGTH:", pdfData.text.length);
-console.log(pdfData.text.substring(0, 300));
-console.log(pdfData.info);
-console.log(pdfData.metadata);
-console.log(JSON.stringify(pdfData, null, 2));
+console.log("Image saved in memory");
 
 const response = await axios.post(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-  {
-    contents: [
-      {
-        parts: [
-          {
-            text: `
-You are VedaAI, an intelligent AI assistant.
 
-Analyze the uploaded PDF carefully.
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
 
-PDF Content:
-${pdfData.text}
+{
+contents:[
+{
+parts:[
 
-Instructions:
+{
+text:`
+You are VedaAI.
 
-1. Detect what type of PDF it is.
-   - Notes
-   - Question Paper
-   - Resume
-   - Research Paper
-   - Invoice/Bill
-   - Assignment
-   - Report
-   - Book
-   - Other
+Analyze this image carefully.
 
-2. Based on the PDF type:
-
-- If Notes:
-  • Give a chapter-wise summary.
-  • Highlight important concepts.
-  • List important exam questions.
-
-- If Question Paper:
-  • Solve every question.
-  • Explain answers in simple language.
-
-- If Resume:
-  • Review the resume.
-  • Suggest improvements.
-
-- If Research Paper:
-  • Explain in simple language.
-  • Mention key findings.
-
-- If Invoice/Bill:
-  • Extract important details like date, amount, company, GST, etc.
-
-- If Assignment:
-  • Answer all questions.
-
-3. If the user asks in Marathi, answer in Marathi.
-If the user asks in English, answer in English.
-If the user asks in Hindi, answer in Hindi.
-
-Always give a well-structured response using headings and bullet points.
+1. Describe the image.
+2. Extract any text present.
+3. Explain important details.
+4. Reply in user's language.
 `
-          }
-        ]
-      }
-    ]
-  }
+},
+
+{
+inline_data:{
+mime_type:req.file.mimetype,
+data:imageBase64
+}
+}
+
+]
+}
+]
+}
+
 );
 
+
+if(fs.existsSync(req.file.path)){
+ fs.unlinkSync(req.file.path);
+}
+
+
 const aiText =
-  response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-  "No response from AI";
+response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+"No response from AI";
 
-return res.json({
-  reply: aiText
+
+res.json({
+reply:aiText
 });
-  } catch (err) {
 
-  console.log("PDF ERROR:");
-  console.log(err.message);
-  console.log(err.response?.status);
-  console.log(err.response?.data);
 
-  return res.status(500).json({
-    error: "PDF parsing failed",
-    details: err.response?.data || err.message
-  });
+}
+catch(err){
+
+console.log("IMAGE ERROR:");
+console.log(err.message);
+
+res.status(500).json({
+error:"Image upload failed",
+details:err.message
+});
 
 }
 
 });
-app.post("/upload-pdf", auth, upload.single("pdf"), async (req, res) => {
-const prompt = req.body.prompt || "Summarize this PDF.";
+
+app.post("/pdf", auth, upload.single("pdf"), async (req,res)=>{
   try {
 
     if (!req.file) {
@@ -430,63 +352,274 @@ const prompt = req.body.prompt || "Summarize this PDF.";
       });
     }
 
-    const uploadedFile = await ai.files.upload({
-      file: req.file.path,
-      config: {
-        mimeType: "application/pdf",
-      },
-    });
 
-    console.log("Uploaded File:");
-    console.log(uploadedFile);
-    
-    const userId = req.userId || "guest";
+    console.log("PDF RECEIVED:");
+    console.log(req.file.originalname);
 
-let memory = await Memory.findOne({ userId });
 
-if (!memory) {
-  memory = new Memory({
-    userId,
-    messages: []
-  });
-}
+   const uploadedFile = await ai.files.upload({
 
-memory.pdfUri = uploadedFile.uri;
-memory.pdfMimeType = uploadedFile.mimeType;
+  file: req.file.path,
 
-await memory.save();
+  config: {
+    mimeType: "application/pdf",
+  },
+
+});
+
+
+console.log("UPLOADED FILE OBJECT:");
+console.log(JSON.stringify(uploadedFile, null, 2));
+
+
+const fileInfo = await ai.files.get({
+  name: uploadedFile.name
+});
+
+console.log("FILE STATE:", fileInfo.state);
+
+console.log("UPLOADED FILE OBJECT:");
+console.log(JSON.stringify(uploadedFile, null, 2));
+
+console.log("NAME:", uploadedFile.name);
+console.log("URI:", uploadedFile.uri);
+console.log("MIME:", uploadedFile.mimeType);
+// Save PDF information for PDF Chat
+
+await Memory.findOneAndUpdate(
+  {
+    userId: req.userId
+  },
+  {
+    pdfUri: uploadedFile.uri,
+    pdfMimeType: uploadedFile.mimeType
+  },
+  {
+    upsert: true
+  }
+);
+
+console.log("PDF saved in memory");
+
 
     const result = await ai.models.generateContent({
+
       model: "gemini-2.5-flash",
+
       contents: [
+
         {
           role: "user",
+
           parts: [
+
             {
               fileData: {
-                fileUri: uploadedFile.uri,
-                mimeType: uploadedFile.mimeType,
+    fileUri: uploadedFile.uri,
+    mimeType: uploadedFile.mimeType || "application/pdf"
+
               },
+
             },
+
+
             {
-              text: prompt,
-            },
+              text: `
+You are VedaAI.
+
+IMPORTANT LANGUAGE RULE:
+Always answer in English.
+Do not follow the language of the PDF.
+
+Analyze this PDF carefully.
+
+Give response in structured format:
+
+1. PDF Type
+2. Summary
+3. Important Points
+4. Detailed Explanation
+5. Important Questions
+6. Suggestions
+`
+
+            }
+
           ],
-        },
+
+        }
+
       ],
+
     });
 
-    const aiReply = result.text;
-    
-   fs.unlinkSync(req.file.path);
+   await Memory.findOneAndUpdate(
+{
+ userId: req.userId
+},
+{
+ $push:{
+   messages:{
+     role:"assistant",
+     text: result.text
+   }
+ }
+}
+);
+console.log("✅ PDF + AI response saved");
+
+    if (fs.existsSync(req.file.path)) {
+
+      fs.unlinkSync(req.file.path);
+
+    }
+
+
 
     return res.json({
-      reply: aiReply,
+
+      reply: result.text || "No response generated",
+
+      fileUri: uploadedFile.uri
+
     });
+
+
 
   } catch (err) {
 
-    console.log(err);
+
+    console.log("PDF ERROR:");
+
+    console.log(err.message);
+
+
+    return res.status(500).json({
+
+      error: "PDF upload failed",
+
+      details: err.message
+
+    });
+
+
+  }
+
+});
+
+console.log("✅ Upload PDF route loaded");
+app.post("/pdf-chat", auth, async(req,res)=>{
+
+  try {
+
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        error: "Message required"
+      });
+    }
+
+
+    const memory = await Memory.findOne({
+  userId: req.userId
+});
+
+    if (!memory || !memory.pdfUri) {
+      return res.status(400).json({
+        error: "No PDF uploaded"
+      });
+    }
+   
+    const result = await ai.models.generateContent({
+
+  model: "gemini-2.5-flash",
+
+  contents: [
+    {
+      role:"user",
+      parts:[
+        {
+          fileData:{
+            fileUri: memory.pdfUri,
+            mimeType: memory.pdfMimeType || "application/pdf"
+          }
+        },
+        {
+          text: message
+        }
+      ]
+    }
+  ]
+
+});
+
+
+// SAVE USER MESSAGE
+await Memory.findOneAndUpdate(
+{
+ userId:req.userId
+},
+{
+ $push:{
+  messages:{
+   role:"user",
+   text:message
+  }
+ }
+}
+);
+
+
+// SAVE AI MESSAGE
+await Memory.findOneAndUpdate(
+{
+ userId:req.userId
+},
+{
+ $push:{
+  messages:{
+   role:"assistant",
+   text:result.text
+  }
+ }
+}
+);
+
+
+console.log("PDF CHAT HISTORY SAVED");
+
+
+return res.json({
+ reply: result.text
+});
+    
+  } catch(err) {
+
+    console.log("PDF HISTORY ERROR:");
+    console.log(err.message);
+
+    return res.status(500).json({
+      error:"Failed to load history"
+    });
+
+  }
+
+});
+ console.log("PDF HISTORY ROUTE REGISTERED");
+app.get("/pdf-history", auth, async (req, res) => {
+
+  try {
+
+    const memory = await Memory.findOne({
+      userId: req.userId
+    });
+
+    return res.json({
+      history: memory?.messages || []
+    });
+
+  } catch (err) {
 
     return res.status(500).json({
       error: err.message
@@ -495,64 +628,7 @@ await memory.save();
   }
 
 });
-app.post("/pdf-chat", async (req, res) => {
 
-  try {
-
-    const { message } = req.body;
-
-    if (!currentPdfText) {
-      return res.status(400).json({
-        error: "No PDF uploaded"
-      });
-    }
-
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-      {
-        contents: [
-          {
-            parts: [
-              {
-                text: `
-You are VedaAI.
-
-PDF Content:
-
-${currentPdfText.substring(0, 15000)}
-
-User Question:
-
-${message}
-
-Answer only using the PDF.
-`
-              }
-            ]
-          }
-        ]
-      }
-    );
-
-    const aiText =
-      response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response";
-
-    return res.json({
-      reply: aiText
-    });
-
-  } catch (err) {
-
-    console.log(err.message);
-
-    return res.status(500).json({
-      error: "PDF Chat failed"
-    });
-
-  }
-
-});
 // ================= CHAT =================
 app.post("/chat", async (req, res) => {
   try {
@@ -703,6 +779,19 @@ BEHAVIOR
 - Provide the best possible answer with available knowledge.
 `;
 
+let pdfInstruction = "";
+
+if (memory.pdfUri) {
+  pdfInstruction = `
+The user has already uploaded a PDF.
+
+Whenever the user's question is related to that PDF,
+answer using the uploaded PDF.
+
+PDF URI:
+${memory.pdfUri}
+`;
+} 
 
 const finalPrompt = `
 ${SYSTEM_PROMPT}
@@ -715,6 +804,7 @@ ${newsText}
 
 History:
 ${history}
+${pdfInstruction}
 
 User:
 ${userMessage}
@@ -814,7 +904,7 @@ app.get("/", (req, res) => {
 
 // ================= SERVER =================
 const PORT = process.env.PORT || 3000;
-
+console.log("BEFORE LISTEN");
 app.listen(PORT, () => {
   console.log(`🔥 VedaAI running on port ${PORT}`);
 });
