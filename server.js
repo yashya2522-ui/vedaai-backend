@@ -68,27 +68,39 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // ================= MEMORY =================
 const MemorySchema = new mongoose.Schema({
+
   userId: String,
 
   profile: {
     name: String
   },
 
-  pdfUri: {
-    type: String,
-    default: ""
-  },
+  pdfs: [
 
-  pdfMimeType: {
-    type: String,
-    default: ""
-  },
-
-  messages: [
     {
-      role: String,
-      text: String
+
+      name: String,
+
+      pdfUri: String,
+
+      pdfMimeType: String,
+
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      },
+
+      messages: [
+
+        {
+          role: String,
+          text: String
+        }
+
+      ]
+
     }
+
   ]
 
 }, { timestamps: true });
@@ -384,22 +396,27 @@ console.log(JSON.stringify(uploadedFile, null, 2));
 console.log("NAME:", uploadedFile.name);
 console.log("URI:", uploadedFile.uri);
 console.log("MIME:", uploadedFile.mimeType);
-// Save PDF information for PDF Chat
+
 
 await Memory.findOneAndUpdate(
   {
     userId: req.userId
   },
   {
-    pdfUri: uploadedFile.uri,
-    pdfMimeType: uploadedFile.mimeType
+    $push: {
+      pdfs: {
+        name: req.file.originalname,
+        pdfUri: uploadedFile.uri,
+        pdfMimeType: uploadedFile.mimeType
+      }
+    }
   },
   {
     upsert: true
   }
 );
 
-console.log("PDF saved in memory");
+console.log("PDF added successfully");
 
 
     const result = await ai.models.generateContent({
@@ -507,30 +524,37 @@ console.log("✅ PDF + AI response saved");
 
 });
 
-console.log("✅ Upload PDF route loaded");
+console.log("✅ PDF CHAT ROUTE LOADED");
 app.post("/pdf-chat", auth, async(req,res)=>{
 
   try {
+const { pdfId, message } = req.body;
 
-    const { message } = req.body;
-
-    if (!message) {
-      return res.status(400).json({
-        error: "Message required"
-      });
-    }
+if (!pdfId || !message) {
+  return res.status(400).json({
+    error: "pdfId and message required"
+  });
+}
 
 
-    const memory = await Memory.findOne({
+   const memory = await Memory.findOne({
   userId: req.userId
 });
 
-    if (!memory || !memory.pdfUri) {
-      return res.status(400).json({
-        error: "No PDF uploaded"
-      });
-    }
-   
+if (!memory) {
+  return res.status(400).json({
+    error: "No PDFs found"
+  });
+}
+
+const pdf = memory.pdfs.id(pdfId);
+
+if (!pdf) {
+  return res.status(404).json({
+    error: "PDF not found"
+  });
+}
+
     const result = await ai.models.generateContent({
 
   model: "gemini-2.5-flash",
@@ -541,8 +565,8 @@ app.post("/pdf-chat", auth, async(req,res)=>{
       parts:[
         {
           fileData:{
-            fileUri: memory.pdfUri,
-            mimeType: memory.pdfMimeType || "application/pdf"
+            fileUri: pdf.pdfUri,
+            mimeType: pdf.pdfMimeType || "application/pdf"
           }
         },
         {
@@ -554,40 +578,40 @@ app.post("/pdf-chat", auth, async(req,res)=>{
 
 });
 
-
 // SAVE USER MESSAGE
 await Memory.findOneAndUpdate(
-{
- userId:req.userId
-},
-{
- $push:{
-  messages:{
-   role:"user",
-   text:message
+  {
+    userId: req.userId,
+    "pdfs._id": pdfId
+  },
+  {
+    $push: {
+      "pdfs.$.messages": {
+        role: "user",
+        text: message
+      }
+    }
   }
- }
-}
 );
-
 
 // SAVE AI MESSAGE
 await Memory.findOneAndUpdate(
-{
- userId:req.userId
-},
-{
- $push:{
-  messages:{
-   role:"assistant",
-   text:result.text
+  {
+    userId: req.userId,
+    "pdfs._id": pdfId
+  },
+  {
+    $push: {
+      "pdfs.$.messages": {
+        role: "assistant",
+        text: result.text
+      }
+    }
   }
- }
-}
 );
 
-
 console.log("PDF CHAT HISTORY SAVED");
+
 
 
 return res.json({
@@ -606,8 +630,10 @@ return res.json({
   }
 
 });
+
  console.log("PDF HISTORY ROUTE REGISTERED");
-app.get("/pdf-history", auth, async (req, res) => {
+
+app.get("/pdf-history/:pdfId", auth, async (req, res) => {
 
   try {
 
@@ -615,9 +641,48 @@ app.get("/pdf-history", auth, async (req, res) => {
       userId: req.userId
     });
 
+    if (!memory) {
+      return res.status(404).json({
+        error: "Memory not found"
+      });
+    }
+
+    const pdf = memory.pdfs.id(req.params.pdfId);
+
+    if (!pdf) {
+      return res.status(404).json({
+        error: "PDF not found"
+      });
+    }
+
     return res.json({
-      history: memory?.messages || []
+      history: pdf.messages
     });
+
+  } catch (err) {
+
+    return res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
+console.log("✅ MY PDFS ROUTE REGISTERED");
+app.get("/my-pdfs", auth, async (req, res) => {
+
+  try {
+
+    const memory = await Memory.findOne({
+  userId: req.userId
+});
+
+console.log("MEMORY =", JSON.stringify(memory, null, 2));
+
+return res.json({
+  pdfs: memory?.pdfs || []
+});
 
   } catch (err) {
 
