@@ -24,6 +24,7 @@
     "mongoose": "^9.7.1",
     "multer": "^2.2.0",
     "newsapi": "^2.4.1",
+    "nodemailer": "^9.0.3",
     "pdf-parse": "^1.1.1",
     "wikipedia": "^2.5.0",
     "winston": "^3.19.0"

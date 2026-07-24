@@ -16,6 +16,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
+import 'login_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,7 +29,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ChatScreen(),
+      home: LoginScreen(),
     );
   }
 }

@@ -13,10 +13,49 @@ const multer = require("multer");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const FormData = require("form-data");
+const nodemailer = require("nodemailer");
 const { GoogleGenAI } = require("@google/genai");
+
 require("dotenv").config();
 
+const transporter = nodemailer.createTransport({
+
+  service: "gmail",
+
+  auth: {
+
+    user: process.env.EMAIL_USER,
+
+    pass: process.env.EMAIL_PASS
+
+  }
+
+});
+
 const User = require("./models/User");
+const OTP = mongoose.model(
+
+  "OTP",
+
+  new mongoose.Schema({
+
+    email: String,
+
+    otp: String,
+
+    expireAt: {
+
+      type: Date,
+
+      default: Date.now,
+
+      expires: 300
+
+    }
+
+  })
+
+);
 
 const app = express();
 const upload = multer({
@@ -75,6 +114,36 @@ const MemorySchema = new mongoose.Schema({
     name: String
   },
 
+  // NORMAL CHAT
+  chats: [
+    {
+      role: String,
+      text: String
+    }
+  ],
+
+  // PINNED MESSAGES
+  pins: [
+    {
+      role: String,
+      text: String
+    }
+  ],
+
+  // APP SETTINGS
+  settings: {
+    theme: {
+      type: String,
+      default: "light"
+    },
+
+    language: {
+      type: String,
+      default: "English"
+    }
+  },
+
+  // PDFS
   pdfs: [
 
     {
@@ -93,8 +162,11 @@ const MemorySchema = new mongoose.Schema({
       messages: [
 
         {
+
           role: String,
+
           text: String
+
         }
 
       ]
@@ -137,41 +209,227 @@ function auth(req, res, next) {
   }
 
 }
-// ================= SIGNUP =================
-app.post("/signup", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+// ================= SEND OTP =================
 
-    const exist = await User.findOne({ email });
-    if (exist) {
-      return res.status(400).json({ error: "User already exists" });
+app.post("/send-otp", async (req, res) => {
+
+  try {
+
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found"
+      });
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const otp = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
 
-    const user = await User.create({
-      name,
+    await OTP.deleteMany({ email });
+
+    await OTP.create({
       email,
-      password: hash
+      otp
     });
 
-    const token = jwt.sign(
-      { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    await transporter.sendMail({
 
-    res.json({
-      message: "Signup successful",
-      token,
-      userId: user._id
+      from: process.env.EMAIL_USER,
+
+      to: email,
+
+      subject: "VedaAI Password Reset OTP",
+
+      html: `
+        <h2>VedaAI</h2>
+
+        <p>Your OTP is:</p>
+
+        <h1>${otp}</h1>
+
+        <p>This OTP is valid for 5 minutes.</p>
+      `
+
+    });
+
+    return res.json({
+      message: "OTP Sent Successfully"
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    console.log(err);
+
+    return res.status(500).json({
+      error: err.message
+    });
+
   }
+
 });
 
+// ================= VERIFY OTP =================
+
+app.post("/verify-otp", async (req, res) => {
+
+  try {
+
+    const { email, otp } = req.body;
+
+    const record = await OTP.findOne({
+      email,
+      otp
+    });
+
+    if (!record) {
+
+      return res.status(400).json({
+        error: "Invalid or Expired OTP"
+      });
+
+    }
+
+    return res.json({
+      message: "OTP Verified Successfully"
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
+// ================= RESET PASSWORD =================
+
+app.post("/reset-password", async (req, res) => {
+
+  try {
+
+    const { email, password } = req.body;
+
+    const hash = await bcrypt.hash(password, 10);
+
+    await User.updateOne(
+
+      { email },
+
+      {
+
+        $set: {
+
+          password: hash
+
+        }
+
+      }
+
+    );
+
+    await OTP.deleteMany({
+
+      email
+
+    });
+
+    return res.json({
+
+      message: "Password Reset Successfully"
+
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+
+      error: err.message
+
+    });
+
+  }
+
+});
+// ================= SIGNUP =================
+app.post("/signup", async (req, res) => {
+
+  try {
+
+    const { name, email, password } = req.body;
+
+
+    const exist = await User.findOne({
+      email
+    });
+
+
+    if (exist) {
+
+      return res.status(400).json({
+        error: "User already exists"
+      });
+
+    }
+
+
+    const hash = await bcrypt.hash(
+      password,
+      10
+    );
+
+
+    const user = await User.create({
+
+      name,
+      email,
+      password: hash
+
+    });
+
+
+    const token = jwt.sign(
+
+      {
+        userId: user._id
+      },
+
+      JWT_SECRET,
+
+      {
+        expiresIn:"7d"
+      }
+
+    );
+
+
+    res.json({
+
+      message:"Signup successful",
+
+      token,
+
+      userId:user._id
+
+    });
+
+
+  } catch(err) {
+
+    res.status(500).json({
+
+      error:err.message
+
+    });
+
+  }
+
+});
 // ================= LOGIN =================
 app.post("/login", async (req, res) => {
   try {
@@ -694,6 +952,49 @@ return res.json({
 
 });
 
+console.log("✅ SYNC ROUTE REGISTERED");
+
+app.get("/sync", auth, async (req, res) => {
+
+  try {
+
+    const memory = await Memory.findOne({
+      userId: req.userId
+    });
+
+    if (!memory) {
+      return res.json({
+        profile: {},
+        chats: [],
+        pins: [],
+        settings: {},
+        pdfs: []
+      });
+    }
+
+    return res.json({
+
+      profile: memory.profile || {},
+
+      chats: memory.chats || [],
+
+      pins: memory.pins || [],
+
+      settings: memory.settings || {},
+
+      pdfs: memory.pdfs || []
+
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
 // ================= CHAT =================
 app.post("/chat", async (req, res) => {
   try {
