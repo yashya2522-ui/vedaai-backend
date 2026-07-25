@@ -532,7 +532,19 @@ app.post("/login", async (req, res) => {
       });
 
     }
+   if (user.role === "owner") {
 
+  return res.json({
+
+    message: "Owner already has lifetime premium",
+
+    isPremium: true,
+
+    subscriptionType: "lifetime"
+
+  });
+
+}
 
     user.isPremium = true;
 
