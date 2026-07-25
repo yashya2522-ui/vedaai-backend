@@ -17,7 +17,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'login_screen.dart';
-
+import 'package:file_picker/file_picker.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -51,7 +51,10 @@ class _ChatScreenState extends State<ChatScreen> {
   bool isLoading = false;
   bool isListening = false;
 bool showScrollButton = false;
+bool isPremium = false;
+String subscriptionType = "free";
   int currentChatIndex = 0;
+
 
   List<Map<String, dynamic>> messages = [];
 
@@ -62,6 +65,263 @@ bool showScrollButton = false;
     }
   ];
 
+Future<void> checkPremium() async {
+
+  final prefs =
+      await SharedPreferences.getInstance();
+
+  setState(() {
+
+    isPremium =
+        prefs.getBool("isPremium") ?? false;
+
+    subscriptionType =
+        prefs.getString("subscriptionType") ?? "free";
+
+  });
+
+  print("Premium Status: $isPremium");
+  print("Plan: $subscriptionType");
+
+}
+
+Future<bool> checkFreeMessageLimit() async {
+
+  final prefs =
+      await SharedPreferences.getInstance();
+
+
+  String today =
+      DateTime.now().toString().substring(0,10);
+
+
+  String? savedDate =
+      prefs.getString("lastMessageDate");
+
+
+  int count =
+      prefs.getInt("freeMessageCount") ?? 0;
+
+
+  if(savedDate != today){
+
+    count = 0;
+
+    await prefs.setString(
+      "lastMessageDate",
+      today,
+    );
+
+    await prefs.setInt(
+      "freeMessageCount",
+      0,
+    );
+
+  }
+
+
+  if(count >= 50){
+
+    return false;
+
+  }
+
+
+  await prefs.setInt(
+    "freeMessageCount",
+    count + 1,
+  );
+
+
+  return true;
+
+}
+ 
+ Future<void> pickPdf() async {
+
+  FilePickerResult? result =
+      await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['pdf'],
+  );
+
+  if (result != null) {
+
+    setState(() {
+
+      selectedPdf =
+          File(result.files.single.path!);
+
+    });
+
+    print("PDF Selected: ${selectedPdf!.path}");
+
+  }
+
+}
+
+Future<bool> checkFreePdfLimit() async {
+
+  final prefs =
+      await SharedPreferences.getInstance();
+
+
+  String today =
+      DateTime.now()
+          .toString()
+          .substring(0,10);
+
+
+  String? savedDate =
+      prefs.getString("lastPdfDate");
+
+
+  int pdfCount =
+      prefs.getInt("freePdfCount") ?? 0;
+
+
+  if(savedDate != today){
+
+    pdfCount = 0;
+
+    await prefs.setString(
+      "lastPdfDate",
+      today,
+    );
+
+    await prefs.setInt(
+      "freePdfCount",
+      0,
+    );
+
+  }
+
+
+  if(pdfCount >= 5){
+
+    return false;
+
+  }
+
+
+  await prefs.setInt(
+    "freePdfCount",
+    pdfCount + 1,
+  );
+
+
+  return true;
+
+}
+
+Future<void> uploadPdf() async {
+
+  if (selectedPdf == null) {
+    return;
+  }
+
+  if (!isPremium) {
+
+    bool allowed =
+        await checkFreePdfLimit();
+
+    if (!allowed) {
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Daily PDF limit completed. Upgrade to Premium 💎",
+          ),
+        ),
+      );
+
+      return;
+    }
+
+  }
+
+  var request = http.MultipartRequest(
+    "POST",
+    Uri.parse(
+      "https://vedaai-backend-5.onrender.com/pdf",
+    ),
+  );
+
+  request.files.add(
+    await http.MultipartFile.fromPath(
+      "pdf",
+      selectedPdf!.path,
+    ),
+  );
+
+  var response = await request.send();
+
+  if (response.statusCode == 200) {
+
+    print("PDF uploaded successfully");
+
+  } else {
+
+    print("PDF upload failed");
+
+  }
+
+} 
+
+Future<bool> checkFreeImageLimit() async {
+
+  final prefs =
+      await SharedPreferences.getInstance();
+
+
+  String today =
+      DateTime.now()
+          .toString()
+          .substring(0, 10);
+
+
+  String? savedDate =
+      prefs.getString("lastImageDate");
+
+
+  int imageCount =
+      prefs.getInt("freeImageCount") ?? 0;
+
+
+  if (savedDate != today) {
+
+    imageCount = 0;
+
+    await prefs.setString(
+      "lastImageDate",
+      today,
+    );
+
+    await prefs.setInt(
+      "freeImageCount",
+      0,
+    );
+
+  }
+
+
+  if (imageCount >= 5) {
+
+    return false;
+
+  }
+
+
+  await prefs.setInt(
+    "freeImageCount",
+    imageCount + 1,
+  );
+
+
+  return true;
+
+}
   // 3. API FUNCTION (OK PLACE)
   
 
@@ -70,7 +330,7 @@ bool showScrollButton = false;
   final ImagePicker picker = ImagePicker();
 
  File? selectedImage;
-
+ File? selectedPdf;
 
   @override
   void dispose() {
@@ -86,7 +346,7 @@ void initState() {
   checkOwner();
 
   loadChat();
-
+  checkPremium();
   scrollController.addListener(() {
 
     if (scrollController.offset <
@@ -145,7 +405,27 @@ Future<void> uploadImage() async {
   if (selectedImage == null) {
     return;
   }
+  
+  if (!isPremium) {
 
+  bool allowed =
+      await checkFreeImageLimit();
+
+  if (!allowed) {
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Daily image limit completed. Upgrade to Premium 💎",
+        ),
+      ),
+    );
+
+    return;
+  }
+
+}
   var request = http.MultipartRequest(
     "POST",
     Uri.parse(
@@ -488,7 +768,27 @@ void sendMessage() async {
 
   String userText = controller.text.trim();
 
+   if (!isPremium) {
 
+    bool allowed =
+        await checkFreeMessageLimit();
+
+
+    if (!allowed) {
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Daily free limit completed. Upgrade to Premium 💎",
+          ),
+        ),
+      );
+
+      return;
+    }
+
+  }
   // First message title
   if ((allChats[currentChatIndex]["messages"] as List).isEmpty) {
 
@@ -1213,7 +1513,21 @@ messages = [];
         );
       },
     ),
-
+    // 💎 PREMIUM STATUS
+Padding(
+  padding: const EdgeInsets.only(right: 5),
+  child: Center(
+    child: Text(
+      isPremium
+          ? "💎 ${subscriptionType.toUpperCase()}"
+          : "🆓 FREE",
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 12,
+      ),
+    ),
+  ),
+), 
     // 🌙 DARK MODE
     IconButton(
       icon: Icon(
@@ -1319,6 +1633,20 @@ IconButton(
   icon: const Icon(Icons.image),
   onPressed: pickImage,
 ), 
+IconButton(
+  icon: const Icon(Icons.picture_as_pdf),
+  onPressed: () async {
+
+    await pickPdf();
+
+    if (selectedPdf != null) {
+
+      uploadPdf();
+
+    }
+
+  },
+),
       IconButton(
         icon: Icon(
           isListening
