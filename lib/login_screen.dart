@@ -74,7 +74,20 @@ class _LoginScreenState extends State<LoginScreen> {
           "token",
           data["token"],
         );
+await prefs.setString(
+  "role",
+  data["role"],
+);
 
+await prefs.setBool(
+  "isPremium",
+  data["isPremium"],
+);
+
+await prefs.setString(
+  "subscriptionType",
+  data["subscriptionType"],
+);
 
         Navigator.pushReplacement(
 

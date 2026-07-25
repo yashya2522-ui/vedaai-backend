@@ -12,7 +12,29 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true
+  },
+
+  role: {
+    type: String,
+    enum: ["owner", "user"],
+    default: "user"
+  },
+
+  isPremium: {
+    type: Boolean,
+    default: false
+  },
+
+  subscriptionType: {
+    type: String,
+    default: "free"
+  },
+
+  subscriptionExpiry: {
+    type: Date,
+    default: null
   }
+
 }, {
   timestamps: true
 });

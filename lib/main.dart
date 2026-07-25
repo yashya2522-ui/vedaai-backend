@@ -83,6 +83,8 @@ bool showScrollButton = false;
 void initState() {
   super.initState();
 
+  checkOwner();
+
   loadChat();
 
   scrollController.addListener(() {
@@ -105,6 +107,24 @@ void initState() {
   });
 
 }
+
+
+Future<void> checkOwner() async {
+
+  final prefs = await SharedPreferences.getInstance();
+
+  print("==============");
+
+  print("ROLE = ${prefs.getString("role")}");
+
+  print("PREMIUM = ${prefs.getBool("isPremium")}");
+
+  print("PLAN = ${prefs.getString("subscriptionType")}");
+
+  print("==============");
+
+}
+
 Future<void> pickImage() async {
 
   final XFile? image = await picker.pickImage(

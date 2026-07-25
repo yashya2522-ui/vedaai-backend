@@ -377,21 +377,39 @@ app.post("/signup", async (req, res) => {
 
     }
 
+const hash = await bcrypt.hash(
+  password,
+  10
+);
 
-    const hash = await bcrypt.hash(
-      password,
-      10
-    );
+// Default User
+let role = "user";
+let isPremium = false;
+let subscriptionType = "free";
+let subscriptionExpiry = null;
 
+// Owner Account
+if (email.toLowerCase() === "yashya2522@gmail.com") {
 
-    const user = await User.create({
+  role = "owner";
+  isPremium = true;
+  subscriptionType = "lifetime";
 
-      name,
-      email,
-      password: hash
+}
 
-    });
+const user = await User.create({
 
+  name,
+  email,
+  password: hash,
+
+  role,
+  isPremium,
+  subscriptionType,
+  subscriptionExpiry
+
+});
+    
 
     const token = jwt.sign(
 
@@ -471,11 +489,20 @@ app.post("/login", async (req, res) => {
     );
 
     return res.json({
-      message: "Login successful",
-      token,
-      userId: user._id
-    });
 
+  message: "Login successful",
+
+  token,
+
+  userId: user._id,
+
+  role: user.role,
+
+  isPremium: user.isPremium,
+
+  subscriptionType: user.subscriptionType
+
+});
   } catch (err) {
 
     return res.status(500).json({
@@ -994,6 +1021,48 @@ app.get("/sync", auth, async (req, res) => {
 
   }
 
+});
+
+app.get("/make-owner", async (req, res) => {
+  try {
+
+    const user = await User.findOneAndUpdate(
+
+      {
+        email: "yashya2522@gmail.com"
+      },
+
+      {
+        role: "owner",
+        isPremium: true,
+        subscriptionType: "lifetime",
+        subscriptionExpiry: null
+      },
+
+      {
+        new: true
+      }
+
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found"
+      });
+    }
+
+    res.json({
+      message: "Owner Updated Successfully",
+      user
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
 });
 // ================= CHAT =================
 app.post("/chat", async (req, res) => {
