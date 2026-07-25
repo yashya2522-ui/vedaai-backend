@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -22,23 +24,58 @@ class _SubscriptionScreenState
 
     final prefs =
         await SharedPreferences.getInstance();
-
+String? userId = prefs.getString("userId");
 
     await prefs.setString(
       "selectedPlan",
       plan,
     );
+final response = await http.post(
 
+  Uri.parse(
+    "https://vedaai-backend-5.onrender.com/activate-premium",
+  ),
 
-    ScaffoldMessenger.of(context).showSnackBar(
+  headers: {
+    "Content-Type": "application/json",
+  },
 
-      SnackBar(
-        content: Text(
-          "$plan plan selected",
-        ),
-      ),
+  body: jsonEncode({
 
-    );
+    "userId": userId,
+
+    "plan": plan,
+
+  }),
+
+);
+
+final data = jsonDecode(response.body);
+print("Selected Plan: ${prefs.getString("selectedPlan")}");
+if (response.statusCode == 200) {
+
+  await prefs.setBool(
+    "isPremium",
+    data["isPremium"],
+  );
+
+  await prefs.setString(
+    "subscriptionType",
+    data["subscriptionType"],
+  );
+
+}
+ScaffoldMessenger.of(context).showSnackBar(
+
+  SnackBar(
+
+    content: Text(
+      data["message"] ?? "$plan activated",
+    ),
+
+  ),
+
+);
 
   }
 
