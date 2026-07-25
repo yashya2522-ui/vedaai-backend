@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import 'subscription_screen.dart';
 
-import 'main.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -95,8 +95,7 @@ await prefs.setString(
 
           MaterialPageRoute(
 
-            builder:(context)=> const ChatScreen(),
-
+            builder: (context) => const SubscriptionScreen(),
           ),
 
         );

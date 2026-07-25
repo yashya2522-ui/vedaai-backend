@@ -511,6 +511,80 @@ app.post("/login", async (req, res) => {
 
   }
 });
+
+ app.post("/activate-premium", async (req, res) => {
+
+  try {
+
+    const {
+      userId,
+      plan
+    } = req.body;
+
+
+    const user = await User.findById(userId);
+
+
+    if(!user){
+
+      return res.status(404).json({
+        error:"User not found"
+      });
+
+    }
+
+
+    user.isPremium = true;
+
+    user.subscriptionType = plan;
+
+
+    if(plan === "monthly"){
+
+      user.subscriptionExpiry =
+        new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        );
+
+    }
+
+
+    if(plan === "yearly"){
+
+      user.subscriptionExpiry =
+        new Date(
+          Date.now() + 365 * 24 * 60 * 60 * 1000
+        );
+
+    }
+
+
+    await user.save();
+
+
+    res.json({
+
+      message:"Premium activated",
+
+      plan:user.subscriptionType,
+
+      expiry:user.subscriptionExpiry
+
+    });
+
+
+  } catch(err){
+
+    res.status(500).json({
+
+      error:err.message
+
+    });
+
+  }
+
+});
+
 // ================= WIKIPEDIA =================
 async function searchWikipedia(query) {
   try {
