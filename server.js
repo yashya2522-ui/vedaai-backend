@@ -1526,64 +1526,47 @@ Assistant:
 `;
 
 
+// ================= GEMINI =================
 
-    // ================= GEMINI =================
-  async function callGemini(finalPrompt) {
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+async function callGemini(finalPrompt) {
 
-  let retries = 3;
+  try {
 
-  while (retries > 0) {
-    try {
-      const response = await axios.post(url, {
-        contents: [
-          {
-            parts: [
-              {
-                text: finalPrompt
-              }
-            ]
-          }
-        ]
-      });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: finalPrompt,
+    });
 
-      return response;
+    return response;
 
-    } catch (err) {
+  } catch (err) {
 
-      if (err.response?.status === 503) {
+    console.log("GEMINI SDK ERROR:");
+    console.log(err);
 
-        retries--;
+    throw err;
 
-        console.log(`Retrying... Remaining: ${retries}`);
-
-        if (retries === 0) {
-          throw err;
-        }
-
-        await new Promise(resolve =>
-          setTimeout(resolve, 2000)
-        );
-
-      } else {
-
-        throw err;
-
-      }
-
-    }
   }
-}
 
+}
+// ================= CALL GEMINI =================
 const response = await callGemini(finalPrompt);
 
-let aiText =
-  response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+console.log("========== GEMINI DEBUG ==========");
+console.log("API KEY EXISTS:", !!API_KEY);
+console.log("API KEY LENGTH:", API_KEY ? API_KEY.length : 0);
+console.log("API KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
+console.log("=================================");
 
-if (!aiText) {
+// ================= AI RESPONSE =================
+
+let aiText = response.text;
+
+if (!aiText || aiText.trim() === "") {
   aiText = "No response from AI";
 }
+
+// ================= SAVE CHAT =================
 
 memory.chats.push({
   role: "assistant",
@@ -1592,7 +1575,8 @@ memory.chats.push({
 
 await memory.save();
 
-// FREE USER MESSAGE COUNT
+// ================= FREE LIMIT =================
+
 if (user && !user.isPremium) {
 
   user.messageCount += 1;
@@ -1601,24 +1585,17 @@ if (user && !user.isPremium) {
 
 }
 
+// ================= RESPONSE =================
 
-return res.json({ reply: aiText });
+return res.json({
+  success: true,
+  reply: aiText
+});
 
-  }  catch (err) {
+} catch (err) {
 
-  console.log("ERROR MESSAGE:");
-  console.log(err.message);
-
-  console.log("ERROR STATUS:");
-  console.log(err.response?.status);
-
-  console.log("ERROR DATA:");
-  console.log(err.response?.data);
-  
-  console.log("API KEY EXISTS:", !!API_KEY);
-console.log("API KEY LENGTH:", API_KEY ? API_KEY.length : 0);
-console.log("API KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
-
+  console.log("========== GEMINI ERROR ==========");
+  console.log(err);
 
   return res.status(500).json({
     error: "Server Error",
@@ -1626,7 +1603,10 @@ console.log("API KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
   });
 
 }
+
 });
+    
+  
 
 app.post("/create-order", async (req, res) => {
 
