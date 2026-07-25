@@ -1576,10 +1576,14 @@ Assistant:
   }
 }
 
+const response = await callGemini(finalPrompt);
+
 let aiText =
   response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-if (!aiText) aiText = "No response from AI";
+if (!aiText) {
+  aiText = "No response from AI";
+}
 
 memory.chats.push({
   role: "assistant",
