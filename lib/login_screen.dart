@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'subscription_screen.dart';
-
+import 'main.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -92,17 +92,25 @@ await prefs.setString(
   "subscriptionExpiry",
   data["subscriptionExpiry"]?.toString() ?? "",
 );
-        Navigator.pushReplacement(
+        if (data["role"] == "owner" || data["isPremium"] == true) {
 
-          context,
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const ChatScreen(),
+    ),
+  );
 
-          MaterialPageRoute(
+} else {
 
-            builder: (context) => const SubscriptionScreen(),
-          ),
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const SubscriptionScreen(),
+    ),
+  );
 
-        );
-
+}
 
       }
 

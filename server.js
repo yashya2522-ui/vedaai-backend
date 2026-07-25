@@ -1342,31 +1342,41 @@ if (userId !== "guest") {
 
 }
 
+// ================= MEMORY =================
+let memory = await Memory.findOne({ userId });
 
-    // ================= MEMORY =================
-    let memory = await Memory.findOne({ userId });
+if (!memory) {
 
-    if (!memory) {
-      memory = new Memory({
-        userId,
-        messages: []
-      });
-    }
+  memory = new Memory({
+    userId,
+    chats: []
+  });
 
-    memory.messages.push({
-      role: "user",
-      text: userMessage
-    });
+}
 
-    await memory.save();
+// Safety for old documents
+if (!Array.isArray(memory.chats)) {
+  memory.chats = [];
+}
 
-    // ================= AI INPUT =================
-    const wikiText = await searchWikipedia(userMessage);
-    const newsText = await getNews(userMessage);
+// Save user message
+memory.chats.push({
+  role: "user",
+  text: userMessage
+});
 
-    const history = memory.messages.slice(-10)
-      .map(m => `${m.role}: ${m.text}`)
-      .join("\n");
+await memory.save();
+
+// ================= AI INPUT =================
+const wikiText = await searchWikipedia(userMessage);
+const newsText = await getNews(userMessage);
+
+// Last 10 chats
+const history = memory.chats
+  .slice(-10)
+  .map(m => `${m.role}: ${m.text}`)
+  .join("\n");
+    
 
 const SYSTEM_PROMPT = `
 You are VedaAI, an advanced AI assistant similar to ChatGPT.
@@ -1571,13 +1581,12 @@ let aiText =
 
 if (!aiText) aiText = "No response from AI";
 
-memory.messages.push({
+memory.chats.push({
   role: "assistant",
   text: aiText
 });
 
 await memory.save();
-
 
 // FREE USER MESSAGE COUNT
 if (user && !user.isPremium) {
