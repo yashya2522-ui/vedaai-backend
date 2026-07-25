@@ -1614,6 +1614,10 @@ return res.json({ reply: aiText });
 
   console.log("ERROR DATA:");
   console.log(err.response?.data);
+  
+  console.log("API KEY EXISTS:", !!API_KEY);
+console.log("API KEY LENGTH:", API_KEY ? API_KEY.length : 0);
+console.log("API KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
 
 
   return res.status(500).json({
