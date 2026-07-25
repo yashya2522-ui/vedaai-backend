@@ -33,6 +33,26 @@ const UserSchema = new mongoose.Schema({
   subscriptionExpiry: {
     type: Date,
     default: null
+  },
+
+    messageCount: {
+    type: Number,
+    default: 0
+  },
+
+  pdfCount: {
+    type: Number,
+    default: 0
+  },
+
+  imageCount: {
+    type: Number,
+    default: 0
+  },
+
+  lastLimitReset: {
+    type: Date,
+    default: Date.now
   }
 
 }, {

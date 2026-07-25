@@ -88,7 +88,10 @@ await prefs.setString(
   "subscriptionType",
   data["subscriptionType"],
 );
-
+await prefs.setString(
+  "subscriptionExpiry",
+  data["subscriptionExpiry"]?.toString() ?? "",
+);
         Navigator.pushReplacement(
 
           context,

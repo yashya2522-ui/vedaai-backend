@@ -15,7 +15,8 @@ const pdfParse = require("pdf-parse");
 const FormData = require("form-data");
 const nodemailer = require("nodemailer");
 const { GoogleGenAI } = require("@google/genai");
-
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
 require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
@@ -72,6 +73,16 @@ const ai = new GoogleGenAI({
   apiKey: API_KEY,
 });
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+
+// ================= RAZORPAY =================
+
+const razorpay = new Razorpay({
+
+  key_id: process.env.RAZORPAY_KEY_ID,
+
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+
+});
 
 // ================= CHECK API =================
 if (!API_KEY) {
@@ -462,6 +473,20 @@ app.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
+    if (
+  user &&
+  user.isPremium &&
+  user.subscriptionExpiry &&
+  new Date() > user.subscriptionExpiry
+) {
+
+  user.isPremium = false;
+  user.subscriptionType = "free";
+  user.subscriptionExpiry = null;
+
+  await user.save();
+
+}
 
     console.log("FOUND USER =", user);
 
@@ -500,7 +525,9 @@ app.post("/login", async (req, res) => {
 
   isPremium: user.isPremium,
 
-  subscriptionType: user.subscriptionType
+  subscriptionType: user.subscriptionType,
+
+  subscriptionExpiry: user.subscriptionExpiry
 
 });
   } catch (err) {
@@ -629,6 +656,51 @@ async function getNews(query) {
 app.post("/image", auth, upload.single("image"), async(req,res)=>{
 
 try {
+   
+  const user = await User.findById(req.userId);
+
+if (!user) {
+  return res.status(404).json({
+    error: "User not found"
+  });
+}
+
+
+// FREE USER IMAGE LIMIT
+if (!user.isPremium) {
+
+  const today = new Date();
+  const lastReset = new Date(user.lastLimitReset);
+
+
+  // Daily reset
+  if (
+    today.toDateString() !==
+    lastReset.toDateString()
+  ) {
+
+    user.messageCount = 0;
+    user.pdfCount = 0;
+    user.imageCount = 0;
+    user.lastLimitReset = today;
+
+    await user.save();
+
+  }
+
+
+  // 5 Image limit
+  if (user.imageCount >= 5) {
+
+    return res.json({
+      success: false,
+      message:
+      "Daily free image limit completed. Upgrade to Premium 👑"
+    });
+
+  }
+
+}
 
 console.log("IMAGE RECEIVED:");
 console.log(req.file);
@@ -706,8 +778,17 @@ response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
 "No response from AI";
 
 
+if (!user.isPremium) {
+
+  user.imageCount += 1;
+
+  await user.save();
+
+}
+
+
 res.json({
-reply:aiText
+  reply: aiText
 });
 
 
@@ -728,6 +809,51 @@ details:err.message
 
 app.post("/pdf", auth, upload.single("pdf"), async (req,res)=>{
   try {
+    
+    const user = await User.findById(req.userId);
+
+if (!user) {
+  return res.status(404).json({
+    error: "User not found"
+  });
+}
+
+
+// FREE USER PDF LIMIT
+if (!user.isPremium) {
+
+  const today = new Date();
+  const lastReset = new Date(user.lastLimitReset);
+
+
+  // Daily reset
+  if (
+    today.toDateString() !==
+    lastReset.toDateString()
+  ) {
+
+    user.messageCount = 0;
+    user.pdfCount = 0;
+    user.imageCount = 0;
+    user.lastLimitReset = today;
+
+    await user.save();
+
+  }
+
+
+  // 5 PDF limit
+  if (user.pdfCount >= 5) {
+
+    return res.json({
+      success: false,
+      message:
+      "Daily free PDF limit completed. Upgrade to Premium 👑"
+    });
+
+  }
+
+}
 
     if (!req.file) {
       return res.status(400).json({
@@ -789,6 +915,13 @@ await Memory.findOneAndUpdate(
 
 console.log("PDF added successfully");
 
+if (!user.isPremium) {
+
+  user.pdfCount += 1;
+
+  await user.save();
+
+}
 
     const result = await ai.models.generateContent({
 
@@ -1151,7 +1284,7 @@ app.get("/make-owner", async (req, res) => {
   }
 });
 // ================= CHAT =================
-app.post("/chat", async (req, res) => {
+app.post("/chat", auth, async (req, res) => {
   try {
 
     const userMessage = req.body.message;
@@ -1160,6 +1293,55 @@ app.post("/chat", async (req, res) => {
     if (!userMessage) {
       return res.status(400).json({ error: "Message required" });
     }
+     
+    let user = null;
+
+if (userId !== "guest") {
+
+  user = await User.findById(userId);
+
+  if (
+    user &&
+    !user.isPremium
+  ) {
+
+    const today = new Date();
+    const lastReset = new Date(user.lastLimitReset);
+
+
+    // Daily reset
+    if (
+      today.toDateString() !==
+      lastReset.toDateString()
+    ) {
+
+      user.messageCount = 0;
+      user.pdfCount = 0;
+      user.imageCount = 0;
+      user.lastLimitReset = today;
+
+      await user.save();
+
+    }
+
+
+    // 100 messages limit
+    if (user.messageCount >= 100) {
+
+      return res.json({
+        success: false,
+        message:
+        "Daily free message limit completed. Upgrade to Premium 👑"
+      });
+
+    }
+           user.messageCount += 1;
+
+            await user.save();
+  }
+
+}
+
 
     // ================= MEMORY =================
     let memory = await Memory.findOne({ userId });
@@ -1396,6 +1578,17 @@ memory.messages.push({
 
 await memory.save();
 
+
+// FREE USER MESSAGE COUNT
+if (user && !user.isPremium) {
+
+  user.messageCount += 1;
+
+  await user.save();
+
+}
+
+
 return res.json({ reply: aiText });
 
   }  catch (err) {
@@ -1416,6 +1609,151 @@ return res.json({ reply: aiText });
   });
 
 }
+});
+
+app.post("/create-order", async (req, res) => {
+
+  try {
+
+    const { plan } = req.body;
+
+let amount = 19900;
+let receipt = "vedaai_monthly_plan";
+
+if (plan === "yearly") {
+  amount = 149900;
+  receipt = "vedaai_yearly_plan";
+}
+
+const options = {
+  amount: amount,
+  currency: "INR",
+  receipt: receipt,
+};
+
+
+    const order =
+      await razorpay.orders.create(options);
+
+
+    res.json({
+      success: true,
+      order,
+    });
+
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      error: "Order creation failed",
+    });
+
+  }
+
+});
+
+app.post("/verify-payment", async (req, res) => {
+
+  try {
+
+    const {
+  userId,
+  plan,
+  razorpay_order_id,
+  razorpay_payment_id,
+  razorpay_signature
+} = req.body;
+
+
+    const body =
+      razorpay_order_id +
+      "|" +
+      razorpay_payment_id;
+
+
+    const expectedSignature =
+      crypto
+        .createHmac(
+          "sha256",
+          process.env.RAZORPAY_KEY_SECRET
+        )
+        .update(body.toString())
+        .digest("hex");
+
+
+    if (expectedSignature === razorpay_signature) {
+
+
+  
+
+
+  const user = await User.findById(userId);
+
+if (!user) {
+
+  return res.status(404).json({
+    success: false,
+    message: "User not found"
+  });
+
+}
+
+
+user.isPremium = true;
+
+user.subscriptionType = plan || "monthly";
+
+
+if (plan === "yearly") {
+
+  user.subscriptionExpiry = new Date(
+    Date.now() + 365 * 24 * 60 * 60 * 1000
+  );
+
+} else {
+
+  user.subscriptionExpiry = new Date(
+    Date.now() + 30 * 24 * 60 * 60 * 1000
+  );
+
+}
+
+  await user.save();
+
+
+  res.json({
+  success: true,
+  message: "Payment verified and Premium activated",
+
+  isPremium: user.isPremium,
+
+  subscriptionType: user.subscriptionType,
+
+  subscriptionExpiry: user.subscriptionExpiry
+});
+
+}else {
+
+      res.status(400).json({
+        success: false,
+        message: "Invalid signature"
+      });
+
+    }
+
+
+  } catch(error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      error: "Verification failed"
+    });
+
+  }
+
 });
 
 // ================= HOME =================

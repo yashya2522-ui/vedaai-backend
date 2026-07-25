@@ -1,0 +1,13 @@
+  test api key=rzp_test_THkZEInKs5IhSL
+
+  Test Key Secret=mTPPY0k5g130nBkPtOpggdr6
+
+
+
+
+RAZORPAY_KEY_ID=rzp_test_THkZEInKs5IhSL
+RAZORPAY_KEY_SECRET=mTPPY0k5g130nBkPtOpggdr6
+ 
+
+
+C:\Users\Admin\Desktop\vedaai

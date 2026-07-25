@@ -691,8 +691,14 @@ Internet or API is unavailable.
 Please connect to the internet for a full AI response.
 """;
 }
+
 Future<String> getAIResponse(String text) async {
   try {
+
+     final prefs = await SharedPreferences.getInstance();
+
+    final token = prefs.getString("token");
+
     final url = Uri.parse(
       "https://vedaai-backend-5.onrender.com/chat",
     );
@@ -700,8 +706,12 @@ Future<String> getAIResponse(String text) async {
     final res = await http.post(
       url,
       headers: {
-        "Content-Type": "application/json",
-      },
+
+  "Content-Type": "application/json",
+
+  "Authorization": "Bearer $token",
+
+},
       body: jsonEncode({
         "message": text,
       }),
@@ -711,9 +721,22 @@ Future<String> getAIResponse(String text) async {
     print("BODY: ${res.body}");
 
     if (res.statusCode == 200) {
-      final data = jsonDecode(res.body);
-      return data["reply"] ?? "No response";
-    } else {
+
+  final data = jsonDecode(res.body);
+
+
+  // FREE LIMIT MESSAGE FROM BACKEND
+  if (data["success"] == false) {
+
+    return data["message"] ??
+        "Daily limit completed. Upgrade to Premium 👑";
+
+  }
+
+
+  return data["reply"] ?? "No response";
+
+}else {
       return "Server Error: ${res.statusCode}";
     }
   } catch (e) {
