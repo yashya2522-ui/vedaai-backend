@@ -17,13 +17,13 @@ const { GoogleGenAI } = require("@google/genai");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { Resend } = require("resend");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 
 
 const User = require("./models/User");
 const OTP = mongoose.model(
-
   "OTP",
 
   new mongoose.Schema({
@@ -32,25 +32,48 @@ const OTP = mongoose.model(
 
     otp: String,
 
+    attempts: {
+      type: Number,
+      default: 0
+    },
+
     expireAt: {
-
       type: Date,
-
-      default: Date.now,
-
-      expires: 300
-
+      default: () => Date.now() + 5 * 60 * 1000,
+      index: {
+        expires: 0
+      }
     }
 
   })
-
 );
 
 const app = express();
+
 app.set("trust proxy", 1);
+
+
+const otpLimiter = rateLimit({
+
+  windowMs: 60 * 1000, // 1 minute
+
+  max: 3, // 3 OTP requests
+
+  message: {
+    error: "Too many OTP requests. Try again after 1 minute."
+  },
+
+  standardHeaders: true,
+
+  legacyHeaders: false,
+
+});
+
+
 const upload = multer({
   dest: "uploads/"
 });
+
 
 let currentPdfText = "";
 let chatHistory = [];
@@ -234,7 +257,7 @@ function auth(req, res, next) {
 }
 // ================= SEND OTP =================
 
-app.post("/send-otp", async (req, res) => {
+app.post("/send-otp", otpLimiter, async (req, res) => {
 
   try {
 
@@ -300,28 +323,94 @@ app.post("/verify-otp", async (req, res) => {
 
     const { email, otp } = req.body;
 
+
     const record = await OTP.findOne({
-      email,
-      otp
+      email
     });
+
 
     if (!record) {
 
       return res.status(400).json({
-        error: "Invalid or Expired OTP"
+        error: "OTP expired or not found"
       });
 
     }
 
-    return res.json({
-      message: "OTP Verified Successfully"
+
+    // Expiry check
+    if (Date.now() > record.expireAt.getTime()) {
+
+      await OTP.deleteOne({
+        _id: record._id
+      });
+
+      return res.status(400).json({
+        error: "OTP expired"
+      });
+
+    }
+
+
+    // Attempts check
+    if (record.attempts >= 5) {
+
+      await OTP.deleteOne({
+        _id: record._id
+      });
+
+      return res.status(429).json({
+        error: "Too many wrong attempts. Request new OTP."
+      });
+
+    }
+
+
+    // Wrong OTP
+    if (record.otp !== otp) {
+
+
+      record.attempts += 1;
+
+      await record.save();
+
+
+      return res.status(400).json({
+
+        error:
+        `Invalid OTP. Attempts left: ${5 - record.attempts}`
+
+      });
+
+    }
+
+
+    // Correct OTP
+
+    await OTP.deleteOne({
+      _id: record._id
     });
 
-  } catch (err) {
+
+    return res.json({
+
+      message:"OTP Verified Successfully"
+
+    });
+
+
+  } catch(err) {
+
+
+    console.log(err);
+
 
     return res.status(500).json({
-      error: err.message
+
+      error:err.message
+
     });
+
 
   }
 
