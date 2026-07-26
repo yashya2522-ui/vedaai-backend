@@ -17,7 +17,7 @@ const { GoogleGenAI } = require("@google/genai");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { Resend } = require("resend");
-const rateLimit = require("express-rate-limit");
+
 require("dotenv").config();
 
 
