@@ -266,50 +266,43 @@ app.post("/send-otp", async (req, res) => {
     }
 
     const otp = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
+  100000 + Math.random() * 900000
+).toString();
 
-    await OTP.deleteMany({ email });
+await OTP.deleteMany({ email });
 
-    await OTP.create({
-      email,
-      otp
-    });
+await OTP.create({
+  email,
+  otp
+});
 
-    await transporter.sendMail({
+console.log("STEP 1 - User Found");
+console.log("STEP 2 - Before sendMail");
 
-      from: process.env.EMAIL_USER,
+await transporter.sendMail({
 
-      to: email,
+  from: process.env.EMAIL_USER,
 
-      subject: "VedaAI Password Reset OTP",
+  to: email,
 
-      html: `
-        <h2>VedaAI</h2>
+  subject: "VedaAI Password Reset OTP",
 
-        <p>Your OTP is:</p>
+  html: `
+    <h2>VedaAI</h2>
 
-        <h1>${otp}</h1>
+    <p>Your OTP is:</p>
 
-        <p>This OTP is valid for 5 minutes.</p>
-      `
+    <h1>${otp}</h1>
 
-    });
+    <p>This OTP is valid for 5 minutes.</p>
+  `
 
-    return res.json({
-      message: "OTP Sent Successfully"
-    });
+});
 
-  } catch (err) {
+console.log("STEP 3 - After sendMail");
 
-    console.log(err);
-
-    return res.status(500).json({
-      error: err.message
-    });
-
-  }
-
+return res.json({
+  message: "OTP Sent Successfully"
 });
 
 // ================= VERIFY OTP =================
