@@ -39,7 +39,8 @@ class _NewPasswordScreenState
 
   bool loading = false;
 
-
+  bool hidePassword = true;
+ bool hideConfirmPassword = true;
 
   Future<void> resetPassword() async {
 
@@ -226,18 +227,39 @@ class _NewPasswordScreenState
 
             TextField(
 
-              controller: passwordController,
+  controller: passwordController,
 
-              obscureText: true,
+  obscureText: hidePassword,
 
-              decoration: const InputDecoration(
+  decoration: InputDecoration(
 
-                labelText:
-                    "New Password",
+    labelText: "New Password",
 
-              ),
+    suffixIcon: IconButton(
 
-            ),
+      icon: Icon(
+
+        hidePassword
+            ? Icons.visibility_off
+            : Icons.visibility,
+
+      ),
+
+      onPressed: () {
+
+        setState(() {
+
+          hidePassword = !hidePassword;
+
+        });
+
+      },
+
+    ),
+
+  ),
+
+),
 
 
 
@@ -247,19 +269,40 @@ class _NewPasswordScreenState
 
             TextField(
 
-              controller: confirmController,
+  controller: confirmController,
 
-              obscureText: true,
+  obscureText: hideConfirmPassword,
 
-              decoration: const InputDecoration(
+  decoration: InputDecoration(
 
-                labelText:
-                    "Confirm Password",
+    labelText: "Confirm Password",
 
-              ),
+    suffixIcon: IconButton(
 
-            ),
+      icon: Icon(
 
+        hideConfirmPassword
+            ? Icons.visibility_off
+            : Icons.visibility,
+
+      ),
+
+      onPressed: () {
+
+        setState(() {
+
+          hideConfirmPassword =
+              !hideConfirmPassword;
+
+        });
+
+      },
+
+    ),
+
+  ),
+
+),
 
 
             const SizedBox(height:20),
