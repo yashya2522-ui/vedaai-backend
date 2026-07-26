@@ -74,6 +74,28 @@ const ai = new GoogleGenAI({
 });
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
+console.log("========= SERVER TEST =========");
+console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
+
+(async () => {
+  try {
+
+    const r = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: "Hello",
+    });
+
+    console.log("SERVER SDK WORKING");
+    console.log(r.text);
+
+  } catch (e) {
+
+    console.log("SERVER SDK FAILED");
+    console.log(e);
+
+  }
+})();
+
 // ================= RAZORPAY =================
 
 const razorpay = new Razorpay({
