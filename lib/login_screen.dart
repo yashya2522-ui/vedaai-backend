@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
 
   bool loading = false;
-
+  bool hidePassword = true;
 
   Future<void> login() async {
 
@@ -191,18 +191,39 @@ await prefs.setString(
 
             TextField(
 
-              controller: passwordController,
+  controller: passwordController,
 
-              obscureText:true,
+  obscureText: hidePassword,
 
-              decoration: const InputDecoration(
+  decoration: InputDecoration(
 
-                labelText:"Password"
+    labelText: "Password",
 
-              ),
+    suffixIcon: IconButton(
 
-            ),
+      icon: Icon(
 
+        hidePassword
+            ? Icons.visibility_off
+            : Icons.visibility,
+
+      ),
+
+      onPressed: () {
+
+        setState(() {
+
+          hidePassword = !hidePassword;
+
+        });
+
+      },
+
+    ),
+
+  ),
+
+),
 
             const SizedBox(height:20),
 
