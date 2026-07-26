@@ -21,7 +21,13 @@ require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
 
-  service: "gmail",
+  host: "smtp.gmail.com",
+
+  port: 587,
+
+  secure: false,
+
+  family: 4,
 
   auth: {
 
@@ -59,6 +65,7 @@ const OTP = mongoose.model(
 );
 
 const app = express();
+app.set("trust proxy", 1);
 const upload = multer({
   dest: "uploads/"
 });

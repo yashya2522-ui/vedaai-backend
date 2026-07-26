@@ -25,6 +25,7 @@ class _ForgotPasswordScreenState
     emailController.dispose();
     super.dispose();
   }
+  
 Future<void> sendOTP() async {
 
   setState(() {
@@ -34,92 +35,70 @@ Future<void> sendOTP() async {
   try {
 
     final response = await http.post(
-
       Uri.parse(
         "https://vedaai-backend-production-bf1d.up.railway.app/send-otp"
       ),
 
       headers: {
-
         "Content-Type": "application/json"
-
       },
 
       body: jsonEncode({
-
         "email": emailController.text.trim()
-
       }),
 
     );
 
     final data = jsonDecode(response.body);
-if (response.statusCode == 200) {
 
-
-  ScaffoldMessenger.of(context).showSnackBar(
-
-    SnackBar(
-
-      content: Text(
-        data["message"],
-      ),
-
-    ),
-
-  );
-
-
-  Navigator.push(
-
-    context,
-
-    MaterialPageRoute(
-
-      builder: (context) => OtpScreen(
-
-        email: emailController.text.trim(),
-
-      ),
-
-    ),
-
-  );
-
-
-} else {
+    if (response.statusCode == 200) {
 
       ScaffoldMessenger.of(context).showSnackBar(
-
         SnackBar(
-
-          content: Text(data["error"]),
-
+          content: Text(data["message"]),
         ),
+      );
 
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpScreen(
+            email: emailController.text.trim(),
+          ),
+        ),
+      );
+
+    } else {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(data["error"] ?? "Something went wrong"),
+        ),
       );
 
     }
 
+
   } catch (e) {
 
     ScaffoldMessenger.of(context).showSnackBar(
-
       SnackBar(
-
         content: Text(e.toString()),
-
       ),
-
     );
+
+  } finally {
+
+    if (mounted) {
+      setState(() {
+        loading = false;
+      });
+    }
 
   }
 
-  setState(() {
-    loading = false;
-  });
-
 }
+
   @override
   Widget build(BuildContext context) {
 
