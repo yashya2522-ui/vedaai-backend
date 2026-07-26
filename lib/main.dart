@@ -698,6 +698,9 @@ Future<String> getAIResponse(String text) async {
      final prefs = await SharedPreferences.getInstance();
 
     final token = prefs.getString("token");
+    if(token == null){
+  return "Please login again";
+}
 
     final url = Uri.parse(
       "https://vedaai-backend-production-bf1d.up.railway.app/chat"

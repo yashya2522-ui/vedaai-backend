@@ -561,13 +561,9 @@ const user = await User.create({
 app.post("/login", async (req, res) => {
   try {
 
-    console.log("BODY =", req.body);
+    
 
-    const users = await User.find();
-
-    console.log("===== ALL USERS =====");
-    console.log(users);
-
+    
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
@@ -586,8 +582,7 @@ app.post("/login", async (req, res) => {
 
 }
 
-    console.log("FOUND USER =", user);
-
+    
     if (!user) {
       return res.status(404).json({
         error: "User not found"
@@ -600,16 +595,22 @@ app.post("/login", async (req, res) => {
     );
 
     if (!match) {
-      return res.status(400).json({
-        error: "Wrong password"
-      });
+      return res.status(401).json({
+ error:"Invalid email or password"
+});
     }
 
     const token = jwt.sign(
-      { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+  { 
+    userId: user._id,
+    email: user.email,
+    role: user.role
+  },
+  process.env.JWT_SECRET,
+  { 
+    expiresIn: "7d" 
+  }
+);
 
     return res.json({
 
@@ -636,6 +637,47 @@ app.post("/login", async (req, res) => {
 
   }
 });
+
+// ================= JWT AUTH MIDDLEWARE =================
+
+const authMiddleware = (req,res,next)=>{
+
+  try{
+
+    const authHeader = req.headers.authorization;
+
+
+    if(!authHeader){
+      return res.status(401).json({
+        error:"No token provided"
+      });
+    }
+
+
+    const token = authHeader.split(" ")[1];
+
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+
+    req.user = decoded;
+
+
+    next();
+
+
+  }catch(err){
+
+    return res.status(401).json({
+      error:"Invalid or expired token"
+    });
+
+  }
+
+};
 
  app.post("/activate-premium", async (req, res) => {
 
@@ -831,7 +873,7 @@ console.log("Image saved in memory");
 
 const response = await axios.post(
 
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${API_KEY}`,
 
 {
 contents:[
@@ -1023,7 +1065,7 @@ if (!user.isPremium) {
 
     const result = await ai.models.generateContent({
 
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
 
       contents: [
 
@@ -1159,7 +1201,7 @@ if (!pdf) {
 
     const result = await ai.models.generateContent({
 
-  model: "gemini-2.5-flash",
+ model: "gemini-2.5-flash-lite",
 
   contents: [
     {
@@ -1631,7 +1673,7 @@ async function callGemini(finalPrompt) {
   try {
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: finalPrompt,
     });
 
