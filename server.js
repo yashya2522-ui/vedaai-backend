@@ -1481,6 +1481,7 @@ if (userId !== "guest") {
   }
 
 }
+  
 
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
@@ -1736,6 +1737,22 @@ return res.json({
 
   console.log("========== GEMINI ERROR ==========");
   console.log(err);
+
+   if(
+    err.message.includes("429") ||
+    err.message.includes("RESOURCE_EXHAUSTED")
+  ){
+
+    return res.json({
+
+      success: false,
+
+      message:
+      "AI is temporarily busy. Please try again later."
+
+    });
+
+  }
 
   return res.status(500).json({
     error: "Server Error",
