@@ -13,25 +13,13 @@ const multer = require("multer");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const FormData = require("form-data");
-const nodemailer = require("nodemailer");
 const { GoogleGenAI } = require("@google/genai");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { Resend } = require("resend");
 require("dotenv").config();
 
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 2525,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
+
 
 const User = require("./models/User");
 const OTP = mongoose.model(
