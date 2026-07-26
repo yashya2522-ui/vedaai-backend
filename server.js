@@ -271,7 +271,10 @@ console.log("STEP 2 - Before sendMail");
 
 await transporter.sendMail({
 
-  from: process.env.EMAIL_USER,
+  from: {
+  name: "VedaAI",
+  address: "yashya2522@gmail.com"
+},
 
   to: email,
 
