@@ -21,12 +21,15 @@ require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
-  port: 587,
+  port: 2525,
   secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 const User = require("./models/User");
@@ -268,6 +271,18 @@ await OTP.create({
 
 console.log("STEP 1 - User Found");
 console.log("STEP 2 - Before sendMail");
+
+console.log(process.env.EMAIL_USER);
+
+console.log(
+  process.env.EMAIL_PASS
+    ? "SMTP PASS FOUND"
+    : "SMTP PASS MISSING"
+);
+
+await transporter.verify();
+
+console.log("SMTP VERIFIED");
 
 await transporter.sendMail({
 
