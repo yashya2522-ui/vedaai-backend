@@ -272,13 +272,13 @@ await OTP.create({
 console.log("STEP 1 - User Found");
 console.log("STEP 2 - Before sendMail");
 
-console.log(process.env.EMAIL_USER);
+console.log("EMAIL_USER =", process.env.EMAIL_USER);
 
 console.log(
-  process.env.EMAIL_PASS
-    ? "SMTP PASS FOUND"
-    : "SMTP PASS MISSING"
+  "EMAIL_PASS =",
+  process.env.EMAIL_PASS ? "FOUND" : "MISSING"
 );
+
 
 await transporter.verify();
 
