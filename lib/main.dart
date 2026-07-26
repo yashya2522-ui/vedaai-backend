@@ -244,7 +244,7 @@ Future<void> uploadPdf() async {
   var request = http.MultipartRequest(
     "POST",
     Uri.parse(
-      "https://vedaai-backend-5.onrender.com/pdf",
+      "https://vedaai-backend-production-bf1d.up.railway.app/pdf"
     ),
   );
 
@@ -429,7 +429,7 @@ Future<void> uploadImage() async {
   var request = http.MultipartRequest(
     "POST",
     Uri.parse(
-      "https://vedaai-backend-5.onrender.com/image"
+      "https://vedaai-backend-production-bf1d.up.railway.app/image"
     ),
   );
 
@@ -700,7 +700,7 @@ Future<String> getAIResponse(String text) async {
     final token = prefs.getString("token");
 
     final url = Uri.parse(
-      "https://vedaai-backend-5.onrender.com/chat",
+      "https://vedaai-backend-production-bf1d.up.railway.app/chat"
     );
 
     final res = await http.post(
@@ -1628,12 +1628,32 @@ if (selectedImage != null)
           ),
 
           child: TextField(
-            controller: controller,
+  controller: controller,
 
-            minLines: 1,
-            maxLines: null,
+  minLines: 1,
+  maxLines: null,
 
-            keyboardType: TextInputType.multiline,
+  keyboardType: TextInputType.multiline,
+
+  textInputAction: TextInputAction.send,
+
+  onSubmitted: (value) {
+
+    if (value.trim().isNotEmpty) {
+
+      if (selectedImage != null) {
+
+        uploadImage();
+
+      } else {
+
+        sendMessage();
+
+      }
+
+    }
+
+  },
 
             decoration: InputDecoration(
               hintText: "Ask anything...",

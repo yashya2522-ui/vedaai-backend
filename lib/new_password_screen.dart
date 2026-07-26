@@ -78,8 +78,7 @@ class _NewPasswordScreenState
 
         Uri.parse(
 
-          "https://vedaai-backend-5.onrender.com/reset-password"
-
+          "https://vedaai-backend-production-bf1d.up.railway.app/reset-password"
         ),
 
 

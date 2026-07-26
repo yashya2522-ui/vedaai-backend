@@ -34,7 +34,7 @@ String? userId = prefs.getString("userId");
 final response = await http.post(
 
   Uri.parse(
-    "https://vedaai-backend-5.onrender.com/activate-premium",
+    "https://vedaai-backend-production-bf1d.up.railway.app/activate-premium"
   ),
 
   headers: {
@@ -119,7 +119,7 @@ Future<void> handlePaymentSuccess(
 
   final verifyResponse = await http.post(
     Uri.parse(
-      "http://localhost:3000/verify-payment",
+      "https://vedaai-backend-production-bf1d.up.railway.app/verify-payment"
     ),
     headers: {
       "Content-Type": "application/json",
@@ -175,7 +175,7 @@ Future<void> openCheckout(String plan) async {
 
   final response = await http.post(
     Uri.parse(
-      "http://localhost:3000/create-order",
+      "https://vedaai-backend-production-bf1d.up.railway.app/create-order"
     ),
     headers: {
       "Content-Type": "application/json",

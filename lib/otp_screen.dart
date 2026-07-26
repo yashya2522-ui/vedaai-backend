@@ -36,7 +36,7 @@ class _OtpScreenState extends State<OtpScreen> {
       final response = await http.post(
 
         Uri.parse(
-          "https://vedaai-backend-5.onrender.com/verify-otp"
+          "https://vedaai-backend-production-bf1d.up.railway.app/verify-otp"
         ),
 
         headers: {

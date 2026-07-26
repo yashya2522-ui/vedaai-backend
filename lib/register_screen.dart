@@ -42,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final response = await http.post(
 
         Uri.parse(
-          "https://vedaai-backend-5.onrender.com/signup"
+          "https://vedaai-backend-production-bf1d.up.railway.app/signup"
         ),
 
         headers: {

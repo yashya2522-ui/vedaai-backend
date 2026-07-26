@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await http.post(
 
         Uri.parse(
-          "https://vedaai-backend-5.onrender.com/login"
+          "https://vedaai-backend-production-bf1d.up.railway.app/login"
         ),
 
         headers: {

@@ -36,7 +36,7 @@ Future<void> sendOTP() async {
     final response = await http.post(
 
       Uri.parse(
-        "https://vedaai-backend-5.onrender.com/send-otp"
+        "https://vedaai-backend-production-bf1d.up.railway.app/send-otp"
       ),
 
       headers: {
