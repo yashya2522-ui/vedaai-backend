@@ -17,6 +17,7 @@ const nodemailer = require("nodemailer");
 const { GoogleGenAI } = require("@google/genai");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const { Resend } = require("resend");
 require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
@@ -73,6 +74,7 @@ const ai = new GoogleGenAI({
   apiKey: API_KEY,
 });
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 console.log("========= SERVER TEST =========");
 console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
@@ -270,44 +272,21 @@ await OTP.create({
 });
 
 console.log("STEP 1 - User Found");
-console.log("STEP 2 - Before sendMail");
-
-console.log("EMAIL_USER =", process.env.EMAIL_USER);
-
-console.log(
-  "EMAIL_PASS =",
-  process.env.EMAIL_PASS ? "FOUND" : "MISSING"
-);
 
 
-await transporter.verify();
-
-console.log("SMTP VERIFIED");
-
-await transporter.sendMail({
-
-  from: {
-  name: "VedaAI",
-  address: "yashya2522@gmail.com"
-},
-
+await resend.emails.send({
+  from: "VedaAI <onboarding@resend.dev>",
   to: email,
-
   subject: "VedaAI Password Reset OTP",
-
   html: `
     <h2>VedaAI</h2>
-
     <p>Your OTP is:</p>
-
     <h1>${otp}</h1>
-
     <p>This OTP is valid for 5 minutes.</p>
-  `
-
+  `,
 });
 
-console.log("STEP 3 - After sendMail");
+console.log("STEP 2 - Email Sent");
 
 return res.json({
   message: "OTP Sent Successfully"
