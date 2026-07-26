@@ -873,7 +873,7 @@ console.log("Image saved in memory");
 
 const response = await axios.post(
 
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${API_KEY}`,
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
 
 {
 contents:[
@@ -1065,7 +1065,7 @@ if (!user.isPremium) {
 
     const result = await ai.models.generateContent({
 
-      model: "gemini-2.5-flash-lite",
+     model: "gemini-2.5-flash",
 
       contents: [
 
@@ -1201,7 +1201,7 @@ if (!pdf) {
 
     const result = await ai.models.generateContent({
 
- model: "gemini-2.5-flash-lite",
+ model: "gemini-2.5-flash",
 
   contents: [
     {
@@ -1673,7 +1673,7 @@ async function callGemini(finalPrompt) {
   try {
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+     model: "gemini-2.5-flash",
       contents: finalPrompt,
     });
 
