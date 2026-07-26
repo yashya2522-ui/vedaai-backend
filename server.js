@@ -305,6 +305,18 @@ return res.json({
   message: "OTP Sent Successfully"
 });
 
+  } catch (err) {
+
+    console.log(err);
+
+    return res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
 // ================= VERIFY OTP =================
 
 app.post("/verify-otp", async (req, res) => {
