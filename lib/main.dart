@@ -1525,8 +1525,54 @@ child: Icon(Icons.arrow_downward),
 
   onTap: newChat,
 ),
+
+ListTile(
+  leading: Icon(
+    Icons.search,
+    color: isDarkMode
+        ? Colors.white
+        : Colors.black,
+  ),
+
+  title: Text(
+    "Search Chats",
+    style: TextStyle(
+      color: isDarkMode
+          ? Colors.white
+          : Colors.black,
+    ),
+  ),
+
+  onTap: () {
+
+    Navigator.pop(context);
+
+    showSearch(
+      context: context,
+      delegate: ChatSearchDelegate(messages),
+    );
+
+  },
+),
+
       const Divider(),
       
+
+      // ⭐ FAVORITES
+if (allChats.any((c) => c["favorite"] == true))
+  const Padding(
+    padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        "⭐ Favorites",
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),
+      ),
+    ),
+  ),
       // 💬 CHAT LIST
      Expanded(
   child: ListView.builder(
