@@ -104,58 +104,216 @@ Future<void> sendOTP() async {
 
     return Scaffold(
 
-      appBar: AppBar(
-        title: const Text("Forgot Password"),
-      ),
+      
+body: Container(
+  width: double.infinity,
+  height: double.infinity,
 
-      body: Padding(
+  decoration: const BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xff050816),
+        Color(0xff0F172A),
+        Color(0xff1E3A8A),
+      ],
+    ),
+  ),
 
-        padding: const EdgeInsets.all(20),
+  child: SafeArea(
+    child: Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
 
-        child: Column(
+          child: Column(
+            children: [
 
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-
-          children: [
-
-            const SizedBox(height: 20),
-
-            TextField(
-
-              controller: emailController,
-
-              keyboardType: TextInputType.emailAddress,
-
-              decoration: const InputDecoration(
-
-                labelText: "Email",
-
-                border: OutlineInputBorder(),
-
+              Image.asset(
+                "assets/icon.png",
+                width: 110,
               ),
 
-            ),
+              const SizedBox(height: 20),
 
-            const SizedBox(height: 20),
+              const Text(
+                "VedaAI",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
 
-            ElevatedButton(
+              const SizedBox(height: 8),
 
-              onPressed: loading ? null : sendOTP,
+              const Text(
+                "Forgot Password",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 18,
+                ),
+              ),
 
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text("Send OTP"),
+              const SizedBox(height: 35),
 
-            ),
+              Container(
 
-          ],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 24,
+                ),
 
+                width: double.infinity,
+
+                decoration: BoxDecoration(
+
+                  color: Colors.white.withOpacity(0.08),
+
+                  borderRadius: BorderRadius.circular(28),
+
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.18),
+                    width: 1.2,
+                  ),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.30),
+                      blurRadius: 30,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+
+                ),
+
+                child: Column(
+                  children: [
+
+                    TextField(
+
+                      controller: emailController,
+
+                      keyboardType: TextInputType.emailAddress,
+
+                      style: const TextStyle(
+                        color: Colors.white,
+                      ),
+
+                      decoration: InputDecoration(
+
+                        labelText: "Email",
+
+                        labelStyle: const TextStyle(
+                          color: Colors.white70,
+                        ),
+
+                        prefixIcon: const Icon(
+                          Icons.email,
+                          color: Colors.white70,
+                        ),
+
+                        filled: true,
+
+                        fillColor: Colors.white.withOpacity(0.12),
+
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: const BorderSide(
+                            color: Colors.white30,
+                          ),
+                        ),
+
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: const BorderSide(
+                            color: Color(0xff60A5FA),
+                            width: 2,
+                          ),
+                        ),
+
+                      ),
+
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    GestureDetector(
+
+                      onTap: loading ? null : sendOTP,
+
+                      child: Container(
+
+                        width: double.infinity,
+
+                        height: 55,
+
+                        decoration: BoxDecoration(
+
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xff2563EB),
+                              Color(0xff4F46E5),
+                              Color(0xff7C3AED),
+                            ],
+                          ),
+
+                          borderRadius: BorderRadius.circular(20),
+
+                        ),
+
+                        child: Center(
+
+                          child: loading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text(
+                                  "Send OTP",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+
+                        ),
+
+                      ),
+
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    TextButton(
+
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+
+                      child: const Text(
+                        "Back to Login",
+                        style: TextStyle(
+                          color: Colors.white70,
+                        ),
+                      ),
+
+                    ),
+
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-
       ),
-
+    ),
+  ),
+),
     );
-
   }
-
-}
+    }

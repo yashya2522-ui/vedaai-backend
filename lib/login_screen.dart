@@ -157,47 +157,184 @@ await prefs.setString(
   Widget build(BuildContext context) {
 
 
-    return Scaffold(
+   return Scaffold(
+  body: Container(
+    width: double.infinity,
+    height: double.infinity,
 
-      appBar: AppBar(
+    decoration: const BoxDecoration(
+      gradient: const LinearGradient(
 
-        title: const Text("VedaAI Login"),
+  begin: Alignment.topLeft,
+
+  end: Alignment.bottomRight,
+
+  colors: [
+
+    Color(0xff2563EB),
+
+    Color(0xff4F46E5),
+
+    Color(0xff7C3AED),
+
+  ],
+
+),
+    ),
+
+    child: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+
+                Image.asset(
+                  "assets/icon.png",
+                  width: 110,
+                ),
+
+                const SizedBox(height: 20),
+
+                const Text(
+                  "VedaAI",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                const Text(
+                  "Welcome Back",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 18,
+                  ),
+                ),
+
+                const SizedBox(height: 35),
+ 
+ 
+
+
+Container(
+
+  padding: const EdgeInsets.symmetric(
+    horizontal: 22,
+    vertical: 24,
+  ),
+
+  width: double.infinity,
+
+  decoration: BoxDecoration(
+
+    color: Colors.white.withOpacity(0.08),
+
+    borderRadius: BorderRadius.circular(28),
+
+    border: Border.all(
+
+      color: Colors.white.withOpacity(0.18),
+
+      width: 1.2,
+
+    ),
+
+    boxShadow: [
+
+      BoxShadow(
+
+        color: Colors.black.withOpacity(0.30),
+
+        blurRadius: 30,
+
+        spreadRadius: 2,
+
+        offset: const Offset(0,12),
 
       ),
 
+    ],
 
-      body: Padding(
+  ),
 
-        padding: const EdgeInsets.all(20),
-
-
-        child: Column(
-
-          children: [
+  
 
 
-            TextField(
+  child: Column(
 
-              controller: emailController,
-
-              decoration: const InputDecoration(
-
-                labelText:"Email"
-
-              ),
-
-            ),
+    children: [
 
 
-            TextField(
+
+            
+             TextField(
+  controller: emailController,
+
+  style: const TextStyle(
+    color: Colors.white,
+  ),
+
+  decoration: InputDecoration(
+    labelText: "Email",
+
+    labelStyle: const TextStyle(
+      color: Colors.white70,
+    ),
+
+    prefixIcon: const Icon(
+      Icons.email,
+      color: Colors.white70,
+    ),
+
+    filled: true,
+    fillColor: Colors.white.withOpacity(0.12),
+
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(20),
+      borderSide: const BorderSide(
+        color: Colors.white30,
+      ),
+    ),
+
+    focusedBorder: OutlineInputBorder(
+
+  borderRadius: BorderRadius.circular(20),
+
+  borderSide: const BorderSide(
+
+    color: Color(0xff60A5FA),
+
+    width: 2,
+
+  ),
+
+),
+  ),
+),
+
+
+         TextField(
 
   controller: passwordController,
 
   obscureText: hidePassword,
 
+  style: const TextStyle(
+    color: Colors.white,
+  ),
+
   decoration: InputDecoration(
 
     labelText: "Password",
+
+    labelStyle: const TextStyle(
+      color: Colors.white70,
+    ),
 
     suffixIcon: IconButton(
 
@@ -206,6 +343,8 @@ await prefs.setString(
         hidePassword
             ? Icons.visibility_off
             : Icons.visibility,
+
+        color: Colors.white70,
 
       ),
 
@@ -224,21 +363,83 @@ await prefs.setString(
   ),
 
 ),
+            
+            const SizedBox(height:16),
 
-            const SizedBox(height:20),
+
+           GestureDetector(
+
+  onTap: loading ? null : login,
+
+  child: Container(
+
+    width: double.infinity,
+
+    height: 55,
+
+    decoration: BoxDecoration(
+
+      gradient: const LinearGradient(
+
+        colors: [
+          Color(0xff2563EB),
+          Color(0xff7C3AED),
+        ],
+
+      ),
+
+      borderRadius: BorderRadius.circular(20),
 
 
-           ElevatedButton(
+      boxShadow: [
 
-  onPressed: loading ? null : login,
+  BoxShadow(
 
-  child: loading
-      ? const CircularProgressIndicator()
-      : const Text("Login"),
+    color: Colors.blue.withOpacity(0.35),
+
+    blurRadius: 20,
+
+    spreadRadius: 2,
+
+    offset: const Offset(0,8),
+
+  ),
+
+],
+
+    ),
+
+    child: Center(
+
+      child: loading
+
+          ? const CircularProgressIndicator(
+              color: Colors.white,
+            )
+
+          : const Text(
+
+              "Login",
+
+              style: TextStyle(
+
+                color: Colors.white,
+
+                fontSize: 18,
+
+                fontWeight: FontWeight.bold,
+
+              ),
+
+            ),
+
+    ),
+
+  ),
 
 ),
 
-const SizedBox(height: 10),
+const SizedBox(height: 16),
 
 TextButton(
 
@@ -260,12 +461,24 @@ TextButton(
   },
 
   child: const Text(
+
     "Forgot Password?",
+
+    style: TextStyle(
+
+      color: Colors.white70,
+
+      fontSize: 15,
+
+    ),
+
   ),
 
 ),
 
-const SizedBox(height: 10),
+  
+
+const SizedBox(height: 8),
 
 TextButton(
 
@@ -287,18 +500,34 @@ TextButton(
   },
 
   child: const Text(
+
     "Create new account",
+
+    style: TextStyle(
+
+      color: Colors.white,
+
+      fontSize: 16,
+
+      fontWeight: FontWeight.bold,
+
+    ),
+
   ),
 
 ),
-          ],
+ ],
+  ),
 
+),
+                           ],
+            ),
+          ),
         ),
-
       ),
-
-    );
-
-  }
+    ),
+  ),
+);
+}
 
 }

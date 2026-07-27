@@ -18,6 +18,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'login_screen.dart';
 import 'package:file_picker/file_picker.dart';
+import 'splash_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -29,7 +30,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginScreen(),
+      home: SplashScreen(),
     );
   }
 }
