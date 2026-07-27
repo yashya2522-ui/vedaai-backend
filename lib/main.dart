@@ -1011,7 +1011,57 @@ void scrollToBottom() {
 
 }
 
+void showAttachmentMenu() {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(25),
+      ),
+    ),
+    builder: (context) {
+      return SafeArea(
+        child: Wrap(
+          children: [
 
+            ListTile(
+              leading: const Icon(Icons.image),
+              title: const Text("Image"),
+              onTap: () {
+                Navigator.pop(context);
+                pickImage();
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf),
+              title: const Text("PDF"),
+              onTap: () async {
+                Navigator.pop(context);
+                await pickPdf();
+
+                if (selectedPdf != null) {
+                  uploadPdf();
+                }
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text("Camera"),
+              onTap: () {
+                Navigator.pop(context);
+
+                // Camera feature पुढे add करू
+              },
+            ),
+
+          ],
+        ),
+      );
+    },
+  );
+}
 Future<void> startListening() async {
   bool available = await speech.initialize();
 
@@ -1049,6 +1099,7 @@ Future<void> stopListening() async {
     isListening = false;
   });
 } 
+
 Widget chatBubble(Map<String, dynamic> msg) {
   bool isUser = msg["role"] == "user";
 
@@ -1178,23 +1229,70 @@ Widget chatBubble(Map<String, dynamic> msg) {
       );
     },
 
-    child: Container(
-      width: double.infinity,
+    child: Align(
 
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 14,
+  alignment: isUser
+      ? Alignment.centerRight
+      : Alignment.centerLeft,
+
+  child: Container(
+
+    margin: const EdgeInsets.symmetric(
+      vertical: 10,
+      horizontal: 8,
+    ),
+
+    padding: const EdgeInsets.symmetric(
+      horizontal: 18,
+      vertical: 14,
+    ),
+
+    constraints: BoxConstraints(
+      maxWidth: MediaQuery.of(context).size.width * 0.80,
+    ),
+
+    decoration: BoxDecoration(
+
+      gradient: isUser
+          ? const LinearGradient(
+              colors: [
+  Color(0xff3B82F6),
+  Color(0xff60A5FA),
+]
+            )
+          : null,
+
+      color: isUser
+          ? null
+          : (isDarkMode
+              ? const Color(0xff1E293B)
+              : Colors.white),
+
+      borderRadius: BorderRadius.only(
+        topLeft: const Radius.circular(22),
+        topRight: const Radius.circular(22),
+        bottomLeft: Radius.circular(
+          isUser ? 22 : 4,
+        ),
+        bottomRight: Radius.circular(
+          isUser ? 4 : 22,
+        ),
       ),
 
-      decoration: BoxDecoration(
+      border: Border.all(
         color: isUser
-            ? (isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.grey.shade100)
-            : (isDarkMode
-                ? const Color(0xFF2A2A2A)
-                : Colors.white),
+            ? Colors.transparent
+            : Colors.white24,
       ),
+
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.15),
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    ),
 
       child: Column(
         crossAxisAlignment:
@@ -1203,7 +1301,7 @@ Widget chatBubble(Map<String, dynamic> msg) {
         children: [
 
           Text(
-            isUser ? "You" : "VedaAI",
+  isUser ? "👤 You" : "🤖 VedaAI",
 
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -1299,10 +1397,13 @@ Widget chatBubble(Map<String, dynamic> msg) {
                 ],
               ),
             ),
-        ],
+                ],
       ),
-    ),
-  );
+    ), // Container
+
+  ), // Align
+
+); // GestureDetector
 }
 
   @override
@@ -1677,21 +1778,9 @@ if (selectedImage != null)
 
       const SizedBox(width: 5),
 IconButton(
-  icon: const Icon(Icons.image),
-  onPressed: pickImage,
-), 
-IconButton(
-  icon: const Icon(Icons.picture_as_pdf),
-  onPressed: () async {
-
-    await pickPdf();
-
-    if (selectedPdf != null) {
-
-      uploadPdf();
-
-    }
-
+  icon: const Icon(Icons.add_circle_outline),
+  onPressed: () {
+    showAttachmentMenu();
   },
 ),
       IconButton(
