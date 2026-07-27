@@ -627,7 +627,7 @@ return res.json({
 
   userId: user._id,
 
-  name: user.name,   // ✅ ADD THIS
+  name: user.name,   
 
   role: user.role,
 
