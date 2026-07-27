@@ -74,6 +74,12 @@ class _LoginScreenState extends State<LoginScreen> {
           "token",
           data["token"],
         );
+
+        await prefs.setString(
+  "name",
+  data["name"] ?? "User",
+);
+
 await prefs.setString(
   "role",
   data["role"],

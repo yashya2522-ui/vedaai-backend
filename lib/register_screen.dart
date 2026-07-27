@@ -78,6 +78,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           "token",
           data["token"],
         );
+        
+        await prefs.setString(
+  "name",
+  nameController.text.trim(),
+);
 
 
         Navigator.pushReplacement(

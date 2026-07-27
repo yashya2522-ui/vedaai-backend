@@ -56,6 +56,7 @@ bool isPremium = false;
 String subscriptionType = "free";
   int currentChatIndex = 0;
 
+String userName = "User";
 
   List<Map<String, dynamic>> messages = [];
 
@@ -83,6 +84,16 @@ Future<void> checkPremium() async {
 
   print("Premium Status: $isPremium");
   print("Plan: $subscriptionType");
+
+}
+
+Future<void> loadUser() async {
+
+  final prefs = await SharedPreferences.getInstance();
+
+  setState(() {
+    userName = prefs.getString("name") ?? "User";
+  });
 
 }
 
@@ -340,6 +351,7 @@ Future<bool> checkFreeImageLimit() async {
     flutterTts.stop();
     super.dispose();
   }
+
 @override
 void initState() {
   super.initState();
@@ -348,6 +360,8 @@ void initState() {
 
   loadChat();
   checkPremium();
+  loadUser(); // ✅ Add this
+
   scrollController.addListener(() {
 
     if (scrollController.offset <
@@ -368,8 +382,6 @@ void initState() {
   });
 
 }
-
-
 Future<void> checkOwner() async {
 
   final prefs = await SharedPreferences.getInstance();
@@ -1432,21 +1444,62 @@ child: Icon(Icons.arrow_downward),
     children: [
 
       DrawerHeader(
-        decoration: BoxDecoration(
-          color: isDarkMode ? Colors.black : Colors.white,
-        ),
-        child: Align(
-          alignment: Alignment.bottomLeft,
-          child: Text(
-            "VedaAI Chats 💬",
-            style: TextStyle(
-              color: isDarkMode ? Colors.white : Colors.black,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+  margin: EdgeInsets.zero,
+  padding: const EdgeInsets.all(20),
+
+  decoration: const BoxDecoration(
+    gradient: LinearGradient(
+      colors: [
+        Color(0xff2563EB),
+        Color(0xff4F46E5),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  ),
+
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisAlignment: MainAxisAlignment.end,
+
+    children: [
+
+      const CircleAvatar(
+        radius: 30,
+        backgroundColor: Colors.white,
+        child: Icon(
+          Icons.person,
+          color: Colors.blue,
+          size: 34,
         ),
       ),
+
+      const SizedBox(height: 12),
+
+      const Text(
+        "Yash Patil",
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+
+      const SizedBox(height: 4),
+
+      Text(
+        isPremium
+            ? "💎 ${subscriptionType.toUpperCase()}"
+            : "🆓 Free Plan",
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 14,
+        ),
+      ),
+
+    ],
+  ),
+),
 
       // 🆕 NEW CHAT
       ListTile(
@@ -1631,9 +1684,22 @@ messages = [];
 
   actions: [
 
-    // 🔍 SEARCH
-    IconButton(
-      icon: const Icon(Icons.search),
+  // 🔍 SEARCH
+  Container(
+    margin: const EdgeInsets.only(right: 6),
+    decoration: BoxDecoration(
+      color: isDarkMode
+          ? Colors.white10
+          : Colors.grey.shade200,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: IconButton(
+      icon: Icon(
+        Icons.search,
+        color: isDarkMode
+            ? Colors.white
+            : Colors.black,
+      ),
       onPressed: () {
         showSearch(
           context: context,
@@ -1641,25 +1707,58 @@ messages = [];
         );
       },
     ),
-    // 💎 PREMIUM STATUS
-Padding(
-  padding: const EdgeInsets.only(right: 5),
-  child: Center(
+  ),
+
+  // 💎 PREMIUM
+  Container(
+    margin: const EdgeInsets.only(right: 6),
+    padding: const EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 8,
+    ),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: isPremium
+            ? const [
+                Color(0xffF59E0B),
+                Color(0xffF97316),
+              ]
+            : const [
+                Colors.grey,
+                Colors.blueGrey,
+              ],
+      ),
+      borderRadius: BorderRadius.circular(14),
+    ),
     child: Text(
       isPremium
           ? "💎 ${subscriptionType.toUpperCase()}"
-          : "🆓 FREE",
+          : "FREE",
       style: const TextStyle(
+        color: Colors.white,
         fontWeight: FontWeight.bold,
-        fontSize: 12,
+        fontSize: 11,
       ),
     ),
   ),
-), 
-    // 🌙 DARK MODE
-    IconButton(
+
+  // 🌙 DARK MODE
+  Container(
+    margin: const EdgeInsets.only(right: 6),
+    decoration: BoxDecoration(
+      color: isDarkMode
+          ? Colors.white10
+          : Colors.grey.shade200,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: IconButton(
       icon: Icon(
-        isDarkMode ? Icons.light_mode : Icons.dark_mode,
+        isDarkMode
+            ? Icons.light_mode
+            : Icons.dark_mode,
+        color: isDarkMode
+            ? Colors.white
+            : Colors.black,
       ),
       onPressed: () {
         setState(() {
@@ -1667,15 +1766,30 @@ Padding(
         });
       },
     ),
+  ),
 
-    // 📥 EXPORT (ONLY THIS EXTRA)
-    IconButton(
+  // 📥 EXPORT
+  Container(
+    decoration: BoxDecoration(
+      color: isDarkMode
+          ? Colors.white10
+          : Colors.grey.shade200,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: IconButton(
       tooltip: "Export Chat",
-      icon: const Icon(Icons.download),
+      icon: Icon(
+        Icons.download,
+        color: isDarkMode
+            ? Colors.white
+            : Colors.black,
+      ),
       onPressed: exportChat,
     ),
-  ],
-),
+  ),
+    
+], 
+    ),
     // 💬 BODY
     body: SafeArea(
       child: Column(
@@ -1720,11 +1834,49 @@ if (selectedImage != null)
     ),
   ),
           // 💬 INPUT BOX
-         Padding(
-  padding: const EdgeInsets.all(10),
-  child: Row(
-    crossAxisAlignment: CrossAxisAlignment.end,
-    children: [
+        Padding(
+  padding: const EdgeInsets.all(12),
+
+  child: Container(
+
+    padding: const EdgeInsets.symmetric(
+      horizontal: 8,
+      vertical: 6,
+    ),
+
+    decoration: BoxDecoration(
+
+      color: isDarkMode
+          ? const Color(0xff1E293B)
+          : Colors.white,
+
+      borderRadius: BorderRadius.circular(30),
+
+      border: Border.all(
+        color: Colors.white24,
+      ),
+
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        ),
+      ],
+
+    ),
+
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+
+
+IconButton(
+  icon: const Icon(Icons.add_circle_outline),
+  onPressed: showAttachmentMenu,
+),
+
+const SizedBox(width: 5),
 
       Expanded(
         child: ConstrainedBox(
@@ -1760,29 +1912,27 @@ if (selectedImage != null)
 
   },
 
-            decoration: InputDecoration(
-              hintText: "Ask anything...",
+            decoration: const InputDecoration(
 
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
+  hintText: "Ask anything...",
 
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
+  border: InputBorder.none,
+
+  enabledBorder: InputBorder.none,
+
+  focusedBorder: InputBorder.none,
+
+  contentPadding: EdgeInsets.symmetric(
+    horizontal: 15,
+    vertical: 12,
+  ),
+
+),
           ),
         ),
       ),
 
-      const SizedBox(width: 5),
-IconButton(
-  icon: const Icon(Icons.add_circle_outline),
-  onPressed: () {
-    showAttachmentMenu();
-  },
-),
+      
       IconButton(
         icon: Icon(
           isListening
@@ -1818,6 +1968,7 @@ IconButton(
     ],
   ),
 ),
+        ),
         ],
       ),
     ),

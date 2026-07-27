@@ -535,16 +535,25 @@ const user = await User.create({
     );
 
 
-    res.json({
+   res.json({
 
-      message:"Signup successful",
+  message: "Signup successful",
 
-      token,
+  token,
 
-      userId:user._id
+  userId: user._id,
 
-    });
+  name: user.name,              // ✅ ADD
 
+  role: user.role,              // ✅ ADD
+
+  isPremium: user.isPremium,    // ✅ ADD
+
+  subscriptionType: user.subscriptionType, // ✅ ADD
+
+  subscriptionExpiry: user.subscriptionExpiry // ✅ ADD
+
+});
 
   } catch(err) {
 
@@ -611,14 +620,15 @@ app.post("/login", async (req, res) => {
     expiresIn: "7d" 
   }
 );
-
-    return res.json({
+return res.json({
 
   message: "Login successful",
 
   token,
 
   userId: user._id,
+
+  name: user.name,   // ✅ ADD THIS
 
   role: user.role,
 
