@@ -1443,64 +1443,67 @@ child: Icon(Icons.arrow_downward),
   child: Column(
     children: [
 
-      DrawerHeader(
-  margin: EdgeInsets.zero,
-  padding: const EdgeInsets.all(20),
+      SizedBox(
+  height: 160,
 
-  decoration: const BoxDecoration(
-    gradient: LinearGradient(
-      colors: [
-        Color(0xff2563EB),
-        Color(0xff4F46E5),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ),
-  ),
+  child: Container(
+    padding: const EdgeInsets.all(12),
 
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    mainAxisAlignment: MainAxisAlignment.end,
-
-    children: [
-
-      const CircleAvatar(
-        radius: 30,
-        backgroundColor: Colors.white,
-        child: Icon(
-          Icons.person,
-          color: Colors.blue,
-          size: 34,
-        ),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Color(0xff2563EB),
+          Color(0xff4F46E5),
+        ],
       ),
+    ),
 
-      const SizedBox(height: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+     
 
-      Text(
+      children: [
+
+        const CircleAvatar(
+          radius: 24,
+          backgroundColor: Colors.white,
+          child: Icon(
+            Icons.person,
+            color: Colors.blue,
+            size: 34,
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        Text(
   userName,
+  maxLines: 1,
+  overflow: TextOverflow.ellipsis,
   style: const TextStyle(
     color: Colors.white,
-    fontSize: 20,
-    fontWeight: FontWeight.bold,
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
   ),
 ),
 
-      const SizedBox(height: 4),
+        const SizedBox(height: 5),
 
-      Text(
-        isPremium
-            ? "💎 ${subscriptionType.toUpperCase()}"
-            : "🆓 Free Plan",
-        style: const TextStyle(
-          color: Colors.white70,
-          fontSize: 14,
+        Text(
+          isPremium
+              ? "💎 ${subscriptionType.toUpperCase()}"
+              : "🆓 Free Plan",
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
         ),
-      ),
 
-    ],
+      ],
+    ),
   ),
 ),
-
       // 🆕 NEW CHAT
       ListTile(
   leading: Icon(
