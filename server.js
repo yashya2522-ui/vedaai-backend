@@ -543,18 +543,17 @@ const user = await User.create({
 
   userId: user._id,
 
-  name: user.name,              // ✅ ADD
+  name: user.name,
 
-  role: user.role,              // ✅ ADD
+  role: user.role,
 
-  isPremium: user.isPremium,    // ✅ ADD
+  isPremium: user.isPremium,
 
-  subscriptionType: user.subscriptionType, // ✅ ADD
+  subscriptionType: user.subscriptionType,
 
-  subscriptionExpiry: user.subscriptionExpiry // ✅ ADD
+  subscriptionExpiry: user.subscriptionExpiry
 
 });
-
   } catch(err) {
 
     res.status(500).json({

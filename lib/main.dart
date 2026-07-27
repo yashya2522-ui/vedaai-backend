@@ -1476,14 +1476,14 @@ child: Icon(Icons.arrow_downward),
 
       const SizedBox(height: 12),
 
-      const Text(
-        "Yash Patil",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      Text(
+  userName,
+  style: const TextStyle(
+    color: Colors.white,
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+  ),
+),
 
       const SizedBox(height: 4),
 
