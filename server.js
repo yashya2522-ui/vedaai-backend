@@ -14,7 +14,7 @@ const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const FormData = require("form-data");
 const { GoogleGenAI } = require("@google/genai");
-const razorpay = require("./config/razorpay");
+const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { Resend } = require("resend");
 
@@ -118,6 +118,13 @@ if (!API_KEY) {
 
 console.log("✅ API KEY LOADED");
 
+const razorpay = new Razorpay({
+
+  key_id: process.env.RAZORPAY_KEY_ID,
+
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+
+});
 // ================= MIDDLEWARE =================
 app.use(cors());
 app.use(express.json());
