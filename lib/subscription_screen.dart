@@ -116,14 +116,16 @@ Future<void> handlePaymentSuccess(
   final prefs = await SharedPreferences.getInstance();
 
   String? userId = prefs.getString("userId");
+  final token = prefs.getString("token") ?? "";
 
   final verifyResponse = await http.post(
     Uri.parse(
       "https://vedaai-backend-production-bf1d.up.railway.app/verify-payment"
     ),
     headers: {
-      "Content-Type": "application/json",
-    },
+  "Content-Type": "application/json",
+  "Authorization": "Bearer $token",
+},
     body: jsonEncode({
       "userId": userId,
       "plan": prefs.getString("selectedPlan"),
@@ -137,23 +139,50 @@ Future<void> handlePaymentSuccess(
 
   if (data["success"]) {
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Premium Activated 👑"),
-      ),
+  await prefs.setBool(
+    "isPremium",
+    true,
+  );
+
+  await prefs.setString(
+    "subscriptionType",
+    data["subscriptionType"],
+  );
+
+  await prefs.setString(
+    "subscriptionExpiry",
+    data["subscriptionExpiry"].toString(),
+  );
+
+  setState(() {
+
+    isPremium = true;
+
+    subscriptionType = data["subscriptionType"];
+
+    subscriptionExpiry = DateTime.parse(
+      data["subscriptionExpiry"].toString(),
     );
 
-    loadUser();
+  });
 
-  } else {
+  loadUser();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(data["message"]),
-      ),
-    );
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("Premium Activated 👑"),
+    ),
+  );
 
-  }
+} else {
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(data["message"]),
+    ),
+  );
+
+}
 
 }
 
@@ -172,14 +201,20 @@ void handleExternalWallet(ExternalWalletResponse response) {
 }
 
 Future<void> openCheckout(String plan) async {
+  final prefs = await SharedPreferences.getInstance();
+
+String token = prefs.getString("token") ?? "";
+
+String userId = prefs.getString("userId") ?? "";
 
   final response = await http.post(
     Uri.parse(
       "https://vedaai-backend-production-bf1d.up.railway.app/create-order"
     ),
     headers: {
-      "Content-Type": "application/json",
-    },
+  "Content-Type": "application/json",
+  "Authorization": "Bearer $token",
+},
     body: jsonEncode({
       "plan": plan,
     }),
@@ -189,7 +224,7 @@ Future<void> openCheckout(String plan) async {
   final data = jsonDecode(response.body);
 
   var options = {
-    'key': 'YOUR_RAZORPAY_TEST_KEY',
+    'key': 'rzp_test_THkZEInKs5IhSL',
     'amount': data["order"]["amount"],
     'name': 'VedaAI',
     'description': '$plan Premium Plan',
@@ -218,15 +253,16 @@ Future<void> openCheckout(String plan) async {
         ? DateTime.parse(expiry)
         : null; 
 
-      role =
-          prefs.getString("role") ?? "user";
+     role = prefs.getString("role") ?? "user";
 
-      isPremium =
-          prefs.getBool("isPremium") ?? false;
-
-      subscriptionType =
-          prefs.getString("subscriptionType") ??
-              "free";
+if (role == "owner") {
+  isPremium = true;
+  subscriptionType = "lifetime";
+} else {
+  isPremium = prefs.getBool("isPremium") ?? false;
+  subscriptionType =
+      prefs.getString("subscriptionType") ?? "free";
+}
 
     });
 
@@ -365,7 +401,7 @@ if (subscriptionExpiry != null)
     ),
   ),
   
-      if (!isPremium) ...[
+      if (!isPremium && role != "owner")
 
       const Icon(
         Icons.workspace_premium,
@@ -376,7 +412,7 @@ if (subscriptionExpiry != null)
       const SizedBox(height: 15),
 
       const Text(
-        "VedaAI Premium",
+        "VedaAI Premium 💎",
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 30,
@@ -439,9 +475,10 @@ if (subscriptionExpiry != null)
     ),
   ),
 ),
-      ],
+      
 const SizedBox(height: 20),
-      if (!isPremium)
+
+     if (!isPremium && role != "owner")
 
       Card(
         elevation: 8,
@@ -480,69 +517,80 @@ const SizedBox(height: 20),
 
               const SizedBox(height: 15),
 
-              SizedBox(
+       SizedBox(
   width: double.infinity,
   child: ElevatedButton(
     onPressed: () {
-
       showDialog(
         context: context,
         builder: (context) {
-
           return AlertDialog(
+            scrollable: true,
 
             title: const Text(
               "Upgrade to Premium 💎",
             ),
 
-            content: const Text(
-              "Get Unlimited AI Chat, PDF, Images and Voice AI for ₹199/month.",
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+
+                  Text(
+                    "₹199 / Month",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+
+                  SizedBox(height: 12),
+
+                  Text("💬 AI Chat : 1000/day"),
+                  Text("📄 PDF : 100/day"),
+                  Text("🖼 AI Images : 200/day"),
+                  Text("🎤 Voice AI"),
+                  Text("⚡ Faster Responses"),
+
+                ],
+              ),
             ),
 
             actions: [
 
               TextButton(
                 onPressed: () {
-
                   Navigator.pop(context);
-
                 },
                 child: const Text("Cancel"),
               ),
 
-
               ElevatedButton(
-  onPressed: () {
-
-    Navigator.pop(context);
-
-    openCheckout("monthly");
-
-  },
-  child: const Text(
-    "Continue",
-  ),
-),
-
+                onPressed: () {
+                  Navigator.pop(context);
+                  openCheckout("monthly");
+                },
+                child: const Text("Continue"),
+              ),
+            
             ],
-
           );
-
         },
       );
-
     },
     child: const Text("Subscribe"),
   ),
 ),
-
+            
             ],
           ),
         ),
       ),
 
       const SizedBox(height: 20),
-      if (!isPremium)
+      if (!isPremium && role != "owner")
 
       Card(
         elevation: 8,
@@ -552,24 +600,47 @@ const SizedBox(height: 20),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              const Text(
-                "👑 Premium Yearly",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              
+ 
+ const Text(
+  "👑 Premium Yearly",
+  style: TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.bold,
+  ),
+),
 
-              const SizedBox(height: 10),
+const SizedBox(height: 5),
 
-              const Text(
-                "₹1499 / Year",
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+Container(
+  padding: const EdgeInsets.symmetric(
+    horizontal: 10,
+    vertical: 5,
+  ),
+  decoration: BoxDecoration(
+    color: Colors.orange,
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: const Text(
+    "⭐ Recommended",
+    style: TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
+
+const SizedBox(height: 10),
+
+const Text(
+  "₹1499 / Year",
+  style: TextStyle(
+    fontSize: 20,
+    color: Colors.green,
+    fontWeight: FontWeight.bold,
+  ),
+),
+              
             
               const SizedBox(height: 10),
 
@@ -640,7 +711,7 @@ const SizedBox(height: 20),
         ),
       ),
 
-    ],
+    ] 
   ),
 ),
     );

@@ -14,7 +14,7 @@ const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const FormData = require("form-data");
 const { GoogleGenAI } = require("@google/genai");
-const Razorpay = require("razorpay");
+const razorpay = require("./config/razorpay");
 const crypto = require("crypto");
 const { Resend } = require("resend");
 
@@ -109,15 +109,6 @@ console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
   }
 })();
 
-// ================= RAZORPAY =================
-
-const razorpay = new Razorpay({
-
-  key_id: process.env.RAZORPAY_KEY_ID,
-
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-
-});
 
 // ================= CHECK API =================
 if (!API_KEY) {
@@ -136,6 +127,139 @@ app.use(rateLimit({
   windowMs: 60 * 1000,
   max: 20
 }));
+
+function checkSubscription(user) {
+
+  // Guest
+  if (!user) {
+    return {
+      premium: false,
+      plan: "free"
+    };
+  }
+
+  // Owner
+  if (user.role === "owner") {
+    return {
+      premium: true,
+      plan: "lifetime"
+    };
+  }
+
+  // Expiry check
+  if (user.isPremium) {
+
+    // जर expiry नाही तर invalid premium
+    if (!user.subscriptionExpiry) {
+      return {
+        premium: false,
+        plan: "free"
+      };
+    }
+
+    // Premium चालू आहे
+    if (new Date() < new Date(user.subscriptionExpiry)) {
+      return {
+        premium: true,
+        plan: user.subscriptionType
+      };
+    }
+
+    // Premium संपलं
+    user.isPremium = false;
+    user.subscriptionType = "free";
+    user.subscriptionExpiry = null;
+
+    // Database save वेगळ्या API मध्ये करू
+    return {
+      premium: false,
+      plan: "free",
+      expired: true
+    };
+
+  }
+
+  // Free
+  return {
+    premium: false,
+    plan: "free"
+  };
+
+}
+
+// ================= PLAN LIMITS =================
+
+function getPlanLimits(user){
+
+  if(!user){
+
+    return{
+      chat:100,
+      image:5,
+      pdf:3
+    };
+
+  }
+
+  if(user.role === "owner"){
+
+    return{
+
+      chat:Infinity,
+      image:Infinity,
+      pdf:Infinity
+
+    };
+
+  }
+
+  const subscription = checkSubscription(user);
+
+  if(!subscription.premium){
+
+    return{
+
+      chat:100,
+      image:5,
+      pdf:3
+
+    };
+
+  }
+
+  if(subscription.plan === "monthly"){
+
+    return{
+
+      chat:1000,
+      image:300,
+      pdf:150
+
+    };
+
+  }
+
+  if(subscription.plan === "yearly"){
+
+    return{
+
+      chat:1000,
+      image:300,
+      pdf:150
+
+    };
+
+  }
+
+  return{
+
+    chat:100,
+    image:5,
+    pdf:3
+
+  };
+
+}
 
 // ================= LOGGER =================
 const logger = winston.createLogger({
@@ -815,45 +939,58 @@ if (!user) {
 }
 
 
-// FREE USER IMAGE LIMIT
-if (!user.isPremium) {
+const subscription = checkSubscription(user);
 
-  const today = new Date();
-  const lastReset = new Date(user.lastLimitReset);
+const limits = getPlanLimits(user);
 
+if (subscription.expired) {
 
-  // Daily reset
-  if (
-    today.toDateString() !==
-    lastReset.toDateString()
-  ) {
-
-    user.messageCount = 0;
-    user.pdfCount = 0;
-    user.imageCount = 0;
-    user.lastLimitReset = today;
-
-    await user.save();
-
-  }
-
-
-  // 5 Image limit
-  if (user.imageCount >= 5) {
-
-    return res.json({
-      success: false,
-      message:
-      "Daily free image limit completed. Upgrade to Premium 👑"
-    });
-
-  }
+  await user.save();
 
 }
 
+const today = new Date();
+
+const lastReset = new Date(
+  user.dailyUsage.lastReset
+);
+
+if (
+  today.toDateString() !==
+  lastReset.toDateString()
+) {
+
+  user.dailyUsage.chat = 0;
+  user.dailyUsage.pdf = 0;
+  user.dailyUsage.image = 0;
+
+  user.dailyUsage.lastReset = today;
+
+  await user.save();
+
+}
+
+if (
+  user.dailyUsage.image >= limits.image
+) {
+
+  return res.json({
+
+    success: false,
+
+    message:
+      "Daily Image Limit Completed. Upgrade to Premium 👑"
+
+  });
+
+}
+
+user.dailyUsage.image++;
+
+await user.save();
+
 console.log("IMAGE RECEIVED:");
 console.log(req.file);
-
 
 if(!req.file){
  return res.status(400).json({
@@ -927,14 +1064,6 @@ response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
 "No response from AI";
 
 
-if (!user.isPremium) {
-
-  user.imageCount += 1;
-
-  await user.save();
-
-}
-
 
 res.json({
   reply: aiText
@@ -969,40 +1098,50 @@ if (!user) {
 
 
 // FREE USER PDF LIMIT
-if (!user.isPremium) {
 
-  const today = new Date();
-  const lastReset = new Date(user.lastLimitReset);
+ const subscription = checkSubscription(user);
 
+const limits = getPlanLimits(user);
 
-  // Daily reset
-  if (
-    today.toDateString() !==
-    lastReset.toDateString()
-  ) {
+if (subscription.expired) {
+  await user.save();
+}
 
-    user.messageCount = 0;
-    user.pdfCount = 0;
-    user.imageCount = 0;
-    user.lastLimitReset = today;
+const today = new Date();
 
-    await user.save();
+const lastReset = new Date(user.dailyUsage.lastReset);
 
-  }
+if (today.toDateString() != lastReset.toDateString()) {
 
+  user.dailyUsage.chat = 0;
+  user.dailyUsage.pdf = 0;
+  user.dailyUsage.image = 0;
 
-  // 5 PDF limit
-  if (user.pdfCount >= 5) {
+  user.dailyUsage.lastReset = today;
 
-    return res.json({
-      success: false,
-      message:
-      "Daily free PDF limit completed. Upgrade to Premium 👑"
-    });
-
-  }
+  await user.save();
 
 }
+
+if (user.dailyUsage.pdf >= limits.pdf) {
+
+  return res.json({
+
+    success: false,
+
+    message:
+      "Daily PDF limit completed. Upgrade to Premium 👑"
+
+  });
+
+}
+
+user.dailyUsage.pdf++;
+
+await user.save();
+
+
+
 
     if (!req.file) {
       return res.status(400).json({
@@ -1064,13 +1203,7 @@ await Memory.findOneAndUpdate(
 
 console.log("PDF added successfully");
 
-if (!user.isPremium) {
 
-  user.pdfCount += 1;
-
-  await user.save();
-
-}
 
     const result = await ai.models.generateContent({
 
@@ -1447,46 +1580,55 @@ app.post("/chat", auth, async (req, res) => {
 
 if (userId !== "guest") {
 
-  user = await User.findById(userId);
+ user = await User.findById(userId);
 
-  if (
-    user &&
-    !user.isPremium
-  ) {
+const subscription = checkSubscription(user);
+const limits = getPlanLimits(user);
+if (subscription.expired) {
 
+  await user.save();
+
+}
+if (
+  user &&
+  !subscription.premium
+) {
     const today = new Date();
-    const lastReset = new Date(user.lastLimitReset);
 
+const lastReset = new Date(
+  user.dailyUsage.lastReset
+);
 
-    // Daily reset
-    if (
-      today.toDateString() !==
-      lastReset.toDateString()
-    ) {
+if (
+  today.toDateString() !=
+  lastReset.toDateString()
+) {
 
-      user.messageCount = 0;
-      user.pdfCount = 0;
-      user.imageCount = 0;
-      user.lastLimitReset = today;
+  user.dailyUsage.chat = 0;
+  user.dailyUsage.pdf = 0;
+  user.dailyUsage.image = 0;
+  user.dailyUsage.lastReset = today;
 
-      await user.save();
+  await user.save();
 
-    }
+}
 
+if (
+  !subscription.premium &&
+  user.dailyUsage.chat >= limits.chat
+) {
 
-    // 100 messages limit
-    if (user.messageCount >= 100) {
+  return res.json({
+    success: false,
+    message:
+      "Daily Free Limit Completed. Upgrade to Premium 👑"
+  });
 
-      return res.json({
-        success: false,
-        message:
-        "Daily free message limit completed. Upgrade to Premium 👑"
-      });
+}
 
-    }
-           user.messageCount += 1;
+user.dailyUsage.chat++;
 
-            await user.save();
+await user.save();
   }
 
 }
@@ -1725,15 +1867,6 @@ memory.chats.push({
 
 await memory.save();
 
-// ================= FREE LIMIT =================
-
-if (user && !user.isPremium) {
-
-  user.messageCount += 1;
-
-  await user.save();
-
-}
 
 // ================= RESPONSE =================
 
@@ -1774,11 +1907,46 @@ return res.json({
     
   
 
-app.post("/create-order", async (req, res) => {
-
+app.post("/create-order", auth, async (req, res) => {
   try {
+    
+    const user = await User.findById(req.userId);
+
+if (!user) {
+
+  return res.status(404).json({
+    error: "User not found"
+  });
+
+}
+const subscription = checkSubscription(user);
+
+
+if (subscription.premium) {
+
+  return res.status(400).json({
+
+    success: false,
+
+    message: "Premium already active."
+
+  });
+
+}
 
     const { plan } = req.body;
+
+    if (
+  plan !== "monthly" &&
+  plan !== "yearly"
+) {
+
+  return res.status(400).json({
+    success: false,
+    message: "Invalid subscription plan."
+  });
+
+}
 
 let amount = 19900;
 let receipt = "vedaai_monthly_plan";
@@ -1862,12 +2030,24 @@ if (!user) {
   });
 
 }
+const subscription = checkSubscription(user);
 
+if (subscription.premium) {
+
+  return res.status(400).json({
+
+    success: false,
+
+    message: "Premium already active."
+
+  });
+
+}
 
 user.isPremium = true;
 
 user.subscriptionType = plan || "monthly";
-
+user.subscriptionStart = new Date();
 
 if (plan === "yearly") {
 

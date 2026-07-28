@@ -35,25 +35,32 @@ const UserSchema = new mongoose.Schema({
     default: null
   },
 
-    messageCount: {
+   subscriptionStart: {
+  type: Date,
+  default: null
+},
+
+dailyUsage: {
+  chat: {
     type: Number,
     default: 0
   },
 
-  pdfCount: {
+  pdf: {
     type: Number,
     default: 0
   },
 
-  imageCount: {
+  image: {
     type: Number,
     default: 0
   },
 
-  lastLimitReset: {
+  lastReset: {
     type: Date,
     default: Date.now
   }
+},
 
 }, {
   timestamps: true

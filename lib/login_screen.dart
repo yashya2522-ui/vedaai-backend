@@ -71,11 +71,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
 
         await prefs.setString(
-          "token",
-          data["token"],
-        );
+  "token",
+  data["token"],
+);
 
-        await prefs.setString(
+await prefs.setString(
+  "userId",
+  data["userId"],
+);
+
+await prefs.setString(
   "name",
   data["name"] ?? "User",
 );
@@ -94,6 +99,7 @@ await prefs.setString(
   "subscriptionType",
   data["subscriptionType"],
 );
+
 await prefs.setString(
   "subscriptionExpiry",
   data["subscriptionExpiry"]?.toString() ?? "",

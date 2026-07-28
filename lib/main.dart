@@ -19,6 +19,7 @@ import 'package:image_picker/image_picker.dart';
 import 'login_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'splash_screen.dart';
+import 'subscription_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -1490,15 +1491,46 @@ child: Icon(Icons.arrow_downward),
 
         const SizedBox(height: 5),
 
-        Text(
-          isPremium
-              ? "💎 ${subscriptionType.toUpperCase()}"
-              : "🆓 Free Plan",
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-          ),
+        const SizedBox(height: 5),
+
+Text(
+  isPremium
+      ? "💎 ${subscriptionType.toUpperCase()}"
+      : "🆓 Free Plan",
+  style: const TextStyle(
+    color: Colors.white70,
+    fontSize: 14,
+  ),
+),
+
+const SizedBox(height: 12),
+
+if (!isPremium)
+  SizedBox(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      icon: const Icon(Icons.workspace_premium),
+      label: const Text("Upgrade to Premium"),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xffF59E0B),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
+      ),
+      onPressed: () {
+        Navigator.pop(context);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SubscriptionScreen(),
+          ),
+        );
+      },
+    ),
+  ),
 
       ],
     ),
@@ -1716,80 +1748,58 @@ messages = [];
 
   title: Row(
     children: [
+
       Container(
-        height: 32,
-        width: 32,
-        decoration: BoxDecoration(
-          color: Colors.blue,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.smart_toy,
-            size: 18, color: Colors.white),
+  height: 40,
+  width: 40,
+  decoration: BoxDecoration(
+    gradient: const LinearGradient(
+      colors: [
+        Color(0xff2563EB),
+        Color(0xff7C3AED),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    borderRadius: BorderRadius.circular(12),
+    boxShadow: const [
+      BoxShadow(
+        color: Colors.black26,
+        blurRadius: 10,
+        offset: Offset(0, 4),
       ),
-      const SizedBox(width: 10),
-      const Text("VedaAI 💬"),
     ],
   ),
 
+  child: const Icon(
+    Icons.psychology,
+    color: Colors.white,
+    size: 25,
+  ),
+),
+
+      const SizedBox(width: 12),
+
+      
+      const Text(
+  "VedaAI",
+  overflow: TextOverflow.visible,
+  style: TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 0.5,
+    color: Color(0xff2563EB),
+  ),
+),
+
+    ],
+  ),
+
+ 
   actions: [
 
-  // 🔍 SEARCH
-  Container(
-    margin: const EdgeInsets.only(right: 6),
-    decoration: BoxDecoration(
-      color: isDarkMode
-          ? Colors.white10
-          : Colors.grey.shade200,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: IconButton(
-      icon: Icon(
-        Icons.search,
-        color: isDarkMode
-            ? Colors.white
-            : Colors.black,
-      ),
-      onPressed: () {
-        showSearch(
-          context: context,
-          delegate: ChatSearchDelegate(messages),
-        );
-      },
-    ),
-  ),
-
-  // 💎 PREMIUM
-  Container(
-    margin: const EdgeInsets.only(right: 6),
-    padding: const EdgeInsets.symmetric(
-      horizontal: 12,
-      vertical: 8,
-    ),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: isPremium
-            ? const [
-                Color(0xffF59E0B),
-                Color(0xffF97316),
-              ]
-            : const [
-                Colors.grey,
-                Colors.blueGrey,
-              ],
-      ),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Text(
-      isPremium
-          ? "💎 ${subscriptionType.toUpperCase()}"
-          : "FREE",
-      style: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-        fontSize: 11,
-      ),
-    ),
-  ),
+ 
+  
 
   // 🌙 DARK MODE
   Container(
@@ -1817,25 +1827,28 @@ messages = [];
     ),
   ),
 
-  // 📥 EXPORT
-  Container(
-    decoration: BoxDecoration(
-      color: isDarkMode
-          ? Colors.white10
-          : Colors.grey.shade200,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: IconButton(
-      tooltip: "Export Chat",
-      icon: Icon(
-        Icons.download,
-        color: isDarkMode
-            ? Colors.white
-            : Colors.black,
-      ),
-      onPressed: exportChat,
-    ),
+// 📥 EXPORT
+Container(
+  margin: const EdgeInsets.only(right: 6),
+
+  decoration: BoxDecoration(
+    color: isDarkMode
+        ? Colors.white10
+        : Colors.grey.shade200,
+    borderRadius: BorderRadius.circular(12),
   ),
+
+  child: IconButton(
+    tooltip: "Export Chat",
+    icon: Icon(
+      Icons.download,
+      color: isDarkMode
+          ? Colors.white
+          : Colors.black,
+    ),
+    onPressed: exportChat,
+  ),
+),
     
 ], 
     ),
