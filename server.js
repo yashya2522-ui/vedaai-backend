@@ -790,37 +790,29 @@ return res.json({
 });
 
 app.get("/load-chats", auth, async (req, res) => {
-
   try {
 
     const memory = await Memory.findOne({
-      userId: req.userId
+      userId: req.userId,
     });
 
     if (!memory) {
-
       return res.json({
-        chats: []
+        chats: [],
       });
-
     }
 
     return res.json({
-
-      chats: memory.chats || []
-
+      chats: memory.chatSessions || [],
     });
 
   } catch (err) {
 
     return res.status(500).json({
-
-      error: err.message
-
+      error: err.message,
     });
 
   }
-
 });
 // ================= JWT AUTH MIDDLEWARE =================
 
