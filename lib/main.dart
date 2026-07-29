@@ -20,6 +20,7 @@ import 'login_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'splash_screen.dart';
 import 'subscription_screen.dart';
+import 'package:vedaai/notifications_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -543,56 +544,90 @@ Future<void> speak(String text) async {
   await flutterTts.speak(text);
 }  
 Future<void> loadChat() async {
-  final prefs = await SharedPreferences.getInstance();
-  final data = prefs.getString("allChats");
-
-  if (data == null) {
-    setState(() {
-      allChats = [
-        {
-          "title": "New Chat",
-          "messages": [],
-          "favorite": false,
-        }
-      ];
-
-      currentChatIndex = 0;
-      messages = [];
-    });
-    return;
-  }
 
   try {
-    final decoded = jsonDecode(data);
 
-    allChats = (decoded as List)
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
+    final prefs = await SharedPreferences.getInstance();
 
-    setState(() {
-      currentChatIndex = 0;
+    final token = prefs.getString("token");
 
-      messages = List<Map<String, dynamic>>.from(
-        allChats[0]["messages"] ?? [],
-      );
-    });
+    if (token == null) return;
+
+    final response = await http.get(
+
+      Uri.parse(
+        "https://vedaai-backend-production-bf1d.up.railway.app/load-chats"
+      ),
+
+      headers: {
+
+        "Authorization": "Bearer $token",
+
+      },
+
+    );
+
+    if (response.statusCode == 200) {
+
+      final data = jsonDecode(response.body);
+
+      final chats = data["chats"] ?? [];
+
+      setState(() {
+
+        allChats = chats.isEmpty
+            ? [
+                {
+                  "title": "New Chat",
+                  "messages": [],
+                  "favorite": false,
+                }
+              ]
+            : List<Map<String, dynamic>>.from(chats);
+
+        currentChatIndex = 0;
+
+        messages = List<Map<String, dynamic>>.from(
+          allChats[0]["messages"] ?? [],
+        );
+
+      });
+
+    }
 
   } catch (e) {
-    print("LOAD ERROR: $e");
 
-    setState(() {
-      allChats = [
-        {
-          "title": "New Chat",
-          "messages": [],
-          "favorite": false,
-        }
-      ];
+    print("LOAD CHAT ERROR: $e");
 
-      currentChatIndex = 0;
-      messages = [];
-    });
   }
+
+}
+Future<void> logout() async {
+
+  final prefs = await SharedPreferences.getInstance();
+
+  await prefs.remove("token");
+  await prefs.remove("userId");
+  await prefs.remove("name");
+  await prefs.remove("role");
+  await prefs.remove("isPremium");
+  await prefs.remove("subscriptionType");
+  await prefs.remove("subscriptionExpiry");
+
+  if (!mounted) return;
+
+  Navigator.pushAndRemoveUntil(
+
+    context,
+
+    MaterialPageRoute(
+      builder: (_) => const LoginScreen(),
+    ),
+
+    (route) => false,
+
+  );
+
 }
 Future<void> saveChat() async {
   try {
@@ -1444,8 +1479,8 @@ child: Icon(Icons.arrow_downward),
   child: Column(
     children: [
 
-      SizedBox(
-  height: 160,
+     Container(
+  width: double.infinity,
 
   child: Container(
     padding: const EdgeInsets.all(12),
@@ -1461,7 +1496,7 @@ child: Icon(Icons.arrow_downward),
 
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
      
 
       children: [
@@ -1638,6 +1673,8 @@ title: Text(
   ),
 
 ),
+ 
+ 
 
       selected: index == currentChatIndex,
 
@@ -1736,6 +1773,120 @@ messages = [];
           },
         ),
       ),
+
+      const Divider(),
+
+ListTile(
+  leading: Icon(
+    Icons.download,
+    color: isDarkMode ? Colors.white : Colors.black,
+  ),
+  title: Text(
+    "Export Chat",
+    style: TextStyle(
+      color: isDarkMode ? Colors.white : Colors.black,
+    ),
+  ),
+  onTap: exportChat,
+),
+
+ListTile(
+  leading: Icon(
+    isDarkMode ? Icons.light_mode : Icons.dark_mode,
+    color: isDarkMode ? Colors.white : Colors.black,
+  ),
+  title: Text(
+    "Dark Mode",
+    style: TextStyle(
+      color: isDarkMode ? Colors.white : Colors.black,
+    ),
+  ),
+  onTap: () {
+    setState(() {
+      isDarkMode = !isDarkMode;
+    });
+  },
+),
+
+const Divider(),
+
+ListTile(
+  leading: const Icon(Icons.info_outline),
+  title: const Text("About VedaAI"),
+  onTap: () {
+    Navigator.pop(context);
+  },
+),
+
+ListTile(
+  leading: const Icon(Icons.privacy_tip_outlined),
+  title: const Text("Privacy Policy"),
+  onTap: () {
+    Navigator.pop(context);
+  },
+),
+
+ListTile(
+  leading: const Icon(Icons.star_rate),
+  title: const Text("Rate App"),
+  onTap: () {
+    Navigator.pop(context);
+  },
+),
+
+ListTile(
+  leading: const Icon(Icons.support_agent),
+  title: const Text("Contact Support"),
+  onTap: () {
+    Navigator.pop(context);
+  },
+),
+
+const Divider(),
+
+ListTile(
+  leading: const Icon(
+    Icons.logout,
+    color: Colors.red,
+  ),
+  title: const Text(
+    "Logout",
+    style: TextStyle(
+      color: Colors.red,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  onTap: () {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text(
+          "Are you sure you want to logout?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              logout();
+            },
+            child: const Text(
+              "Logout",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  },
+),
     ],
   ),
 ),
@@ -1795,61 +1946,81 @@ messages = [];
     ],
   ),
 
- 
-  actions: [
+ actions: [
 
- 
-  
 
-  // 🌙 DARK MODE
-  Container(
-    margin: const EdgeInsets.only(right: 6),
-    decoration: BoxDecoration(
-      color: isDarkMode
-          ? Colors.white10
-          : Colors.grey.shade200,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: IconButton(
-      icon: Icon(
-        isDarkMode
-            ? Icons.light_mode
-            : Icons.dark_mode,
-        color: isDarkMode
-            ? Colors.white
-            : Colors.black,
+  // 📤 Share Chat
+  IconButton(
+    tooltip: "Share Chat",
+    icon: const Icon(Icons.share),
+    onPressed: () {
+      
+      exportChat(); 
+    },
+  ),
+
+  // 🔔 Notifications
+ IconButton(
+  tooltip: "Notifications",
+  icon: const Icon(Icons.notifications_none),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const NotificationsScreen(),
       ),
-      onPressed: () {
-        setState(() {
-          isDarkMode = !isDarkMode;
-        });
-      },
-    ),
-  ),
-
-// 📥 EXPORT
-Container(
-  margin: const EdgeInsets.only(right: 6),
-
-  decoration: BoxDecoration(
-    color: isDarkMode
-        ? Colors.white10
-        : Colors.grey.shade200,
-    borderRadius: BorderRadius.circular(12),
-  ),
-
-  child: IconButton(
-    tooltip: "Export Chat",
-    icon: Icon(
-      Icons.download,
-      color: isDarkMode
-          ? Colors.white
-          : Colors.black,
-    ),
-    onPressed: exportChat,
-  ),
+    );
+  },
 ),
-    
+
+  // ⋮ More
+  PopupMenuButton<String>(
+    icon: const Icon(Icons.more_vert),
+    onSelected: (value) {
+
+      switch (value) {
+
+        case "about":
+          break;
+
+        case "privacy":
+          break;
+
+        case "contact":
+          break;
+
+        case "rate":
+          break;
+
+      }
+
+    },
+
+    itemBuilder: (context) => const [
+
+      PopupMenuItem(
+        value: "about",
+        child: Text("About VedaAI"),
+      ),
+
+      PopupMenuItem(
+        value: "privacy",
+        child: Text("Privacy Policy"),
+      ),
+
+      PopupMenuItem(
+        value: "contact",
+        child: Text("Contact Support"),
+      ),
+
+      PopupMenuItem(
+        value: "rate",
+        child: Text("Rate App"),
+      ),
+
+    ],
+  ),
+
 ], 
     ),
     // 💬 BODY

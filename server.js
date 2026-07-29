@@ -778,6 +778,39 @@ return res.json({
   }
 });
 
+app.get("/load-chats", auth, async (req, res) => {
+
+  try {
+
+    const memory = await Memory.findOne({
+      userId: req.userId
+    });
+
+    if (!memory) {
+
+      return res.json({
+        chats: []
+      });
+
+    }
+
+    return res.json({
+
+      chats: memory.chats || []
+
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+
+      error: err.message
+
+    });
+
+  }
+
+});
 // ================= JWT AUTH MIDDLEWARE =================
 
 const authMiddleware = (req,res,next)=>{
@@ -1964,11 +1997,19 @@ if (plan === "yearly") {
 }
 
 const options = {
-  amount: amount,
-  currency: "INR",
-  receipt: receipt,
-};
 
+  amount: amount,
+
+  currency: "INR",
+
+  receipt: receipt,
+
+  notes: {
+    userId: user._id.toString(),
+    plan: plan
+  }
+
+};
 
     const order =
       await razorpay.orders.create(options);
@@ -1992,17 +2033,20 @@ const options = {
 
 });
 
-app.post("/verify-payment", async (req, res) => {
-
+app.post("/verify-payment", auth, async (req, res) => {
+console.log("VERIFY PAYMENT CALLED");
+console.log(req.body);
   try {
 
-    const {
-  userId,
+   const {
   plan,
   razorpay_order_id,
   razorpay_payment_id,
   razorpay_signature
 } = req.body;
+
+
+const userId = req.userId;
 
 
     const body =
@@ -2020,10 +2064,15 @@ app.post("/verify-payment", async (req, res) => {
         .update(body.toString())
         .digest("hex");
 
-
+console.log("EXPECTED:", expectedSignature);
+console.log("RECEIVED:", razorpay_signature);
     if (expectedSignature === razorpay_signature) {
 
+const order = await razorpay.orders.fetch(
+  razorpay_order_id
+);
 
+const verifiedPlan = order.notes.plan;
   
 
 
@@ -2053,10 +2102,10 @@ if (subscription.premium) {
 
 user.isPremium = true;
 
-user.subscriptionType = plan || "monthly";
+user.subscriptionType = verifiedPlan || "monthly";
 user.subscriptionStart = new Date();
 
-if (plan === "yearly") {
+if (verifiedPlan === "yearly") {
 
   user.subscriptionExpiry = new Date(
     Date.now() + 365 * 24 * 60 * 60 * 1000
@@ -2103,6 +2152,7 @@ if (plan === "yearly") {
     });
 
   }
+
 
 });
 

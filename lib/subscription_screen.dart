@@ -111,7 +111,13 @@ void initState() {
   loadUser();
 } 
 Future<void> handlePaymentSuccess(
+  
     PaymentSuccessResponse response) async {
+
+print("SUCCESS CALLBACK");
+print(response.orderId);
+print(response.paymentId);
+print(response.signature); 
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -188,7 +194,10 @@ Future<void> handlePaymentSuccess(
 
 
 void handlePaymentError(PaymentFailureResponse response) {
-
+  
+print("ERROR CALLBACK");
+print(response.code);
+print(response.message);
   print("Payment Failed");
 
 }
