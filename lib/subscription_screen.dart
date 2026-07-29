@@ -25,65 +25,24 @@ class _SubscriptionScreenState
 
     final prefs =
         await SharedPreferences.getInstance();
-String? userId = prefs.getString("userId");
+
 
     await prefs.setString(
       "selectedPlan",
       plan,
     );
-final response = await http.post(
+Future<void> selectPlan(String plan) async {
 
-  Uri.parse(
-    "https://vedaai-backend-production-bf1d.up.railway.app/activate-premium"
-  ),
-
-  headers: {
-    "Content-Type": "application/json",
-  },
-
-  body: jsonEncode({
-
-    "userId": userId,
-
-    "plan": plan,
-
-  }),
-
-);
-
-final data = jsonDecode(response.body);
-print("Selected Plan: ${prefs.getString("selectedPlan")}");
-if (response.statusCode == 200) {
-
-  await prefs.setBool(
-    "isPremium",
-    data["isPremium"],
-  );
+  final prefs = await SharedPreferences.getInstance();
 
   await prefs.setString(
-    "subscriptionType",
-    data["subscriptionType"],
+    "selectedPlan",
+    plan,
   );
 
+  await openCheckout(plan);
 
-await prefs.setString(
-  "subscriptionExpiry",
-  data["subscriptionExpiry"]?.toString() ?? "",
-);
-  }
-  
-ScaffoldMessenger.of(context).showSnackBar(
-
-  SnackBar(
-
-    content: Text(
-      data["message"] ?? "$plan activated",
-    ),
-
-  ),
-
-);
-
+}
   }
 
 
@@ -400,7 +359,7 @@ if (subscriptionExpiry != null)
 
           ElevatedButton(
             onPressed: () {
-              openCheckout(subscriptionType);
+              selectPlan(subscriptionType);
             },
             child: const Text("Renew Premium"),
           ),
@@ -577,12 +536,13 @@ const SizedBox(height: 20),
               ),
 
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  openCheckout("monthly");
-                },
-                child: const Text("Continue"),
-              ),
+  onPressed: () {
+    Navigator.pop(context);
+
+    selectPlan("monthly");
+  },
+  child: const Text("Continue"),
+),
             
             ],
           );
@@ -690,18 +650,15 @@ const Text(
               ),
 
 
-              ElevatedButton(
+             ElevatedButton(
   onPressed: () {
-
     Navigator.pop(context);
 
-    openCheckout("yearly");
-
+    selectPlan("yearly");
   },
-  child: const Text(
-    "Continue",
-  ),
+  child: const Text("Continue"),
 ),
+
             
             ],
 
