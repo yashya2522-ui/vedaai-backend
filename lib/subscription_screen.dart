@@ -155,13 +155,20 @@ void handleExternalWallet(ExternalWalletResponse response) {
   print("External Wallet");
 
 }
+@override
+void dispose() {
+  razorpay.clear();
+  super.dispose();
+}
 
 Future<void> openCheckout(String plan) async {
   print("OPEN CHECKOUT CALLED");
+  print("PLAN = $plan");
 
   final prefs = await SharedPreferences.getInstance();
 
   String token = prefs.getString("token") ?? "";
+
 
   final response = await http.post(
     Uri.parse(

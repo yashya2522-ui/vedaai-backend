@@ -2024,9 +2024,20 @@ console.log("EXPECTED:", expectedSignature);
 console.log("RECEIVED:", razorpay_signature);
     if (expectedSignature === razorpay_signature) {
 
-const order = await razorpay.orders.fetch(
-  razorpay_order_id
+const payment = await razorpay.payments.fetch(
+  razorpay_payment_id
 );
+
+console.log(payment.status);
+
+if(payment.status !== "captured"){
+ return res.status(400).json({
+   success:false,
+   message:"Payment not completed"
+ });
+}
+user.isPremium = true;
+await user.save();
 
 console.log("ORDER STATUS:", order.status);
 console.log("ORDER NOTES:", order.notes);
