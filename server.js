@@ -2028,6 +2028,9 @@ const order = await razorpay.orders.fetch(
   razorpay_order_id
 );
 
+console.log("ORDER STATUS:", order.status);
+console.log("ORDER NOTES:", order.notes);
+
 const verifiedPlan = order.notes.plan;
   
 

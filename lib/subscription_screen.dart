@@ -169,25 +169,34 @@ void handleExternalWallet(ExternalWalletResponse response) {
 }
 
 Future<void> openCheckout(String plan) async {
+  print("OPEN CHECKOUT CALLED");
+
   final prefs = await SharedPreferences.getInstance();
 
-String token = prefs.getString("token") ?? "";
-
-String userId = prefs.getString("userId") ?? "";
+  String token = prefs.getString("token") ?? "";
 
   final response = await http.post(
     Uri.parse(
-      "https://vedaai-backend-production-bf1d.up.railway.app/create-order"
+      "https://vedaai-backend-production-bf1d.up.railway.app/create-order",
     ),
     headers: {
-  "Content-Type": "application/json",
-  "Authorization": "Bearer $token",
-},
+      "Content-Type": "application/json",
+      "Authorization": "Bearer $token",
+    },
     body: jsonEncode({
       "plan": plan,
     }),
   );
 
+  print("STATUS: ${response.statusCode}");
+  print("BODY: ${response.body}");
+
+  if (response.statusCode != 200) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(response.body)),
+    );
+    return;
+  }
 
   final data = jsonDecode(response.body);
 
@@ -203,9 +212,9 @@ String userId = prefs.getString("userId") ?? "";
     }
   };
 
+  print(options);
 
   razorpay.open(options);
-
 }
 
   Future<void> loadUser() async {
