@@ -80,7 +80,7 @@ print(response.signature);
   "Authorization": "Bearer $token",
 },
     body: jsonEncode({
-      "userId": userId,
+     
       "plan": prefs.getString("selectedPlan"),
       "razorpay_order_id": response.orderId,
       "razorpay_payment_id": response.paymentId,
@@ -90,7 +90,8 @@ print(response.signature);
 
   final data = jsonDecode(verifyResponse.body);
 
-  if (data["success"]) {
+  if (data["success"] == true &&
+    data["isPremium"] == true) {
 
   await prefs.setBool(
     "isPremium",

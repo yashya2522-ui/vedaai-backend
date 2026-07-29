@@ -1990,135 +1990,177 @@ const options = {
 });
 
 app.post("/verify-payment", auth, async (req, res) => {
+
 console.log("VERIFY PAYMENT CALLED");
 console.log(req.body);
-  try {
 
-   const {
-  plan,
-  razorpay_order_id,
-  razorpay_payment_id,
-  razorpay_signature
+try {
+
+const {
+ razorpay_order_id,
+ razorpay_payment_id,
+ razorpay_signature
 } = req.body;
 
 
 const userId = req.userId;
 
 
-    const body =
-      razorpay_order_id +
-      "|" +
-      razorpay_payment_id;
+// 1. Signature verify
+
+const body =
+razorpay_order_id +
+"|" +
+razorpay_payment_id;
 
 
-    const expectedSignature =
-      crypto
-        .createHmac(
-          "sha256",
-          process.env.RAZORPAY_KEY_SECRET
-        )
-        .update(body.toString())
-        .digest("hex");
+const expectedSignature =
+crypto
+.createHmac(
+"sha256",
+process.env.RAZORPAY_KEY_SECRET
+)
+.update(body)
+.digest("hex");
 
-console.log("EXPECTED:", expectedSignature);
-console.log("RECEIVED:", razorpay_signature);
-    if (expectedSignature === razorpay_signature) {
 
-const order = await razorpay.orders.fetch(
-  razorpay_order_id
+if(expectedSignature !== razorpay_signature){
+
+return res.status(400).json({
+success:false,
+message:"Invalid signature"
+});
+
+}
+
+
+// 2. Check actual payment status from Razorpay
+
+const payment =
+await razorpay.payments.fetch(
+razorpay_payment_id
 );
 
-console.log("ORDER STATUS:", order.status);
-console.log("ORDER NOTES:", order.notes);
 
-if(order.status !== "paid"){
-  return res.status(400).json({
-    success:false,
-    message:"Order not paid"
-  });
-}
-
-const verifiedPlan = order.notes.plan;
-  
+console.log(
+"PAYMENT STATUS:",
+payment.status
+);
 
 
-  const user = await User.findById(userId);
+// IMPORTANT
+if(payment.status !== "captured"){
 
-if (!user) {
-
-  return res.status(404).json({
-    success: false,
-    message: "User not found"
-  });
+return res.status(400).json({
+success:false,
+message:"Payment not captured"
+});
 
 }
-const subscription = checkSubscription(user);
 
-if (subscription.premium) {
 
-  return res.status(400).json({
+// 3. Fetch user AFTER payment success
 
-    success: false,
+const user =
+await User.findById(userId);
 
-    message: "Premium already active."
 
-  });
+if(!user){
+
+return res.status(404).json({
+success:false,
+message:"User not found"
+});
 
 }
+
+
+// 4. Get plan from order
+
+const order =
+await razorpay.orders.fetch(
+razorpay_order_id
+);
+
+
+const verifiedPlan =
+order.notes.plan;
+
+
+
+// 5. Activate premium
 
 user.isPremium = true;
 
-user.subscriptionType = verifiedPlan || "monthly";
-user.subscriptionStart = new Date();
+user.subscriptionType =
+verifiedPlan;
 
-if (verifiedPlan === "yearly") {
 
-  user.subscriptionExpiry = new Date(
-    Date.now() + 365 * 24 * 60 * 60 * 1000
-  );
+user.subscriptionStart =
+new Date();
 
-} else {
 
-  user.subscriptionExpiry = new Date(
-    Date.now() + 30 * 24 * 60 * 60 * 1000
-  );
+
+if(verifiedPlan === "yearly"){
+
+user.subscriptionExpiry =
+new Date(
+Date.now()
++
+365*24*60*60*1000
+);
+
+
+}else{
+
+
+user.subscriptionExpiry =
+new Date(
+Date.now()
++
+30*24*60*60*1000
+);
+
 
 }
 
-  await user.save();
+
+await user.save();
 
 
-  res.json({
-  success: true,
-  message: "Payment verified and Premium activated",
 
-  isPremium: user.isPremium,
+console.log("PREMIUM ACTIVATED");
 
-  subscriptionType: user.subscriptionType,
 
-  subscriptionExpiry: user.subscriptionExpiry
+return res.json({
+
+success:true,
+
+message:"Premium activated",
+
+isPremium:true,
+
+subscriptionType:user.subscriptionType,
+
+subscriptionExpiry:user.subscriptionExpiry
+
 });
 
-}else {
 
-      res.status(400).json({
-        success: false,
-        message: "Invalid signature"
-      });
+}
+catch(error){
 
-    }
+console.log(error);
 
+res.status(500).json({
 
-  } catch(error) {
+success:false,
 
-    console.log(error);
+message:"Verification failed"
 
-    res.status(500).json({
-      error: "Verification failed"
-    });
+});
 
-  }
-
+}
 
 });
 
