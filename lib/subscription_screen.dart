@@ -21,18 +21,8 @@ class _SubscriptionScreenState
   String subscriptionType = "free";
   DateTime? subscriptionExpiry;
 
-  Future<void> selectPlan(String plan) async {
-
-    final prefs =
-        await SharedPreferences.getInstance();
-
-
-    await prefs.setString(
-      "selectedPlan",
-      plan,
-    );
+ 
 Future<void> selectPlan(String plan) async {
-
   final prefs = await SharedPreferences.getInstance();
 
   await prefs.setString(
@@ -41,12 +31,9 @@ Future<void> selectPlan(String plan) async {
   );
 
   await openCheckout(plan);
-
 }
-  }
 
-
- @override
+@override
 void initState() {
   super.initState();
 
@@ -68,7 +55,8 @@ void initState() {
   );
 
   loadUser();
-} 
+}
+
 Future<void> handlePaymentSuccess(
   
     PaymentSuccessResponse response) async {
@@ -223,25 +211,27 @@ Future<void> openCheckout(String plan) async {
         await SharedPreferences.getInstance();
     String? expiry =
     prefs.getString("subscriptionExpiry");
-    setState(() {
-      
-      subscriptionExpiry =
-    expiry != null
-        ? DateTime.parse(expiry)
-        : null; 
 
-     role = prefs.getString("role") ?? "user";
+setState(() {
 
-if (role == "owner") {
-  isPremium = true;
-  subscriptionType = "lifetime";
-} else {
-  isPremium = prefs.getBool("isPremium") ?? false;
-  subscriptionType =
-      prefs.getString("subscriptionType") ?? "free";
-}
+  if (expiry != null && expiry.isNotEmpty) {
+    subscriptionExpiry = DateTime.tryParse(expiry);
+  } else {
+    subscriptionExpiry = null;
+  }
 
-    });
+  role = prefs.getString("role") ?? "user";
+
+  if (role == "owner") {
+    isPremium = true;
+    subscriptionType = "lifetime";
+  } else {
+    isPremium = prefs.getBool("isPremium") ?? false;
+    subscriptionType =
+        prefs.getString("subscriptionType") ?? "free";
+  }
+
+});
 
   }
 
