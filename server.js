@@ -814,6 +814,7 @@ app.get("/load-chats", auth, async (req, res) => {
 
   }
 });
+
 // ================= JWT AUTH MIDDLEWARE =================
 
 const authMiddleware = (req,res,next)=>{
