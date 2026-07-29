@@ -292,13 +292,24 @@ const MemorySchema = new mongoose.Schema({
   },
 
   // NORMAL CHAT
-  chats: [
-    {
-      role: String,
-      text: String
-    }
-  ],
+  // CHAT SESSIONS
+chatSessions: [
+  {
+    title: String,
 
+    favorite: {
+      type: Boolean,
+      default: false,
+    },
+
+    messages: [
+      {
+        role: String,
+        text: String,
+      }
+    ]
+  }
+],
   // PINNED MESSAGES
   pins: [
     {
@@ -1673,7 +1684,42 @@ await user.save();
 
 }
   
+app.post("/save-chats", auth, async (req, res) => {
 
+  try {
+
+    const { chats } = req.body;
+
+    let memory = await Memory.findOne({
+      userId: req.userId,
+    });
+
+    if (!memory) {
+
+      memory = new Memory({
+        userId: req.userId,
+      });
+
+    }
+
+    memory.chatSessions = chats;
+
+    await memory.save();
+
+    res.json({
+      success: true,
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+
+  }
+
+});
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
 

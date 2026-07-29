@@ -381,6 +381,7 @@ void initState() {
 
     }
 
+
   });
 
 }
@@ -549,24 +550,18 @@ Future<void> loadChat() async {
 
     final prefs = await SharedPreferences.getInstance();
 
-    final token = prefs.getString("token");
+final token = prefs.getString("token");
 
-    if (token == null) return;
+if (token == null) return;
 
-    final response = await http.get(
-
-      Uri.parse(
-        "https://vedaai-backend-production-bf1d.up.railway.app/load-chats"
-      ),
-
-      headers: {
-
-        "Authorization": "Bearer $token",
-
-      },
-
-    );
-
+final response = await http.get(
+  Uri.parse(
+    "https://vedaai-backend-production-bf1d.up.railway.app/load-chats",
+  ),
+  headers: {
+    "Authorization": "Bearer $token",
+  },
+);
     if (response.statusCode == 200) {
 
       final data = jsonDecode(response.body);
@@ -630,19 +625,44 @@ Future<void> logout() async {
 
 }
 Future<void> saveChat() async {
+
   try {
+
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString(
-      "allChats",
-      jsonEncode(allChats),
+    final token = prefs.getString("token");
+
+    if (token == null) return;
+
+    await http.post(
+
+      Uri.parse(
+        "https://vedaai-backend-production-bf1d.up.railway.app/save-chats",
+      ),
+
+      headers: {
+
+        "Authorization": "Bearer $token",
+
+        "Content-Type": "application/json",
+
+      },
+
+      body: jsonEncode({
+
+        "chats": allChats,
+
+      }),
+
     );
 
-    print("Chats Saved");
   } catch (e) {
-    print("SAVE ERROR: $e");
+
+    print("SAVE CHAT ERROR: $e");
+
   }
-} 
+
+}
 Future<void> newChat() async {
   setState(() {
     allChats.add({
