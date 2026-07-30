@@ -2036,28 +2036,18 @@ message:"Invalid signature"
 
 // 2. Check actual payment status from Razorpay
 
-const payment =
-await razorpay.payments.fetch(
-razorpay_payment_id
+const payment = await razorpay.payments.fetch(
+  razorpay_payment_id
 );
 
+console.log(JSON.stringify(payment, null, 2));
 
-console.log(
-"PAYMENT STATUS:",
-payment.status
-);
-
-
-// IMPORTANT
-if(payment.status !== "captured"){
-
-return res.status(400).json({
-success:false,
-message:"Payment not captured"
-});
-
+if (payment.status !== "captured") {
+  return res.status(400).json({
+    success: false,
+    message: "Payment not captured"
+  });
 }
-
 
 // 3. Fetch user AFTER payment success
 

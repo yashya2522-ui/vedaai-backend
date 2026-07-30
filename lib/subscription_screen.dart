@@ -61,10 +61,12 @@ Future<void> handlePaymentSuccess(
   
     PaymentSuccessResponse response) async {
 
-print("SUCCESS CALLBACK");
-print(response.orderId);
-print(response.paymentId);
-print(response.signature); 
+ print("SUCCESS CALLBACK");
+  print("Order ID: ${response.orderId}");
+  print("Payment ID: ${response.paymentId}");
+  print("Signature: ${response.signature}");
+
+
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -144,9 +146,8 @@ print(response.signature);
 void handlePaymentError(PaymentFailureResponse response) {
   
 print("ERROR CALLBACK");
-print(response.code);
-print(response.message);
-  print("Payment Failed");
+  print("Code: ${response.code}");
+  print("Message: ${response.message}");
 
 }
 
@@ -213,37 +214,40 @@ Future<void> openCheckout(String plan) async {
   razorpay.open(options);
 }
 
-  Future<void> loadUser() async {
+ Future<void> loadUser() async {
 
-    final prefs =
-        await SharedPreferences.getInstance();
-    String? expiry =
-    prefs.getString("subscriptionExpiry");
+  final prefs = await SharedPreferences.getInstance();
 
-setState(() {
+  print("====== LOAD USER ======");
+  print("ROLE = ${prefs.getString("role")}");
+  print("PREMIUM = ${prefs.getBool("isPremium")}");
+  print("PLAN = ${prefs.getString("subscriptionType")}");
+  print("EXPIRY = ${prefs.getString("subscriptionExpiry")}");
+  print("=======================");
 
-  if (expiry != null && expiry.isNotEmpty) {
-    subscriptionExpiry = DateTime.tryParse(expiry);
-  } else {
-    subscriptionExpiry = null;
-  }
+  String? expiry = prefs.getString("subscriptionExpiry");
 
-  role = prefs.getString("role") ?? "user";
+  setState(() {
 
-  if (role == "owner") {
-    isPremium = true;
-    subscriptionType = "lifetime";
-  } else {
-    isPremium = prefs.getBool("isPremium") ?? false;
-    subscriptionType =
-        prefs.getString("subscriptionType") ?? "free";
-  }
+    if (expiry != null && expiry.isNotEmpty) {
+      subscriptionExpiry = DateTime.tryParse(expiry);
+    } else {
+      subscriptionExpiry = null;
+    }
 
-});
+    role = prefs.getString("role") ?? "user";
 
-  }
+    if (role == "owner") {
+      isPremium = true;
+      subscriptionType = "lifetime";
+    } else {
+      isPremium = prefs.getBool("isPremium") ?? false;
+      subscriptionType =
+          prefs.getString("subscriptionType") ?? "free";
+    }
 
-
+  });
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
