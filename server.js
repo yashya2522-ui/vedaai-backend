@@ -90,35 +90,56 @@ const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 // ================= SHOULD SEARCH WEB =================
 function shouldSearchWeb(query) {
-  const q = query.toLowerCase();
+
+  const q = query.toLowerCase().trim();
 
   const keywords = [
+
+    // Current information
     "today",
     "latest",
     "current",
+    "now",
     "news",
+    "breaking",
     "live",
+
+    // Sports
     "ipl",
     "winner",
-    "minister",
-    "prime minister",
-    "president",
-    "weather",
-    "gold price",
-    "silver price",
-    "stock",
-    "bitcoin",
-    "crypto",
     "score",
     "match",
     "result",
+
+    // Government / Politics
+    "minister",
+    "prime minister",
+    "president",
+    "chief minister",
+    "election",
+
+    // Market
+    "gold price",
+    "silver price",
+    "stock",
+    "share price",
+    "bitcoin",
+    "crypto",
+
+    // Weather
+    "weather",
+    "temperature",
+    "rain",
+
+    // Years
     "2025",
     "2026",
-    "2027",
-    "breaking"
+    "2027"
+
   ];
 
   return keywords.some(k => q.includes(k));
+
 }
 
 // ================= WEB CACHE =================
