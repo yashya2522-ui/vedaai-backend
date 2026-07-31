@@ -85,6 +85,43 @@ const ai = new GoogleGenAI({
   apiKey: API_KEY,
 });
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+
+// ================= SHOULD SEARCH WEB =================
+function shouldSearchWeb(query) {
+  const q = query.toLowerCase();
+
+  const keywords = [
+    "today",
+    "latest",
+    "current",
+    "news",
+    "live",
+    "ipl",
+    "winner",
+    "minister",
+    "prime minister",
+    "president",
+    "weather",
+    "gold price",
+    "silver price",
+    "stock",
+    "bitcoin",
+    "crypto",
+    "score",
+    "match",
+    "result",
+    "2025",
+    "2026",
+    "2027",
+    "breaking"
+  ];
+
+  return keywords.some(k => q.includes(k));
+}
+
+// ================= WEB SEARCH =================
+
 async function searchWeb(query) {
   try {
     const response = await axios.post(
@@ -1838,7 +1875,14 @@ Assistant:
 async function callGemini(userMessage, finalPrompt) {
   try {
 
-    const webResults = await searchWeb(userMessage);
+    let webResults = [];
+
+if (shouldSearchWeb(userMessage)) {
+  console.log("WEB SEARCH ENABLED");
+  webResults = await searchWeb(userMessage);
+} else {
+  console.log("WEB SEARCH SKIPPED");
+}
 
     let searchContext = "";
 
