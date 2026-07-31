@@ -1909,10 +1909,33 @@ ${finalPrompt}
 `;
 const geminiStart = Date.now();
 
-const response = await ai.models.generateContent({
-  model: "gemini-2.5-flash",
-  contents: prompt
-});
+let response;
+
+for (let attempt = 1; attempt <= 2; attempt++) {
+  try {
+    response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    break;
+
+  } catch (err) {
+
+    if (err.status === 503 && attempt < 2) {
+
+      console.log("Gemini busy. Retrying in 1 second...");
+
+      await new Promise(resolve =>
+        setTimeout(resolve, 1000)
+      );
+
+      continue;
+    }
+
+    throw err;
+  }
+}
 
 console.log(
   `GEMINI TIME: ${Date.now() - geminiStart} ms`
