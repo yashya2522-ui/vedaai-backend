@@ -1879,13 +1879,15 @@ Assistant:
 
 
 // ================= GEMINI =================
-
 async function callGeminiStream(userMessage, finalPrompt) {
+
   let webResults = [];
 
   if (shouldSearchWeb(userMessage)) {
     console.log("WEB SEARCH ENABLED");
     webResults = await searchWeb(userMessage);
+  } else {
+    console.log("WEB SEARCH SKIPPED");
   }
 
   let searchContext = "";
@@ -1903,6 +1905,8 @@ async function callGeminiStream(userMessage, finalPrompt) {
 
   const prompt = `
 You are VedaAI.
+   Use the web search results below if they are available.
+If the web results contain the answer, always prefer them over your internal knowledge.
 
 ${searchContext}
 
@@ -1930,54 +1934,6 @@ ${finalPrompt}
 
       throw err;
     }
-  }
-}
-
-
-async function callGeminiStream(userMessage, finalPrompt) {
-  try {
-
-    let webResults = [];
-
-    if (shouldSearchWeb(userMessage)) {
-      console.log("WEB SEARCH ENABLED");
-      webResults = await searchWeb(userMessage);
-    } else {
-      console.log("WEB SEARCH SKIPPED");
-    }
-
-    let searchContext = "";
-
-    if (webResults.length > 0) {
-      searchContext =
-        "Latest web search results:\n\n" +
-        webResults
-          .map(
-            (item, i) =>
-              `${i + 1}. ${item.title}\n${item.content}\nSource: ${item.url}`
-          )
-          .join("\n\n");
-    }
-
-    const prompt = `
-You are VedaAI.
-
-Use the web search results below if they are available.
-If the web results contain the answer, always prefer them over your internal knowledge.
-
-${searchContext}
-
-${finalPrompt}
-`;
-
-    return await ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-
-  } catch (err) {
-    console.log(err);
-    throw err;
   }
 }
 // ================= CALL GEMINI =================
