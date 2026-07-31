@@ -86,6 +86,8 @@ const ai = new GoogleGenAI({
 });
 
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+
+
 // ================= SHOULD SEARCH WEB =================
 function shouldSearchWeb(query) {
   const q = query.toLowerCase();
@@ -119,10 +121,25 @@ function shouldSearchWeb(query) {
   return keywords.some(k => q.includes(k));
 }
 
+// ================= WEB CACHE =================
+const webCache = new Map();
+const CACHE_TIME = 10 * 60 * 1000; // 10 minutes
+
 // ================= WEB SEARCH =================
 
 async function searchWeb(query) {
   try {
+    const key = query.trim().toLowerCase();
+
+const cached = webCache.get(key);
+
+if (cached && Date.now() - cached.time < CACHE_TIME) {
+  console.log("CACHE HIT");
+  return cached.results;
+}
+
+console.log("CACHE MISS");
+
     const response = await axios.post(
       "https://api.tavily.com/search",
       {
@@ -133,7 +150,15 @@ async function searchWeb(query) {
       }
     );
 
-    return response.data.results || [];
+    const results = response.data.results || [];
+
+webCache.set(key, {
+  results,
+  time: Date.now(),
+});
+
+return results;
+
   } catch (err) {
     console.log("TAVILY ERROR:", err.response?.data || err.message);
     return [];
