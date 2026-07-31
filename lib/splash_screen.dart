@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,6 +16,32 @@ class _SplashScreenState extends State<SplashScreen>
 
   late AnimationController controller;
 
+Future<void> checkLogin() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  final token = prefs.getString("token");
+
+  await Future.delayed(const Duration(seconds: 3));
+
+  if (!mounted) return;
+
+  if (token != null && token.isNotEmpty) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ChatScreen(),
+      ),
+    );
+  } else {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+    );
+  }
+}
+
   @override
   void initState() {
     super.initState();
@@ -25,14 +53,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     controller.forward();
 
-    Timer(const Duration(seconds: 3),() {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-        ),
-      );
-    });
+    checkLogin();
   }
 
   @override

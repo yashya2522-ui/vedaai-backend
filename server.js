@@ -164,6 +164,23 @@ return results;
     return [];
   }
 }
+function isGreeting(message) {
+
+  const text = message.toLowerCase().trim();
+
+  const greetings = [
+    "hi",
+    "hello",
+    "hey",
+    "hii",
+    "namaste",
+    "नमस्कार",
+    "हॅलो"
+  ];
+
+  return greetings.some(greet => text.startsWith(greet));
+
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -1944,6 +1961,14 @@ ${finalPrompt}
 }
 
 // ================= CALL GEMINI =================
+if (isGreeting(userMessage)) {
+
+  return res.json({
+    success: true,
+    reply: "Hello! 👋 How can I help you today?"
+  });
+
+}
 const response = await callGemini(userMessage, finalPrompt);
 console.log("========== GEMINI DEBUG ==========");
 console.log("API KEY EXISTS:", !!API_KEY);

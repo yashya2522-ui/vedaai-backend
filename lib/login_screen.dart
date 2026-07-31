@@ -104,25 +104,12 @@ await prefs.setString(
   "subscriptionExpiry",
   data["subscriptionExpiry"]?.toString() ?? "",
 );
-        if (data["role"] == "owner" || data["isPremium"] == true) {
-
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const ChatScreen(),
-    ),
-  );
-
-} else {
-
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const SubscriptionScreen(),
-    ),
-  );
-
-}
+        Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (context) => const ChatScreen(),
+  ),
+);
 
       }
 

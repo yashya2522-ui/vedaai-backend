@@ -43,7 +43,9 @@ class ChatScreen extends StatefulWidget {
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
+
 class _ChatScreenState extends State<ChatScreen> {
+
 
   // 1. CONTROLLERS
   final TextEditingController controller = TextEditingController();
@@ -69,6 +71,20 @@ String userName = "User";
     }
   ];
 
+void startNewChat() {
+  setState(() {
+    messages = [];
+
+    allChats = [
+      {
+        "title": "New Chat",
+        "messages": []
+      }
+    ];
+
+    currentChatIndex = 0;
+  });
+}
 Future<void> checkPremium() async {
 
   final prefs =
@@ -362,7 +378,7 @@ void initState() {
 
   loadChat();
   checkPremium();
-  loadUser(); // ✅ Add this
+  loadUser();
 
   scrollController.addListener(() {
 
@@ -580,11 +596,17 @@ final response = await http.get(
               ]
             : List<Map<String, dynamic>>.from(chats);
 
-        currentChatIndex = 0;
+        // Open fresh chat after login
 
-        messages = List<Map<String, dynamic>>.from(
-          allChats[0]["messages"] ?? [],
-        );
+allChats.insert(0, {
+  "title": "New Chat",
+  "messages": <Map<String, dynamic>>[],
+  "favorite": false,
+});
+
+currentChatIndex = 0;
+
+messages = [];
 
       });
 
