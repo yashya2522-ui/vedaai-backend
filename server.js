@@ -1197,6 +1197,14 @@ if (!user) {
 
 const limits = getPlanLimits(user);
 
+console.log("========== PDF DEBUG ==========");
+console.log("User Premium:", user.isPremium);
+console.log("Premium Expiry:", user.premiumExpiry);
+console.log("PDF Used:", user.dailyUsage.pdf);
+console.log("PDF Limit:", limits.pdf);
+console.log("Subscription:", subscription);
+console.log("==============================");
+
 if (subscription.expired) {
   await user.save();
 }

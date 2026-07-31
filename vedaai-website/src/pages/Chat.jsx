@@ -80,6 +80,13 @@ const uploadFile = async () => {
 
 
   const formData = new FormData();
+  const formData = new FormData();
+
+if (file.type === "application/pdf") {
+  formData.append("file", file);   // PDF route
+} else if (file.type.startsWith("image/")) {
+  formData.append("image", file);  // Image route
+}
 
   formData.append("file", file);
 
