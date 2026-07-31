@@ -84,9 +84,8 @@ const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({
   apiKey: API_KEY,
 });
-const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
-const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
+const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 // ================= SHOULD SEARCH WEB =================
 function shouldSearchWeb(query) {
   const q = query.toLowerCase();
