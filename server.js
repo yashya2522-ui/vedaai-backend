@@ -85,6 +85,25 @@ const ai = new GoogleGenAI({
   apiKey: API_KEY,
 });
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+async function searchWeb(query) {
+  try {
+    const response = await axios.post(
+      "https://api.tavily.com/search",
+      {
+        api_key: process.env.TAVILY_API_KEY,
+        query: query,
+        search_depth: "advanced",
+        max_results: 5,
+      }
+    );
+
+    return response.data.results || [];
+  } catch (err) {
+    console.log("TAVILY ERROR:", err.response?.data || err.message);
+    return [];
+  }
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 console.log("========= SERVER TEST =========");
@@ -1817,25 +1836,48 @@ Assistant:
 // ================= GEMINI =================
 
 async function callGemini(finalPrompt) {
-
   try {
 
+    // Web Search
+    const webResults = await searchWeb(finalPrompt);
+
+    let searchContext = "";
+
+    if (webResults.length > 0) {
+      searchContext =
+        "Latest web search results:\n\n" +
+        webResults
+          .map(
+            (item, i) =>
+              `${i + 1}. ${item.title}\n${item.content}\nSource: ${item.url}`
+          )
+          .join("\n\n");
+    }
+
+    const prompt = `
+You are VedaAI.
+
+Use the web search results below if they are available.
+If the web results contain the answer, always prefer them over your internal knowledge.
+
+${searchContext}
+
+User Question:
+${finalPrompt}
+`;
+
     const response = await ai.models.generateContent({
-     model: "gemini-2.5-flash",
-      contents: finalPrompt,
+      model: "gemini-2.5-flash",
+      contents: prompt
     });
 
     return response;
 
   } catch (err) {
-
     console.log("GEMINI SDK ERROR:");
     console.log(err);
-
     throw err;
-
   }
-
 }
 // ================= CALL GEMINI =================
 const response = await callGemini(finalPrompt);
