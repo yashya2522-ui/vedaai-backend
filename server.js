@@ -1179,7 +1179,7 @@ details:err.message
 
 });
 
-app.post("/pdf", auth, upload.single("pdf"), async (req,res)=>{
+app.post("/pdf", auth, upload.single("file"), async (req,res)=>{
   try {
     
     const user = await User.findById(req.userId);
