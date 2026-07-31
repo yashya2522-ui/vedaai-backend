@@ -1926,29 +1926,100 @@ return response;
   }
 }
 
+async function callGeminiStream(userMessage, finalPrompt) {
+  try {
+
+    let webResults = [];
+
+    if (shouldSearchWeb(userMessage)) {
+      console.log("WEB SEARCH ENABLED");
+      webResults = await searchWeb(userMessage);
+    } else {
+      console.log("WEB SEARCH SKIPPED");
+    }
+
+    let searchContext = "";
+
+    if (webResults.length > 0) {
+      searchContext =
+        "Latest web search results:\n\n" +
+        webResults
+          .map(
+            (item, i) =>
+              `${i + 1}. ${item.title}\n${item.content}\nSource: ${item.url}`
+          )
+          .join("\n\n");
+    }
+
+    const prompt = `
+You are VedaAI.
+
+Use the web search results below if they are available.
+If the web results contain the answer, always prefer them over your internal knowledge.
+
+${searchContext}
+
+${finalPrompt}
+`;
+
+    return await ai.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+}
 // ================= CALL GEMINI =================
+res.setHeader("Content-Type", "text/plain; charset=utf-8");
+res.setHeader("Transfer-Encoding", "chunked");
+
 if (isGreeting(userMessage)) {
 
-  return res.json({
-    success: true,
-    reply: "Hello! 👋 How can I help you today?"
-  });
+  res.write("Hello! 👋 How can I help you today?");
+  return res.end();
 
 }
-const response = await callGemini(userMessage, finalPrompt);
+if (isGreeting(userMessage)) {
+
+  console.log("GREETING STREAM");
+
+  res.write("Hello! 👋 How can I help you today?");
+  return res.end();
+
+}
+const stream = await callGeminiStream(
+  userMessage,
+  finalPrompt
+);
+
+let aiText = "";
 console.log("========== GEMINI DEBUG ==========");
 console.log("API KEY EXISTS:", !!API_KEY);
 console.log("API KEY LENGTH:", API_KEY ? API_KEY.length : 0);
 console.log("API KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
 console.log("=================================");
 
+
+
 // ================= AI RESPONSE =================
+res.setHeader("Content-Type", "text/event-stream");
+res.setHeader("Cache-Control", "no-cache");
+res.setHeader("Connection", "keep-alive");
+res.setHeader("Transfer-Encoding", "chunked");
 
-let aiText = response.text;
+for await (const chunk of stream) {
 
-if (!aiText || aiText.trim() === "") {
-  aiText = "No response from AI";
+  const text = chunk.text || "";
+
+  aiText += text;
+
+  res.write(text);
+
 }
+
 
 // ================= SAVE CHAT =================
 
@@ -1962,10 +2033,7 @@ await memory.save();
 
 // ================= RESPONSE =================
 
-return res.json({
-  success: true,
-  reply: aiText
-});
+res.end();
 
 } catch (err) {
 

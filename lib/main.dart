@@ -838,6 +838,69 @@ Future<String> getAIResponse(String text) async {
     return "ERROR: $e";
   }
 }
+
+Future<void> streamAIResponse(
+  String text,
+  int index,
+) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+
+    final token = prefs.getString("token");
+
+    if (token == null) return;
+
+    final client = http.Client();
+
+    final request = http.Request(
+      "POST",
+      Uri.parse(
+        "https://vedaai-backend-production-bf1d.up.railway.app/chat",
+      ),
+    );
+
+    request.headers.addAll({
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    });
+
+    request.body = jsonEncode({
+      "message": text,
+    });
+
+    final response = await client.send(request);
+
+    if (response.statusCode != 200) {
+      throw Exception("Server Error");
+    }
+
+    await for (final chunk
+        in response.stream.transform(utf8.decoder)) {
+
+      if (!mounted) return;
+
+      setState(() {
+
+        allChats[currentChatIndex]["messages"][index]["text"] += chunk;
+
+        messages = List<Map<String, dynamic>>.from(
+          allChats[currentChatIndex]["messages"],
+        );
+
+      });
+
+      scrollToBottom();
+    }
+
+    await saveChat();
+
+    client.close();
+
+  } catch (e) {
+    print(e);
+  }
+}
+
 Future<void> streamText(
   String fullText,
   int index,
@@ -876,6 +939,8 @@ Future<void> streamText(
   await saveChat();
 
 }
+
+
 void sendMessage() async {
 
   if (controller.text.trim().isEmpty) return;
@@ -951,14 +1016,7 @@ void sendMessage() async {
   try {
 
 
-    String aiText = await getAIResponse(
-
-      userText,
-
-    );
-
-
-    aiText = aiText.trim();
+   
 
 
     String aiImage = "";
@@ -1014,13 +1072,10 @@ void sendMessage() async {
 
 
 
-    await streamText(
-
-      aiText,
-
-      index,
-
-    );
+    await streamAIResponse(
+  userText,
+  index,
+);
 
 
 
