@@ -838,21 +838,20 @@ Future<String> getAIResponse(String text) async {
     return "ERROR: $e";
   }
 }
-
 Future<void> streamText(
   String fullText,
   int index,
 ) async {
 
-  for (int i = 0; i < fullText.length; i += 5) {
+  for (int i = 0; i < fullText.length; i += 10) {
 
     await Future.delayed(
-      const Duration(milliseconds: 15),
+      const Duration(milliseconds: 5),
     );
 
     if (!mounted) return;
 
-    int end = i + 5;
+    int end = i + 10;
 
     if (end > fullText.length) {
       end = fullText.length;
@@ -861,14 +860,12 @@ Future<void> streamText(
     setState(() {
 
       allChats[currentChatIndex]["messages"][index]["text"] +=
-
           fullText.substring(i, end);
 
-      messages = List<Map<String, dynamic>>.from(
-
-        allChats[currentChatIndex]["messages"],
-
-      );
+      messages =
+          List<Map<String, dynamic>>.from(
+            allChats[currentChatIndex]["messages"],
+          );
 
     });
 

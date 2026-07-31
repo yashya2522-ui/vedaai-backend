@@ -150,16 +150,26 @@ const CACHE_TIME = 10 * 60 * 1000; // 10 minutes
 
 async function searchWeb(query) {
   try {
+
+    const searchStart = Date.now();
+
     const key = query.trim().toLowerCase();
 
-const cached = webCache.get(key);
+    const cached = webCache.get(key);
 
-if (cached && Date.now() - cached.time < CACHE_TIME) {
-  console.log("CACHE HIT");
-  return cached.results;
-}
+    if (cached && Date.now() - cached.time < CACHE_TIME) {
 
-console.log("CACHE MISS");
+      console.log("CACHE HIT");
+
+      console.log(
+        `TAVILY TIME: ${Date.now() - searchStart} ms (CACHE)`
+      );
+
+      return cached.results;
+
+    }
+
+    console.log("CACHE MISS");
 
     const response = await axios.post(
       "https://api.tavily.com/search",
@@ -173,18 +183,23 @@ console.log("CACHE MISS");
 
     const results = response.data.results || [];
 
-webCache.set(key, {
-  results,
-  time: Date.now(),
-});
+    webCache.set(key, {
+      results,
+      time: Date.now(),
+    });
 
-return results;
+    console.log(
+      `TAVILY TIME: ${Date.now() - searchStart} ms`
+    );
+
+    return results;
 
   } catch (err) {
     console.log("TAVILY ERROR:", err.response?.data || err.message);
     return [];
   }
 }
+
 function isGreeting(message) {
 
   const text = message.toLowerCase().trim();
@@ -1648,6 +1663,8 @@ app.get("/make-owner", async (req, res) => {
 app.post("/chat", auth, async (req, res) => {
   try {
 
+     const startTime = Date.now();
+
     const userMessage = req.body.message;
     const userId = req.userId || "guest";
 
@@ -1777,125 +1794,46 @@ await memory.save();
 const wikiText = await searchWikipedia(userMessage);
 const newsText = await getNews(userMessage);
 
-// Last 10 chats
 const history = memory.chats
-  .slice(-10)
+  .slice(-5)
   .map(m => `${m.role}: ${m.text}`)
   .join("\n");
     
 
 const SYSTEM_PROMPT = `
-You are VedaAI, an advanced AI assistant similar to ChatGPT.
+You are VedaAI, an advanced AI assistant.
 
-IDENTITY
-- You are intelligent, professional, friendly and highly knowledgeable.
-- Your mission is to provide the most accurate, detailed and useful answer possible.
+ROLE:
+- Be accurate, helpful, professional and friendly.
+- Explain concepts clearly with examples.
+- Never invent facts. If unsure, say you don't know.
 
-KNOWLEDGE DOMAINS
-You can answer questions from ANY field including but not limited to:
+LANGUAGE:
+- Reply in the same language as the user.
+- Avoid unnecessary language mixing.
 
-• General Knowledge
-• Current Affairs
-• Indian Affairs
-• International Affairs
-• World History
-• Indian History
-• Ancient History
-• Medieval History
-• Modern History
-• Geography
-• Politics
-• Economics
-• Business
-• Finance
-• Banking
-• Stock Market
-• Cryptocurrency
-• Science
-• Physics
-• Chemistry
-• Biology
-• Mathematics
-• Statistics
-• Artificial Intelligence
-• Machine Learning
-• Deep Learning
-• Data Science
-• Cybersecurity
-• Programming
-• Flutter
-• Android Development
-• Web Development
-• Databases
-• Networking
-• Operating Systems
-• Cloud Computing
-• Education
-• School Subjects
-• College Subjects
-• Competitive Exams
-• UPSC
-• MPSC
-• JEE
-• NEET
-• Literature
-• Philosophy
-• Psychology
-• Health
-• Medicine
-• Sports
-• Movies
-• Music
-• Food
-• Recipes
-• Travel
-• Astronomy
-• Space Science
-• Law
-• Religion
-• Culture
-• Biographies
-• Languages
-• Translation
-• Casual Conversation
-• Jokes
-• Any other topic
+FORMAT:
+- Use Markdown when useful.
+- Use headings, bullets and steps for clarity.
 
-LANGUAGE RULES
-- Always reply in the same language as the user.
-- Only switch languages if explicitly requested.
-- Never unnecessarily mix languages.
+KNOWLEDGE:
+- Answer questions from technology, science, education,
+history, geography, finance, business, AI, programming,
+competitive exams, health, sports and general topics.
 
-FORMAT RULES
-- Use Markdown formatting.
-- Use headings when useful.
-- Use bullet points and numbered lists.
-- Use tables when useful.
-- Use examples whenever they improve understanding.
-- Explain difficult concepts step by step.
+CURRENT INFORMATION:
+- Use web search results when provided.
+- Prefer latest reliable information from web results.
 
-REASONING RULES
-- Think carefully before answering.
-- Prefer factual accuracy over confidence.
-- Distinguish facts, assumptions and opinions.
-- Never invent dates, events, statistics or references.
-- If information may have changed recently, clearly mention that newer information may exist.
-- If uncertain, say exactly:
-"I don't know."
+CODING:
+- Provide clean code.
+- Explain solutions step by step.
 
-MEMORY RULES
-- The conversation history is extremely important.
-- Always use information from History when answering.
+MEMORY:
+- Use conversation history when relevant.
 
-CODING RULES
-- Generate clean, working and well-commented code.
-- Debug errors step-by-step.
-- Explain code in simple language.
-
-BEHAVIOR
-- Stay helpful, respectful and neutral.
-- Avoid unnecessary refusals.
-- Provide the best possible answer with available knowledge.
+BEHAVIOR:
+- Be respectful, neutral and helpful.
 `;
 
 let pdfInstruction = "";
@@ -1969,11 +1907,18 @@ ${searchContext}
 
 ${finalPrompt}
 `;
+const geminiStart = Date.now();
 
-    return await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt
-    });
+const response = await ai.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: prompt
+});
+
+console.log(
+  `GEMINI TIME: ${Date.now() - geminiStart} ms`
+);
+
+return response;
 
   } catch (err) {
     console.log(err);
