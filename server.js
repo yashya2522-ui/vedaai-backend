@@ -165,7 +165,7 @@ console.log("CACHE MISS");
       "https://api.tavily.com/search",
       {
         api_key: process.env.TAVILY_API_KEY,
-        query: query,
+        query: query.substring(0, 400),
         search_depth: "advanced",
         max_results: 5,
       }
