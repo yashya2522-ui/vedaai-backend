@@ -1835,11 +1835,10 @@ Assistant:
 
 // ================= GEMINI =================
 
-async function callGemini(finalPrompt) {
+async function callGemini(userMessage, finalPrompt) {
   try {
 
-    // Web Search
-    const webResults = await searchWeb(finalPrompt);
+    const webResults = await searchWeb(userMessage);
 
     let searchContext = "";
 
@@ -1862,26 +1861,22 @@ If the web results contain the answer, always prefer them over your internal kno
 
 ${searchContext}
 
-User Question:
 ${finalPrompt}
 `;
 
-    const response = await ai.models.generateContent({
+    return await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt
     });
 
-    return response;
-
   } catch (err) {
-    console.log("GEMINI SDK ERROR:");
     console.log(err);
     throw err;
   }
 }
-// ================= CALL GEMINI =================
-const response = await callGemini(finalPrompt);
 
+// ================= CALL GEMINI =================
+const response = await callGemini(userMessage, finalPrompt);
 console.log("========== GEMINI DEBUG ==========");
 console.log("API KEY EXISTS:", !!API_KEY);
 console.log("API KEY LENGTH:", API_KEY ? API_KEY.length : 0);
