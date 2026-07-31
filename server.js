@@ -1880,82 +1880,59 @@ Assistant:
 
 // ================= GEMINI =================
 
-async function callGemini(userMessage, finalPrompt) {
-  try {
+async function callGeminiStream(userMessage, finalPrompt) {
+  let webResults = [];
 
-    let webResults = [];
+  if (shouldSearchWeb(userMessage)) {
+    console.log("WEB SEARCH ENABLED");
+    webResults = await searchWeb(userMessage);
+  }
 
-if (shouldSearchWeb(userMessage)) {
-  console.log("WEB SEARCH ENABLED");
-  webResults = await searchWeb(userMessage);
-} else {
-  console.log("WEB SEARCH SKIPPED");
-}
+  let searchContext = "";
 
-    let searchContext = "";
+  if (webResults.length > 0) {
+    searchContext =
+      "Latest web search results:\n\n" +
+      webResults
+        .map(
+          (item, i) =>
+            `${i + 1}. ${item.title}\n${item.content}\nSource: ${item.url}`
+        )
+        .join("\n\n");
+  }
 
-    if (webResults.length > 0) {
-      searchContext =
-        "Latest web search results:\n\n" +
-        webResults
-          .map(
-            (item, i) =>
-              `${i + 1}. ${item.title}\n${item.content}\nSource: ${item.url}`
-          )
-          .join("\n\n");
-    }
-
-    const prompt = `
+  const prompt = `
 You are VedaAI.
-
-Use the web search results below if they are available.
-If the web results contain the answer, always prefer them over your internal knowledge.
 
 ${searchContext}
 
 ${finalPrompt}
 `;
-const geminiStart = Date.now();
 
-let response;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
 
-for (let attempt = 1; attempt <= 2; attempt++) {
-  try {
-    response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
+      return await ai.models.generateContentStream({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
 
-    break;
+    } catch (err) {
 
-  } catch (err) {
+      if (err.status === 503 && attempt < 2) {
 
-    if (err.status === 503 && attempt < 2) {
+        console.log("Gemini busy. Retrying stream...");
 
-      console.log("Gemini busy. Retrying in 1 second...");
+        await new Promise(r => setTimeout(r, 1000));
 
-      await new Promise(resolve =>
-        setTimeout(resolve, 1000)
-      );
+        continue;
+      }
 
-      continue;
+      throw err;
     }
-
-    throw err;
   }
 }
 
-console.log(
-  `GEMINI TIME: ${Date.now() - geminiStart} ms`
-);
-
-return response;
-
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-}
 
 async function callGeminiStream(userMessage, finalPrompt) {
   try {
@@ -2013,14 +1990,7 @@ if (isGreeting(userMessage)) {
   return res.end();
 
 }
-if (isGreeting(userMessage)) {
 
-  console.log("GREETING STREAM");
-
-  res.write("Hello! 👋 How can I help you today?");
-  return res.end();
-
-}
 const stream = await callGeminiStream(
   userMessage,
   finalPrompt
@@ -2071,21 +2041,18 @@ res.end();
   console.log("========== GEMINI ERROR ==========");
   console.log(err);
 
-   if(
-    err.message.includes("429") ||
-    err.message.includes("RESOURCE_EXHAUSTED")
-  ){
-
-    return res.json({
-
-      success: false,
-
-      message:
-      "AI is temporarily busy. Please try again later."
-
-    });
-
-  }
+   if (
+  err.status === 503 ||
+  err.message.includes("503") ||
+  err.message.includes("UNAVAILABLE") ||
+  err.message.includes("429") ||
+  err.message.includes("RESOURCE_EXHAUSTED")
+) {
+  return res.status(503).json({
+    success: false,
+    message: "AI is temporarily busy. Please try again in a few seconds."
+  });
+}
 
   return res.status(500).json({
     error: "Server Error",

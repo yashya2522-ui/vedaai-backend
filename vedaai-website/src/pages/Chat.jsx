@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./../App.css";
 import axios from "axios";
+import Sidebar from "../components/Sidebar";
 function Chat() {
 
   const [message, setMessage] = useState("");
@@ -79,16 +80,15 @@ const uploadFile = async () => {
   }
 
 
-  const formData = new FormData();
+
   const formData = new FormData();
 
 if (file.type === "application/pdf") {
-  formData.append("file", file);   // PDF route
+  formData.append("file", file);   
 } else if (file.type.startsWith("image/")) {
   formData.append("image", file);  // Image route
 }
 
-  formData.append("file", file);
 
 
   try {
@@ -140,107 +140,89 @@ if (file.type === "application/pdf") {
 };
 
   return (
+   
+    <div className="chat-layout">
 
-    <div className="chat-container">
+    <Sidebar />
 
-      <h1>
-        VedaAI Chat 🤖
-      </h1>
+    <div className="chat-main">
 
+        <div className="chat-container">
 
-      <div className="chat-box">
+            <h1>VedaAI Chat 🤖</h1>
 
-        {
-          messages.map((msg,index)=>(
+            <div className="chat-box">
 
-            <div
-              key={index}
-              className={
-                msg.role==="user"
-                ? "user-msg"
-                : "ai-msg"
-              }
-            >
+                {messages.map((msg,index)=>(
 
-              {msg.text}
+                    <div
+                        key={index}
+                        className={
+                            msg.role==="user"
+                            ? "user-msg"
+                            : "ai-msg"
+                        }
+                    >
+                        {msg.text}
+                    </div>
+
+                ))}
 
             </div>
 
-          ))
-        }
+            <div className="chat-input">
 
-      </div>
+                {/* PDF */}
 
+                <label className="upload-btn">
+                    📄
+                    <input
+                        hidden
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(e)=>setFile(e.target.files[0])}
+                    />
+                </label>
 
+                {/* Image */}
 
-      <div className="chat-input">
+                <label className="upload-btn">
+                    🖼️
+                    <input
+                        hidden
+                        type="file"
+                        accept="image/*"
+                        onChange={(e)=>setFile(e.target.files[0])}
+                    />
+                </label>
 
+                <input
+                    placeholder="Ask anything..."
+                    value={message}
+                    onChange={(e)=>setMessage(e.target.value)}
+                    onKeyDown={(e)=>{
+                        if(e.key==="Enter"){
+                            sendMessage();
+                        }
+                    }}
+                />
 
-       <label className="upload-btn">
-  📄
-  <input
-    type="file"
-    accept="application/pdf"
-    hidden
-    onChange={(e)=>{
-      setFile(e.target.files[0]);
-    }}
-  />
-</label>
+                <button
+                    className="send-btn"
+                    onClick={sendMessage}
+                >
+                    ➤
+                </button>
 
+            </div>
 
-<label className="upload-btn">
-  🖼️
-  <input
-    type="file"
-    accept="image/*"
-    hidden
-    onChange={(e)=>{
-      setFile(e.target.files[0]);
-    }}
-  />
-</label>
-
-{
- file && (
-   <p className="file-name">
-     📎 {file.name}
-   </p>
- )
-}
-
-        <input
-
-          placeholder="Ask anything..."
-
-          value={message}
-
-          onChange={(e)=>setMessage(e.target.value)}
-
-          onKeyDown={(e)=>{
-
-            if(e.key==="Enter")
-              sendMessage();
-
-          }}
-
-        />
-
-
-        <button
-          className="send-btn"
-          onClick={sendMessage}
-        >
-
-          ➤
-
-        </button>
-
-
-      </div>
-
+        </div>
 
     </div>
+
+</div>
+
+
 
   );
 

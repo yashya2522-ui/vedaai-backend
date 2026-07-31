@@ -963,41 +963,41 @@ button:hover {
 
 .chat-container{
 
-  min-height:100vh;
+    width:100%;
 
-  background:#050816;
+    height:100%;
 
-  color:white;
+    display:flex;
 
-  padding:30px;
+    flex-direction:column;
+
+    flex:1;
 
 }
 
 
 .chat-container h1{
 
-  text-align:center;
+    font-size:40px;
 
-  color:#00e5ff;
+    margin-bottom:20px;
 
 }
 
 
 .chat-box{
 
-  max-width:800px;
+    flex:1;
 
-  height:500px;
+    overflow-y:auto;
 
-  margin:20px auto;
+    padding:25px;
 
-  background:#111827;
+    display:flex;
 
-  border-radius:20px;
+    flex-direction:column;
 
-  padding:20px;
-
-  overflow-y:auto;
+    gap:8px;
 
 }
 
@@ -1005,19 +1005,25 @@ button:hover {
 
 .user-msg{
 
-  background:#00e5ff;
+    background:#18c8e8;
 
-  color:black;
+    color:#000;
 
-  padding:12px 18px;
+    padding:12px 18px;
 
-  border-radius:15px;
+    border-radius:18px;
 
-  margin:10px;
+    margin:12px 0;
 
-  margin-left:auto;
+    margin-left:auto;
 
-  max-width:70%;
+    width:fit-content;
+
+    max-width:60%;
+
+    word-wrap:break-word;
+
+    text-align:left;
 
 }
 
@@ -1025,15 +1031,21 @@ button:hover {
 
 .ai-msg{
 
-  background:#1f2937;
+    background:#202938;
 
-  padding:12px 18px;
+    color:white;
 
-  border-radius:15px;
+    padding:12px 18px;
 
-  margin:10px;
+    border-radius:18px;
 
-  max-width:70%;
+    margin:12px 0;
+
+    width:fit-content;
+
+    max-width:70%;
+
+    text-align:left;
 
 }
 
@@ -1041,13 +1053,15 @@ button:hover {
 
 .chat-input{
 
-  max-width:800px;
-
-  margin:auto;
+  width:100%;
 
   display:flex;
 
+  align-items:center;
+
   gap:10px;
+
+  margin-top:15px;
 
 }
 
@@ -1072,14 +1086,198 @@ button:hover {
 .send-btn,
 .upload-btn{
 
-  padding:12px 15px;
+    width:50px;
 
-  border:none;
+    height:50px;
 
-  border-radius:12px;
+    border:none;
 
-  cursor:pointer;
+    border-radius:12px;
 
-  background:#00e5ff;
+    cursor:pointer;
 
+    background:#00e5ff;
+
+    flex-shrink:0;
+
+}
+
+/* ================= CHAT LAYOUT ================= */
+
+.chat-layout{
+    display:flex;
+    height:100vh;
+    width:100%;
+    overflow:hidden;
+}
+
+.sidebar{
+
+    width:250px;
+    min-width:250px;
+    max-width:250px;
+
+    background:#0b1020;
+
+    color:white;
+
+    display:flex;
+    flex-direction:column;
+
+    padding:20px;
+
+    border-right:1px solid rgba(255,255,255,.08);
+
+}
+
+.chat-main{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    padding:20px;
+
+    overflow:hidden;
+
+}
+
+.chat-container{
+
+    display:flex;
+
+    flex-direction:column;
+
+    height:100%;
+
+    width:100%;
+
+}
+
+.chat-container h1{
+
+    font-size:34px;
+
+    margin-bottom:20px;
+
+    text-align:center;
+
+}
+
+.chat-box{
+
+    flex:1;
+
+    width:100%;
+
+    background:#161d2d;
+
+    border-radius:20px;
+
+    padding:20px;
+
+    overflow-y:auto;
+
+}
+
+.chat-input{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    width:100%;
+
+    margin-top:20px;
+
+}
+
+.chat-input input{
+
+    flex:1;
+
+    padding:15px;
+
+    border:none;
+
+    outline:none;
+
+    border-radius:15px;
+
+}
+
+.send-btn,
+.upload-btn{
+
+    width:50px;
+
+    height:50px;
+
+    border:none;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    background:#00d8ff;
+
+}
+
+.sidebar{
+
+    width:260px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    height:100vh;
+
+    padding:20px;
+
+}
+
+.history{
+
+    flex:1;
+
+    margin-top:25px;
+
+}
+
+.sidebar-bottom{
+
+    margin-top:auto;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+}
+.sidebar-bottom button{
+
+    width:100%;
+    height:48px;
+    border:none;
+    border-radius:12px;
+
+    background:#1f2937;
+    color:white;
+
+    font-size:15px;
+    font-weight:500;
+
+    cursor:pointer;
+
+    transition:0.3s;
+}
+
+.sidebar-bottom button:hover{
+    background:#2d3748;
 }
