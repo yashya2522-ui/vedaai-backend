@@ -180,3 +180,139 @@
     border-bottom-left-radius:5px;
 
 }
+
+/* ================= MARKDOWN STYLE ================= */
+
+.ai-msg h1,
+.ai-msg h2,
+.ai-msg h3{
+    margin-top:15px;
+    margin-bottom:10px;
+}
+
+
+.ai-msg p{
+    margin:10px 0;
+    line-height:1.6;
+}
+
+
+.ai-msg ul,
+.ai-msg ol{
+    padding-left:25px;
+    margin:10px 0;
+}
+
+
+.ai-msg li{
+    margin-bottom:6px;
+}
+
+
+.ai-msg code{
+
+    background:#0f172a;
+
+    padding:3px 7px;
+
+    border-radius:6px;
+
+    font-size:14px;
+}
+
+
+.ai-msg pre{
+
+    background:#020617;
+
+    padding:15px;
+
+    border-radius:12px;
+
+    overflow-x:auto;
+
+}
+
+
+.ai-msg strong{
+    font-weight:700;
+}
+
+/* ================= WELCOME ================= */
+
+.welcome{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    color:#94a3b8;
+}
+
+.welcome h2{
+    color:#fff;
+    margin-bottom:10px;
+}
+
+.welcome p{
+    color:#94a3b8;
+    margin:0;
+}
+
+/* ================= FILE ================= */
+
+.file-name{
+    margin-top:10px;
+    margin-left:5px;
+    color:#cbd5e1;
+    font-size:14px;
+}
+
+/* ================= SCROLLBAR ================= */
+
+.chat-box::-webkit-scrollbar{
+    width:8px;
+}
+
+.chat-box::-webkit-scrollbar-thumb{
+    background:#334155;
+    border-radius:10px;
+}
+
+.chat-box::-webkit-scrollbar-track{
+    background:transparent;
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width:768px){
+
+    .chat-container{
+        padding:10px;
+    }
+
+    .chat-box{
+        padding:15px;
+    }
+
+    .user-msg,
+    .ai-msg{
+        max-width:90%;
+        font-size:14px;
+    }
+
+    .chat-input{
+        padding:8px;
+    }
+
+    .chat-input input{
+        height:46px;
+    }
+
+    .upload-btn,
+    .send-btn{
+        width:46px;
+        height:46px;
+    }
+}

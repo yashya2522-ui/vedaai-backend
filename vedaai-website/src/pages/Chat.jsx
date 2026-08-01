@@ -3,6 +3,8 @@ import "./../App.css";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import "./../Chat.css";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 function Chat() {
 
   const [message, setMessage] = useState("");
@@ -11,7 +13,30 @@ function Chat() {
  const [messages, setMessages] = useState([]);
 const [chatSessions, setChatSessions] = useState([]);
 const [currentChatId, setCurrentChatId] = useState(null);
+
 const chatEndRef = useRef(null);
+
+useEffect(() => {
+
+  const savedChats = localStorage.getItem("vedaChats");
+
+  if (savedChats) {
+
+    const parsedChats = JSON.parse(savedChats);
+
+    setChatSessions(parsedChats);
+
+    if (parsedChats.length > 0) {
+
+      setCurrentChatId(parsedChats[0].id);
+
+      setMessages(parsedChats[0].messages);
+
+    }
+
+  }
+
+}, []);
 
 useEffect(() => {
 
@@ -20,6 +45,15 @@ useEffect(() => {
   });
 
 }, [messages]);
+
+useEffect(() => {
+
+  localStorage.setItem(
+    "vedaChats",
+    JSON.stringify(chatSessions)
+  );
+
+}, [chatSessions]);
 
 
 const createNewChat = () => {
@@ -43,32 +77,29 @@ const sendMessage = async () => {
 
   const userText = message;
 
- if(!currentChatId){
+let chatId = currentChatId;
+
+if (!chatId) {
+
+  chatId = Date.now();
 
   const newChat = {
-    id: Date.now(),
-
-    title:
-      userText.length > 25
-      ? userText.substring(0,25) + "..."
+  id: chatId,
+  title:
+    userText.length > 25
+      ? userText.substring(0, 25) + "..."
       : userText,
+  messages: [
+    {
+      role: "user",
+      text: userText
+    }
+  ]
+};
 
-    messages:[
-      {
-        role:"user",
-        text:userText
-      }
-    ]
-  };
+setChatSessions(prev => [newChat, ...prev]);
 
-
-  setChatSessions(prev=>[
-    ...prev,
-    newChat
-  ]);
-
-
-  setCurrentChatId(newChat.id);
+  setCurrentChatId(chatId);
 
 }
 
@@ -79,6 +110,7 @@ const sendMessage = async () => {
       text:userText
     }
   ]);
+  
 
   setMessage("");
 
@@ -113,22 +145,20 @@ const sendMessage = async () => {
       }
     ]);
 
-    setChatSessions(prev =>
+   setChatSessions(prev =>
   prev.map(chat =>
-    chat.id === currentChatId
-    ?
-    {
-      ...chat,
-      messages:[
-        ...chat.messages,
-        {
-          role:"ai",
-          text:text
+    chat.id === chatId
+      ? {
+          ...chat,
+          messages: [
+            ...chat.messages,
+            {
+              role: "ai",
+              text
+            }
+          ]
         }
-      ]
-    }
-    :
-    chat
+      : chat
   )
 );
 
@@ -212,8 +242,9 @@ if (file.type === "application/pdf") {
    
     <div className="chat-layout">
 
-      <Sidebar
+    <Sidebar
   chatSessions={chatSessions}
+  currentChatId={currentChatId}
   setMessages={setMessages}
   setCurrentChatId={setCurrentChatId}
   createNewChat={createNewChat}
@@ -254,14 +285,28 @@ if (file.type === "application/pdf") {
 
 
     <div
-      className={
-        msg.role === "user"
-        ? "user-msg"
-        : "ai-msg"
-      }
-    >
+  className={
+    msg.role === "user"
+    ? "user-msg"
+    : "ai-msg"
+  }
+>
+
+{
+  msg.role === "ai" ? (
+
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>
       {msg.text}
-    </div>
+    </ReactMarkdown>
+
+  ) : (
+
+    msg.text
+
+  )
+}
+
+</div>
 
 
   </div>

@@ -870,27 +870,68 @@ Future<void> streamAIResponse(
 
     final response = await client.send(request);
 
-    if (response.statusCode != 200) {
-      throw Exception("Server Error");
+  if (response.statusCode == 429) {
+  final body = await response.stream.bytesToString();
+
+  try {
+    final data = jsonDecode(body);
+
+    if (!mounted) return;
+
+    setState(() {
+      allChats[currentChatIndex]["messages"][index]["text"] =
+          data["message"] ??
+          "VedaAI is temporarily busy. Please try again later.";
+
+      messages = List<Map<String, dynamic>>.from(
+        allChats[currentChatIndex]["messages"],
+      );
+    });
+
+    await saveChat();
+    client.close();
+    return;
+
+  } catch (_) {}
+}
+
+if (response.statusCode != 200) {
+  throw Exception("Server Error");
+}
+
+   await for (final chunk
+    in response.stream.transform(utf8.decoder)) {
+
+  if (!mounted) return;
+
+  // Backend JSON error आला तर
+  if (chunk.trim().startsWith("{")) {
+    try {
+      final data = jsonDecode(chunk);
+
+      if (data["success"] == false) {
+        setState(() {
+          allChats[currentChatIndex]["messages"][index]["text"] =
+              data["message"] ?? "AI is temporarily unavailable.";
+        });
+
+        break;
+      }
+    } catch (_) {
+      // JSON नसेल तर ignore
     }
+  }
 
-    await for (final chunk
-        in response.stream.transform(utf8.decoder)) {
+  setState(() {
+    allChats[currentChatIndex]["messages"][index]["text"] += chunk;
 
-      if (!mounted) return;
+    messages = List<Map<String, dynamic>>.from(
+      allChats[currentChatIndex]["messages"],
+    );
+  });
 
-      setState(() {
-
-        allChats[currentChatIndex]["messages"][index]["text"] += chunk;
-
-        messages = List<Map<String, dynamic>>.from(
-          allChats[currentChatIndex]["messages"],
-        );
-
-      });
-
-      scrollToBottom();
-    }
+  scrollToBottom();
+}
 
     await saveChat();
 

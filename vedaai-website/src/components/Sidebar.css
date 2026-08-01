@@ -108,6 +108,41 @@
     font-size:14px;
 }
 
+.history-item{
+
+    padding:10px 12px;
+
+    margin-bottom:8px;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+    color:#e2e8f0;
+
+    transition:.25s;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+}
+
+.history-item:hover{
+
+    background:#1e293b;
+
+}
+
+.history-item.active{
+
+    background:#2563eb;
+
+    color:#fff;
+
+}
+
 .empty-history{
 
     color:#64748b;

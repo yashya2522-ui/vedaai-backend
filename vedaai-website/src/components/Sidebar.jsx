@@ -8,10 +8,12 @@ import "./Sidebar.css";
 
 function Sidebar({
   chatSessions,
+  currentChatId,
   setMessages,
   setCurrentChatId,
   createNewChat
-}) {
+})
+ {
 
   return (
     <div className="sidebar">
@@ -50,7 +52,11 @@ function Sidebar({
 
       <div
         key={chat.id}
-        className="history-item"
+       className={
+  chat.id === currentChatId
+    ? "history-item active"
+    : "history-item"
+}
         onClick={()=>{
           
           setMessages(chat.messages);
