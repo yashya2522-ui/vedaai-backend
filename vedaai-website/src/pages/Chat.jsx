@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./../App.css";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
@@ -11,6 +11,15 @@ function Chat() {
  const [messages, setMessages] = useState([]);
 const [chatSessions, setChatSessions] = useState([]);
 const [currentChatId, setCurrentChatId] = useState(null);
+const chatEndRef = useRef(null);
+
+useEffect(() => {
+
+  chatEndRef.current?.scrollIntoView({
+    behavior: "smooth"
+  });
+
+}, [messages]);
 
 
 const createNewChat = () => {
@@ -224,18 +233,42 @@ if (file.type === "application/pdf") {
     </div>
   )}
 
-  {messages.map((msg,index)=>(
+ {messages.map((msg,index)=>(
+
+  <div
+    key={index}
+    className={
+      msg.role === "user"
+      ? "message-row user-row"
+      : "message-row ai-row"
+    }
+  >
+
+    <div className="avatar">
+      {
+        msg.role === "user"
+        ? "👤"
+        : "🤖"
+      }
+    </div>
+
+
     <div
-      key={index}
       className={
-        msg.role==="user"
-          ? "user-msg"
-          : "ai-msg"
+        msg.role === "user"
+        ? "user-msg"
+        : "ai-msg"
       }
     >
       {msg.text}
     </div>
-  ))}
+
+
+  </div>
+
+))}
+
+<div ref={chatEndRef}></div>
 
 </div>
 
