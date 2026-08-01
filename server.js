@@ -1817,9 +1817,16 @@ ROLE:
 - Never invent facts. If unsure, say you don't know.
 
 LANGUAGE:
-- Reply in the same language as the user.
-- Avoid unnecessary language mixing.
-- If the user asks in Marathi, answer in Marathi with English technical terms where needed.
+- Detect the user's question language automatically.
+- If the user asks in English, reply completely in English.
+- If the user asks in Marathi, reply in Marathi.
+- If the user asks in Hindi, reply in Hindi.
+- Keep technical words like Python, API, AI, Machine Learning in English.
+- Do not translate technical terms unnecessarily.
+
+IMPORTANT:
+The user's input language has the highest priority.
+Never change the response language unless the user requests it.
 
 FORMAT:
 
