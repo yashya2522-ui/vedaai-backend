@@ -48,10 +48,19 @@ useEffect(() => {
 
 useEffect(() => {
 
-  localStorage.setItem(
-    "vedaChats",
-    JSON.stringify(chatSessions)
-  );
+  if(chatSessions.length > 0){
+
+    localStorage.setItem(
+      "vedaChats",
+      JSON.stringify(chatSessions)
+    );
+
+    console.log(
+      "SAVED HISTORY:",
+      chatSessions
+    );
+
+  }
 
 }, [chatSessions]);
 
@@ -103,6 +112,8 @@ setChatSessions(prev => [newChat, ...prev]);
 
 }
 
+
+
   setMessages(prev => [
     ...prev,
     {
@@ -132,16 +143,31 @@ setChatSessions(prev => [newChat, ...prev]);
     );
 
 
-    const text = await response.text();
+   const text = await response.text();
 
-    console.log("CHAT RESPONSE:", text);
+console.log("CHAT RESPONSE:", text);
+
+let aiReply = text;
+
+try {
+
+  const data = JSON.parse(text);
+
+  aiReply = data.message || data.reply || text;
+
+}
+catch(error){
+
+  console.log("Response is normal text");
+
+}
 
 
     setMessages(prev => [
       ...prev,
       {
         role:"ai",
-        text:text
+        text: aiReply
       }
     ]);
 
@@ -154,7 +180,7 @@ setChatSessions(prev => [newChat, ...prev]);
             ...chat.messages,
             {
               role: "ai",
-              text
+              text:aiReply
             }
           ]
         }
