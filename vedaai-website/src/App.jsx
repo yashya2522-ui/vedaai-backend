@@ -8,6 +8,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import Chat from "./pages/Chat";
+
 function App() {
   return (
     <Routes>

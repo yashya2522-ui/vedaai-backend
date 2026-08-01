@@ -1,0 +1,195 @@
+/* ================= SIDEBAR ================= */
+
+.sidebar{
+    width:260px;
+    height:100vh;
+    flex-shrink:0;
+
+    display:flex;
+    flex-direction:column;
+
+    padding:18px;
+
+    background:rgba(15,23,42,.95);
+    backdrop-filter:blur(18px);
+
+    border-right:1px solid rgba(255,255,255,.08);
+}
+
+/* Logo */
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    font-size:24px;
+    font-weight:700;
+
+    color:#fff;
+
+    margin-bottom:22px;
+}
+
+.logo span{
+    color:#38bdf8;
+}
+
+/* New Chat */
+
+.new-chat-btn{
+
+    width:100%;
+    height:48px;
+
+    border:none;
+    border-radius:14px;
+
+    background:#2563eb;
+
+    color:white;
+
+    font-size:15px;
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.25s;
+}
+
+.new-chat-btn:hover{
+
+    background:#3b82f6;
+
+}
+
+/* Search */
+
+.search-box{
+
+    margin:20px 0;
+
+}
+
+.search-box input{
+
+    width:100%;
+    height:44px;
+
+    border:none;
+    outline:none;
+
+    border-radius:12px;
+
+    padding:0 14px;
+
+    background:#1e293b;
+
+    color:white;
+}
+
+/* History */
+
+.history{
+
+    flex:1;
+
+    overflow-y:auto;
+
+    margin-top:15px;
+}
+
+.history h4{
+
+    color:#94a3b8;
+
+    margin-bottom:15px;
+
+    font-size:14px;
+}
+
+.empty-history{
+
+    color:#64748b;
+
+    font-size:14px;
+}
+
+/* Bottom */
+
+.sidebar-bottom{
+
+    margin-top:auto;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+}
+
+.sidebar-bottom button{
+
+    width:100%;
+
+    height:46px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#1f2937;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    transition:.25s;
+}
+
+.sidebar-bottom button:hover{
+
+    background:#334155;
+
+}
+
+.logo-icon{
+    font-size:28px;
+    color:#38bdf8;
+}
+
+.new-chat-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+}
+
+.search-box{
+    position:relative;
+}
+
+.search-icon{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#94a3b8;
+}
+
+.search-box input{
+    padding-left:40px;
+}
+
+.sidebar-bottom button{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding-left:15px;
+}
+
+.sidebar-bottom svg{
+    font-size:18px;
+}

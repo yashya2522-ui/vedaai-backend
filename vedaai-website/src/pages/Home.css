@@ -1,0 +1,209 @@
+/* ================= NAVBAR ================= */
+
+.navbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    padding:20px 50px;
+
+    background:#0b1020;
+
+    border-bottom:1px solid rgba(255,255,255,.1);
+}
+
+.home-logo{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    font-size:28px;
+
+    font-weight:700;
+
+    color:white;
+
+}
+
+.home-logo span{
+
+    color:#00e5ff;
+
+}
+
+.nav-links{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:25px;
+
+}
+
+.nav-links a{
+
+    color:white;
+
+    text-decoration:none;
+
+}
+
+.nav-btn{
+
+    background:#00e5ff;
+
+    color:black;
+
+    border:none;
+
+    padding:10px 22px;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+    font-weight:bold;
+
+    transition:.3s;
+
+}
+
+.nav-btn:hover{
+
+    background:#19d3f3;
+
+}
+
+/* ================= HERO ================= */
+
+.hero{
+    text-align:center;
+    padding:90px 20px 70px;
+}
+
+.hero h1{
+    font-size:56px;
+    font-weight:700;
+    margin-bottom:20px;
+    color:#ffffff;
+}
+
+.hero p{
+    max-width:700px;
+    margin:0 auto 35px;
+
+    font-size:20px;
+    line-height:1.7;
+
+    color:#cbd5e1;
+}
+
+.buttons{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    flex-wrap:wrap;
+}
+
+.download,
+.premium{
+
+    padding:14px 28px;
+
+    border:none;
+
+    border-radius:12px;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.download{
+    background:#00e5ff;
+    color:#000;
+}
+
+.download:hover{
+    transform:translateY(-3px);
+}
+
+.premium{
+    background:#7c3aed;
+    color:#fff;
+}
+
+.premium:hover{
+    transform:translateY(-3px);
+}
+
+/* ================= FEATURES ================= */
+
+.features{
+    padding:80px 50px;
+    text-align:center;
+}
+
+.features h2{
+    font-size:40px;
+    margin-bottom:50px;
+}
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:25px;
+}
+
+.feature-link{
+    text-decoration:none;
+}
+
+.feature-card{
+
+    background:#111827;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:18px;
+
+    padding:35px 25px;
+
+    color:white;
+
+    transition:.3s;
+}
+
+.feature-card:hover{
+
+    transform:translateY(-8px);
+
+    border-color:#00e5ff;
+
+    box-shadow:0 10px 30px rgba(0,229,255,.15);
+
+}
+
+.feature-card h3{
+
+    margin:18px 0 10px;
+
+    font-size:24px;
+
+}
+
+.feature-card p{
+
+    color:#cbd5e1;
+
+    line-height:1.6;
+
+}

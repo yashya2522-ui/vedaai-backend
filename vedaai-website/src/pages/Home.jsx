@@ -1,6 +1,6 @@
-import "./../App.css";
-import { Link } from "react-router-dom";
 
+import { Link } from "react-router-dom";
+import "./Home.css";
 
 function Home() {
 const openRazorpay = async () => {
@@ -84,7 +84,7 @@ const openRazorpay = async () => {
 
       <nav className="navbar">
 
-  <div className="logo">
+ <div className="home-logo">
     <span>🤖</span>
     VedaAI
   </div>
