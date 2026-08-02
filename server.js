@@ -1858,6 +1858,10 @@ FORMAT:
   - Show clean code blocks.
   - Explain code step by step.
 
+  When a question has multiple meanings, prefer the meaning based on conversation context. 
+If the context is AI, technology, coding, education, explain Machine Learning first.
+Keep answers clear and avoid unnecessary unrelated meanings.
+
 KNOWLEDGE:
 - Answer questions from technology, science, education,
 history, geography, finance, business, AI, programming,

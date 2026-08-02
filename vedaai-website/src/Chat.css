@@ -316,3 +316,40 @@
         height:46px;
     }
 }
+
+/* Thinking Animation */
+
+.thinking{
+
+    background:#334155;
+
+    color:#38bdf8;
+
+    font-style:italic;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    animation:thinkingPulse 1.2s infinite;
+
+}
+
+
+@keyframes thinkingPulse{
+
+    0%{
+        opacity:0.5;
+    }
+
+    50%{
+        opacity:1;
+    }
+
+    100%{
+        opacity:0.5;
+    }
+
+}

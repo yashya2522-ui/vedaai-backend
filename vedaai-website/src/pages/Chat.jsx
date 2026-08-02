@@ -3,8 +3,8 @@ import "./../App.css";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import "./../Chat.css";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import AiMessage from "../components/AiMessage";
+
 function Chat() {
 
   const [message, setMessage] = useState("");
@@ -13,7 +13,7 @@ function Chat() {
  const [messages, setMessages] = useState([]);
 const [chatSessions, setChatSessions] = useState([]);
 const [currentChatId, setCurrentChatId] = useState(null);
-
+const [isThinking, setIsThinking] = useState(false);
 const chatEndRef = useRef(null);
 
 useEffect(() => {
@@ -75,128 +75,301 @@ const createNewChat = () => {
 
 const sendMessage = async () => {
 
-  if(file){
+  if (file) {
     await uploadFile();
     setFile(null);
     return;
   }
 
 
-  if(!message.trim()) return;
+  if (!message.trim()) return;
+
 
   const userText = message;
 
-let chatId = currentChatId;
+  let chatId = currentChatId;
 
-if (!chatId) {
 
-  chatId = Date.now();
+  // CREATE NEW CHAT
+  if (!chatId) {
 
-  const newChat = {
-  id: chatId,
-  title:
-    userText.length > 25
-      ? userText.substring(0, 25) + "..."
-      : userText,
-  messages: [
-    {
-      role: "user",
-      text: userText
-    }
-  ]
-};
+    chatId = Date.now();
 
-setChatSessions(prev => [newChat, ...prev]);
 
-  setCurrentChatId(chatId);
+    const newChat = {
+      id: chatId,
+      title:
+        userText.length > 25
+          ? userText.substring(0, 25) + "..."
+          : userText,
+      messages: []
+    };
 
-}
 
+    setChatSessions(prev => [
+      newChat,
+      ...prev
+    ]);
+
+
+    setCurrentChatId(chatId);
+
+  }
+
+
+
+  // USER MESSAGE
+  const userMessage = {
+    role:"user",
+    text:userText
+  };
 
 
   setMessages(prev => [
     ...prev,
-    {
-      role:"user",
-      text:userText
-    }
+    userMessage
   ]);
-  
+
+
+
+  // SAVE USER MESSAGE
+  setChatSessions(prev =>
+    prev.map(chat =>
+      chat.id === chatId
+        ? {
+            ...chat,
+            messages:[
+              ...chat.messages,
+              userMessage
+            ]
+          }
+        : chat
+    )
+  );
+
+
 
   setMessage("");
 
+
+
+  // ADD THINKING MESSAGE
+  const thinkingMessage = {
+
+    role:"ai",
+
+    text:"VedaAI is thinking...",
+
+    thinking:true
+
+  };
+
+
+  setMessages(prev => [
+    ...prev,
+    thinkingMessage
+  ]);
+
+
+
   try {
+
 
     const response = await fetch(
       "http://localhost:3000/chat",
       {
+
         method:"POST",
+
         headers:{
+
           "Content-Type":"application/json",
+
           "Authorization":
           "Bearer " + localStorage.getItem("token")
+
         },
+
+
         body:JSON.stringify({
+
           message:userText
+
         })
+
       }
     );
 
 
-   const text = await response.text();
 
-console.log("CHAT RESPONSE:", text);
+    if(!response.ok){
 
-let aiReply = text;
+      throw new Error(
+        "Server Error"
+      );
 
-try {
-
-  const data = JSON.parse(text);
-
-  aiReply = data.message || data.reply || text;
-
-}
-catch(error){
-
-  console.log("Response is normal text");
-
-}
+    }
 
 
-    setMessages(prev => [
-      ...prev,
-      {
-        role:"ai",
-        text: aiReply
-      }
-    ]);
 
-   setChatSessions(prev =>
-  prev.map(chat =>
-    chat.id === chatId
-      ? {
-          ...chat,
-          messages: [
-            ...chat.messages,
-            {
-              role: "ai",
-              text:aiReply
-            }
-          ]
+    const reader =
+    response.body.getReader();
+
+
+    const decoder =
+    new TextDecoder();
+
+
+
+    let aiText = "";
+
+
+
+    while(true){
+
+
+      const {
+        done,
+        value
+      } = await reader.read();
+
+
+
+      if(done)
+        break;
+
+
+
+      const chunk =
+      decoder.decode(
+        value,
+        {
+          stream:true
         }
-      : chat
-  )
-);
+      );
 
-  } catch(error){
 
-    console.log(error);
+
+      aiText += chunk;
+
+
+
+      // UPDATE SAME THINKING MESSAGE
+      setMessages(prev => {
+
+        const updated = [...prev];
+
+
+        updated[updated.length - 1] = {
+
+          role:"ai",
+
+          text:aiText,
+
+          thinking:false
+
+        };
+
+
+        return updated;
+
+      });
+
+
+
+      // AUTO SCROLL
+      chatEndRef.current?.scrollIntoView({
+
+        behavior:"smooth"
+
+      });
+
+
+    }
+
+
+
+    // SAVE AI MESSAGE
+
+    const aiMessage = {
+
+      role:"ai",
+
+      text:aiText
+
+    };
+
+
+
+    setChatSessions(prev =>
+
+      prev.map(chat =>
+
+        chat.id === chatId
+
+        ?
+
+        {
+
+          ...chat,
+
+          messages:[
+
+            ...chat.messages,
+
+            aiMessage
+
+          ]
+
+        }
+
+        :
+
+        chat
+
+      )
+
+    );
+
+
 
   }
 
+
+
+  catch(error){
+
+
+    console.log(
+      "CHAT ERROR:",
+      error
+    );
+
+
+
+    const errorMessage = {
+
+      role:"ai",
+
+      text:
+      "AI is temporarily busy. Please try again."
+
+    };
+
+
+
+    setMessages(prev => [
+
+      ...prev,
+
+      errorMessage
+
+    ]);
+
+  }
+
+
 };
-
-
 const uploadFile = async () => {
 
   if(!file){
@@ -289,6 +462,29 @@ if (file.type === "application/pdf") {
       <p>Ask anything to get started.</p>
     </div>
   )}
+   
+   {isThinking && (
+  <div className="ai-message">
+
+    <div className="ai-header">
+
+      <div className="ai-avatar">
+        🤖
+      </div>
+
+      <div className="ai-name">
+        VedaAI
+      </div>
+
+    </div>
+
+
+    <div className="ai-content thinking-content">
+      VedaAI is thinking...
+    </div>
+
+  </div>
+)}
 
  {messages.map((msg,index)=>(
 
@@ -301,38 +497,33 @@ if (file.type === "application/pdf") {
     }
   >
 
-    <div className="avatar">
-      {
-        msg.role === "user"
-        ? "👤"
-        : "🤖"
-      }
-    </div>
+   
 
 
-    <div
-  className={
-    msg.role === "user"
-    ? "user-msg"
-    : "ai-msg"
-  }
->
-
-{
+ {
   msg.role === "ai" ? (
 
-    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-      {msg.text}
-    </ReactMarkdown>
+   <AiMessage 
+  text={msg.text}
+  thinking={isThinking}
+/>
 
   ) : (
 
-    msg.text
+    <div className="user-wrapper">
+
+      <div className="user-msg">
+        {msg.text}
+      </div>
+
+      <div className="user-avatar">👤
+        
+      </div>
+
+    </div>
 
   )
 }
-
-</div>
 
 
   </div>
