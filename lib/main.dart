@@ -923,12 +923,16 @@ if (response.statusCode != 200) {
   }
 
   setState(() {
-    allChats[currentChatIndex]["messages"][index]["text"] += chunk;
 
-    messages = List<Map<String, dynamic>>.from(
-      allChats[currentChatIndex]["messages"],
-    );
-  });
+  allChats[currentChatIndex]["messages"][index]["thinking"] = false;
+
+  allChats[currentChatIndex]["messages"][index]["text"] += chunk;
+
+  messages = List<Map<String, dynamic>>.from(
+    allChats[currentChatIndex]["messages"],
+  );
+
+});
 
   scrollToBottom();
 }
@@ -1067,20 +1071,19 @@ void sendMessage() async {
 
 
       // EMPTY AI MESSAGE
+      allChats[currentChatIndex]["messages"].add({
 
-      allChats[currentChatIndex]["messages"]
+  "role": "ai",
 
-          .add({
+  "text": "",
 
-        "role": "ai",
+  "thinking": true,
 
-        "text": "",
+  "image": aiImage,
 
-        "image": aiImage,
+  "pinned": false,
 
-        "pinned": false,
-
-      });
+});
 
 
 
@@ -1498,6 +1501,63 @@ Widget chatBubble(Map<String, dynamic> msg) {
 
           const SizedBox(height: 8),
 
+
+         if (msg["thinking"] == true)
+  Row(
+  children: [
+
+    const Text(
+      "🤖",
+      style: TextStyle(fontSize: 20),
+    ),
+
+    const SizedBox(width: 10),
+
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          const Text(
+            "VedaAI",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Row(
+            children: [
+
+              Text(
+                "Thinking",
+                style: TextStyle(
+                  fontSize: 15,
+                  color: isDarkMode
+                      ? Colors.white70
+                      : Colors.black54,
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              LoadingAnimationWidget.threeArchedCircle(
+                size: 18,
+                color: Colors.cyan,
+              ),
+
+            ],
+          ),
+
+        ],
+      ),
+    ),
+
+  ],
+)
+else
           MarkdownBody(
             data: msg["text"] ?? "",
 
