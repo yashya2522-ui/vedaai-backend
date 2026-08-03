@@ -55,6 +55,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool isDarkMode = false;
   bool isLoading = false;
   bool isListening = false;
+  int copiedMessageIndex = -1;
 bool showScrollButton = false;
 bool isPremium = false;
 String subscriptionType = "free";
@@ -842,6 +843,7 @@ Future<String> getAIResponse(String text) async {
 Future<void> streamAIResponse(
   String text,
   int index,
+  List<Map<String, dynamic>> history,
 ) async {
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -864,9 +866,10 @@ Future<void> streamAIResponse(
       "Content-Type": "application/json",
     });
 
-    request.body = jsonEncode({
-      "message": text,
-    });
+   request.body = jsonEncode({
+  "message": text,
+  "history": history,
+});
 
     final response = await client.send(request);
 
@@ -922,7 +925,7 @@ if (response.statusCode != 200) {
     }
   }
 
-  setState(() {
+setState(() {
 
   allChats[currentChatIndex]["messages"][index]["thinking"] = false;
 
@@ -1115,10 +1118,12 @@ void sendMessage() async {
             1;
 
 
-
-    await streamAIResponse(
+await streamAIResponse(
   userText,
   index,
+  List<Map<String, dynamic>>.from(
+    allChats[currentChatIndex]["messages"],
+  ),
 );
 
 
@@ -1286,7 +1291,10 @@ Future<void> stopListening() async {
   });
 } 
 
-Widget chatBubble(Map<String, dynamic> msg) {
+Widget chatBubble(
+  Map<String, dynamic> msg,
+  int index,
+) {
   bool isUser = msg["role"] == "user";
 
   return GestureDetector(
@@ -1484,163 +1492,170 @@ Widget chatBubble(Map<String, dynamic> msg) {
         crossAxisAlignment:
             CrossAxisAlignment.start,
 
-        children: [
-
-          Text(
-  isUser ? "👤 You" : "🤖 VedaAI",
-
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-
-              color: isDarkMode
-                  ? Colors.white
-                  : Colors.black,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-
-         if (msg["thinking"] == true)
+       children: [
   Row(
   children: [
 
-    const Text(
-      "🤖",
-      style: TextStyle(fontSize: 20),
+    Expanded(
+      child: Text(
+        isUser ? "👤 You" : "🤖 VedaAI",
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+          color: isDarkMode
+              ? Colors.white
+              : Colors.black,
+        ),
+      ),
     ),
 
-    const SizedBox(width: 10),
+    if (!isUser)
+      TextButton.icon(
+        onPressed: () async {
 
-    Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+          await Clipboard.setData(
+            ClipboardData(
+              text: msg["text"] ?? "",
+            ),
+          );
+
+          setState(() {
+            copiedMessageIndex = index;
+          });
+
+          Future.delayed(
+            const Duration(seconds: 2),
+            () {
+              if (!mounted) return;
+
+              setState(() {
+                copiedMessageIndex = -1;
+              });
+            },
+          );
+        },
+
+        icon: Icon(
+          copiedMessageIndex == index
+              ? Icons.check
+              : Icons.copy,
+          size: 18,
+          color: Colors.cyan,
+        ),
+
+        label: Text(
+          copiedMessageIndex == index
+              ? "Copied"
+              : "Copy",
+          style: const TextStyle(
+            color: Colors.cyan,
+            fontSize: 12,
+          ),
+        ),
+      ),
+
+  ],
+),
+
+const SizedBox(height: 8),
+
+  if (msg["thinking"] == true)
+
+    Row(
+      children: [
+
+        Text(
+          "Thinking",
+          style: TextStyle(
+            fontSize: 15,
+            color: isDarkMode
+                ? Colors.white70
+                : Colors.black54,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        LoadingAnimationWidget.threeArchedCircle(
+          size: 18,
+          color: Colors.cyan,
+        ),
+
+      ],
+    )
+
+  else
+
+    MarkdownBody(
+      data: msg["text"] ?? "",
+      selectable: true,
+      styleSheet: MarkdownStyleSheet(
+        p: TextStyle(
+          fontSize: 16,
+          height: 1.7,
+          color: isDarkMode
+              ? Colors.white
+              : Colors.black,
+        ),
+
+        h1: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+
+        h2: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+
+        h3: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+
+  if (msg["image"] != null &&
+      msg["image"].toString().isNotEmpty)
+    Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          msg["image"],
+          height: 220,
+          fit: BoxFit.cover,
+        ),
+      ),
+    ),
+
+  if (msg["pinned"] == true)
+    const Padding(
+      padding: EdgeInsets.only(top: 8),
+      child: Row(
         children: [
 
-          const Text(
-            "VedaAI",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          Icon(
+            Icons.push_pin,
+            size: 14,
+            color: Colors.orange,
           ),
 
-          const SizedBox(height: 4),
+          SizedBox(width: 4),
 
-          Row(
-            children: [
-
-              Text(
-                "Thinking",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: isDarkMode
-                      ? Colors.white70
-                      : Colors.black54,
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              LoadingAnimationWidget.threeArchedCircle(
-                size: 18,
-                color: Colors.cyan,
-              ),
-
-            ],
+          Text(
+            "Pinned",
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.orange,
+            ),
           ),
 
         ],
       ),
     ),
 
-  ],
-)
-else
-          MarkdownBody(
-            data: msg["text"] ?? "",
-
-            selectable: true,
-
-            styleSheet: MarkdownStyleSheet(
-              p: TextStyle(
-                fontSize: 16,
-                height: 1.7,
-
-                color: isDarkMode
-                    ? Colors.white
-                    : Colors.black,
-              ),
-
-              h1: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-
-              h2: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-
-              h3: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-
-          if (msg["image"] != null &&
-              msg["image"].toString().isNotEmpty)
-            Padding(
-              padding:
-                  const EdgeInsets.only(top: 12),
-
-              child: ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(12),
-
-                child: Image.network(
-                  msg["image"],
-
-                  height: 220,
-
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-
-          if (msg["pinned"] == true)
-            const Padding(
-              padding:
-                  EdgeInsets.only(top: 8),
-
-              child: Row(
-                children: [
-
-                  Icon(
-                    Icons.push_pin,
-
-                    size: 14,
-
-                    color: Colors.orange,
-                  ),
-
-                  SizedBox(width: 4),
-
-                  Text(
-                    "Pinned",
-
-                    style: TextStyle(
-                      fontSize: 11,
-
-                      color: Colors.orange,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-                ],
+],
       ),
     ), // Container
 
@@ -2236,7 +2251,10 @@ ListTile(
     padding: const EdgeInsets.only(bottom: 10),
     itemCount: messages.length,
     itemBuilder: (context, index) {
-      return chatBubble(messages[index]);
+     return chatBubble(
+  messages[index],
+  index,
+);
     },
   ),
 ),

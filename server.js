@@ -1674,6 +1674,8 @@ app.post("/chat", auth, async (req, res) => {
      const startTime = Date.now();
 
     const userMessage = req.body.message;
+    const history = req.body.history || [];
+    console.log("History:", history);
     const userId = req.userId || "guest";
 
     if (!userMessage) {
