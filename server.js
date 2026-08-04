@@ -2103,6 +2103,24 @@ ${memory.pdfUri}
 `;
 } 
 
+const historyText = history
+  .filter(
+    (msg) =>
+      msg.text &&
+      msg.text.trim() !== "" &&
+      msg.thinking !== true
+  )
+  .map((msg) => {
+    const role =
+      msg.role === "user"
+        ? "User"
+        : "Assistant";
+
+    return `${role}: ${msg.text}`;
+  })
+  .join("\n\n");
+
+
 const finalPrompt = `
 ${SYSTEM_PROMPT}
 
@@ -2112,11 +2130,13 @@ ${wikiText}
 News:
 ${newsText}
 
-History:
-${history}
+Conversation History:
+
+${historyText}
+
 ${pdfInstruction}
 
-User:
+Current User Message:
 ${userMessage}
 
 Assistant:
