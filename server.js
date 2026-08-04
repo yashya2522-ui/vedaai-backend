@@ -1804,8 +1804,13 @@ await memory.save();
 const wikiText = await searchWikipedia(userMessage);
 const newsText = await getNews(userMessage);
 
-const history = memory.chats
-  .slice(-5)
+const historyText = memory.chats
+  .filter(
+    m =>
+      m.text &&
+      m.text.trim() !== ""
+  )
+  .slice(-10)
   .map(m => `${m.role}: ${m.text}`)
   .join("\n");
     
