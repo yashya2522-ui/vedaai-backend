@@ -1741,6 +1741,7 @@ await user.save();
 
 }
   
+
 app.post("/save-chats", auth, async (req, res) => {
 
   try {
@@ -1806,7 +1807,13 @@ await memory.save();
 const wikiText = await searchWikipedia(userMessage);
 const newsText = await getNews(userMessage);
 
-const historyText = memory.chats
+const historyText = history
+  .filter(
+    msg =>
+      msg.text &&
+      msg.text.trim() !== "" &&
+      msg.thinking !== true
+  )
   .slice(-20)
   .map(msg => {
     const role =
@@ -1817,7 +1824,6 @@ const historyText = memory.chats
     return `${role}: ${msg.text}`;
   })
   .join("\n\n");
-    
 
 const SYSTEM_PROMPT = `
 You are VedaAI, an advanced AI assistant created by Yash Krishnat Patil.
@@ -2252,32 +2258,48 @@ await memory.save();
 
 res.end();
 
+
 } catch (err) {
 
   console.log("========== GEMINI ERROR ==========");
   console.log(err);
 
-   if (
-  err.status === 503 ||
-  err.message.includes("503") ||
-  err.message.includes("UNAVAILABLE") ||
-  err.message.includes("429") ||
-  err.message.includes("RESOURCE_EXHAUSTED")
-) {
-  return res.status(503).json({
-    success: false,
-    message: "AI is temporarily busy. Please try again in a few seconds."
-  });
-}
 
-  return res.status(500).json({
-    error: "Server Error",
-    details: err.message
-  });
+  if (
+    err.status === 429 ||
+    err.message.includes("429") ||
+    err.message.includes("RESOURCE_EXHAUSTED")
+  ) {
+
+    return res.end(
+      "AI is temporarily busy. Please try again in a few seconds."
+    );
+
+  }
+
+
+  if (
+    err.status === 503 ||
+    err.message.includes("503") ||
+    err.message.includes("UNAVAILABLE")
+  ) {
+
+    return res.end(
+      "AI is temporarily unavailable. Please try again later."
+    );
+
+  }
+
+
+  return res.end(
+    "Something went wrong. Please try again later."
+  );
+
 
 }
 
 });
+
     
   
 

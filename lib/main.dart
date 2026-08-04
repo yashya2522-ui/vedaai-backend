@@ -799,18 +799,35 @@ Future<String> getAIResponse(String text) async {
     );
 
     final res = await http.post(
-      url,
-      headers: {
+  url,
 
-  "Content-Type": "application/json",
+  headers: {
 
-  "Authorization": "Bearer $token",
+    "Content-Type": "application/json",
 
-},
-      body: jsonEncode({
-        "message": text,
-      }),
-    );
+    "Authorization": "Bearer $token",
+
+  },
+
+  body: jsonEncode({
+
+    "message": text,
+
+    "history": messages.map((msg) {
+
+      return {
+
+        "role": msg["role"],
+
+        "text": msg["text"],
+
+      };
+
+    }).toList(),
+
+  }),
+
+);
 
     print("STATUS: ${res.statusCode}");
     print("BODY: ${res.body}");
@@ -941,7 +958,9 @@ setState(() {
 }
 
     await saveChat();
-
+print("===== ALL CHATS =====");
+print(allChats[currentChatIndex]["messages"]);
+print("=====================");
     client.close();
 
   } catch (e) {
