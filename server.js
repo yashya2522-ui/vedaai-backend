@@ -1676,6 +1676,8 @@ app.post("/chat", auth, async (req, res) => {
     const userMessage = req.body.message;
     const history = req.body.history || [];
     console.log("History:", history);
+    console.log("REQ HISTORY");
+console.log(JSON.stringify(history, null, 2));
     const userId = req.userId || "guest";
 
     if (!userMessage) {
@@ -1805,14 +1807,16 @@ const wikiText = await searchWikipedia(userMessage);
 const newsText = await getNews(userMessage);
 
 const historyText = memory.chats
-  .filter(
-    m =>
-      m.text &&
-      m.text.trim() !== ""
-  )
-  .slice(-10)
-  .map(m => `${m.role}: ${m.text}`)
-  .join("\n");
+  .slice(-20)
+  .map(msg => {
+    const role =
+      msg.role === "user"
+        ? "User"
+        : "Assistant";
+
+    return `${role}: ${msg.text}`;
+  })
+  .join("\n\n");
     
 
 const SYSTEM_PROMPT = `

@@ -866,7 +866,7 @@ Future<void> streamAIResponse(
       "Content-Type": "application/json",
     });
 
-   request.body = jsonEncode({
+  request.body = jsonEncode({
   "message": text,
   "history": history,
 });
@@ -1060,7 +1060,9 @@ void sendMessage() async {
 
   await saveChat();
 
-
+final historyForAI = List<Map<String, dynamic>>.from(
+  allChats[currentChatIndex]["messages"],
+);
   try {
 
 
@@ -1121,11 +1123,8 @@ void sendMessage() async {
 await streamAIResponse(
   userText,
   index,
-  List<Map<String, dynamic>>.from(
-    allChats[currentChatIndex]["messages"],
-  ),
+  historyForAI,
 );
-
 
 
     scrollToBottom();
