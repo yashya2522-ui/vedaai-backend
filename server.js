@@ -2108,6 +2108,9 @@ ${memory.pdfUri}
 `;
 } 
 
+console.log("========== HISTORY ==========");
+console.log(historyText);
+console.log("=============================");
 
 const finalPrompt = `
 ${SYSTEM_PROMPT}
