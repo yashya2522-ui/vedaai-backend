@@ -2146,8 +2146,12 @@ News:
 ${newsText}
 
 Conversation History:
-
 ${historyText}
+
+IMPORTANT:
+- Always use the Conversation History before answering.
+- If the current message is short (for example: "explain", "types", "advantages", "translate", "marathi madhe sang", "continue", "next", "why", "how"), assume it refers to the LAST assistant answer unless the user clearly changes the topic.
+- Never ignore the previous conversation when answering follow-up questions.
 
 ${pdfInstruction}
 
