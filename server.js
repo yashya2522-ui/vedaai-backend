@@ -432,14 +432,30 @@ const MemorySchema = new mongoose.Schema({
   },
 
   // NORMAL CHAT
-  // CHAT SESSIONS
 chatSessions: [
   {
+    id: String,
+
     title: String,
 
     favorite: {
       type: Boolean,
       default: false,
+    },
+
+    messageCount: {
+      type: Number,
+      default: 0,
+    },
+
+    paused: {
+      type: Boolean,
+      default: false,
+    },
+
+    resetTime: {
+      type: Date,
+      default: null,
     },
 
     messages: [
@@ -1682,10 +1698,14 @@ app.post("/chat", auth, async (req, res) => {
 
     const userMessage = req.body.message;
     const history = req.body.history || [];
+    const chatId = req.body.chatId;
+
+    console.log("Chat ID:", chatId);
     console.log("History:", history);
     console.log("REQ HISTORY");
-console.log(JSON.stringify(history, null, 2));
-    const userId = req.userId || "guest";
+    console.log(JSON.stringify(history, null, 2));
+
+const userId = req.userId || "guest";
 
     if (!userMessage) {
       return res.status(400).json({ error: "Message required" });
@@ -1696,6 +1716,33 @@ console.log(JSON.stringify(history, null, 2));
 if (userId !== "guest") {
 
  user = await User.findById(userId);
+
+ let memory = await Memory.findOne({
+  userId,
+});
+
+if (!memory) {
+  return res.status(404).json({
+    success: false,
+    message: "Memory not found",
+  });
+}
+
+const currentChat = memory.chatSessions.find(
+  (chat) => chat.id === chatId
+);
+
+if (!currentChat) {
+  return res.status(404).json({
+    success: false,
+    message: "Chat session not found",
+  });
+}
+
+console.log("========== CURRENT CHAT ==========");
+console.log(currentChat);
+console.log("==================================");
+
 
 const subscription = checkSubscription(user);
 const limits = getPlanLimits(user);
@@ -1787,7 +1834,16 @@ app.post("/save-chats", auth, async (req, res) => {
 });
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
+const currentChat = memory.chatSessions.find(
+  (chat) => chat.id === chatId
+);
 
+if (!currentChat) {
+  return res.status(404).json({
+    success: false,
+    message: "Chat session not found."
+  });
+}
 if (!memory) {
 
   memory = new Memory({
@@ -1797,16 +1853,32 @@ if (!memory) {
 
 }
 
-// Safety for old documents
-if (!Array.isArray(memory.chats)) {
-  memory.chats = [];
+// ================= CURRENT CHAT =================
+
+const currentChat = memory.chatSessions.find(
+  (chat) => chat.id === chatId
+);
+
+if (!currentChat) {
+  return res.status(404).json({
+    success: false,
+    message: "Chat session not found."
+  });
 }
 
 // Save user message
-memory.chats.push({
+currentChat.messages.push({
   role: "user",
   text: userMessage
 });
+
+currentChat.messageCount =
+  (currentChat.messageCount || 0) + 1;
+
+console.log(
+  "Current Chat Messages:",
+  currentChat.messageCount
+);
 
 await memory.save();
 
@@ -2338,7 +2410,7 @@ if (
   !aiText.includes("AI is temporarily unavailable")
 ) {
 
-  memory.chats.push({
+  currentChat.messages.push({
     role: "assistant",
     text: aiText
   });

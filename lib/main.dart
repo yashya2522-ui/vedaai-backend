@@ -688,11 +688,15 @@ Future<void> saveChat() async {
 }
 Future<void> newChat() async {
   setState(() {
-    allChats.add({
-      "title": "New Chat",
-      "messages": <Map<String, dynamic>>[],
-      "favorite": false,
-    });
+   allChats.add({
+  "id": DateTime.now().millisecondsSinceEpoch.toString(),
+  "title": "New Chat",
+  "messages": <Map<String, dynamic>>[],
+  "favorite": false,
+  "messageCount": 0,
+  "paused": false,
+  "resetTime": null,
+});
 
     currentChatIndex = allChats.length - 1;
 
@@ -708,10 +712,14 @@ Future<void> clearChat() async {
   setState(() {
     allChats = [
       {
-        "title": "New Chat",
-        "messages": <Map<String, dynamic>>[],
-        "favorite": false,
-      }
+  "id": DateTime.now().millisecondsSinceEpoch.toString(),
+  "title": "New Chat",
+  "messages": <Map<String, dynamic>>[],
+  "favorite": false,
+  "messageCount": 0,
+  "paused": false,
+  "resetTime": null,
+}
     ];
 
     currentChatIndex = 0;
@@ -883,6 +891,7 @@ Future<void> streamAIResponse(
   request.body = jsonEncode({
   "message": text,
   "history": history.take(15).toList(),
+  "chatId": allChats[currentChatIndex]["id"],
 });
 
     final response = await client.send(request);
