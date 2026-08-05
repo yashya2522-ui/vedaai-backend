@@ -2247,14 +2247,26 @@ res.setHeader("Cache-Control", "no-cache");
 res.setHeader("Connection", "keep-alive");
 res.setHeader("Transfer-Encoding", "chunked");
 
+let buffer = "";
+
 for await (const chunk of stream) {
 
   const text = chunk.text || "";
 
   aiText += text;
 
-  res.write(text);
+  buffer += text;
 
+  if (buffer.length >= 40) {
+    res.write(buffer);
+    buffer = "";
+  }
+
+}
+
+
+if (buffer.isNotEmpty) {
+  res.write(buffer);
 }
 
 
