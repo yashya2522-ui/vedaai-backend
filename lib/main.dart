@@ -21,6 +21,7 @@ import 'package:file_picker/file_picker.dart';
 import 'splash_screen.dart';
 import 'subscription_screen.dart';
 import 'package:vedaai/notifications_screen.dart';
+import 'package:intl/intl.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -935,14 +936,41 @@ if (response.statusCode != 200) {
     try {
       final data = jsonDecode(chunk);
 
-      if (data["success"] == false) {
-        setState(() {
-          allChats[currentChatIndex]["messages"][index]["text"] =
-              data["message"] ?? "AI is temporarily unavailable.";
-        });
+      if (data["paused"] == true) {
 
-        break;
-      }
+  setState(() {
+
+    allChats[currentChatIndex]["paused"] = true;
+
+    allChats[currentChatIndex]["resetTime"] =
+        data["resetTime"];
+
+    allChats[currentChatIndex]["messages"][index]["text"] =
+        data["message"];
+
+    messages = List<Map<String, dynamic>>.from(
+      allChats[currentChatIndex]["messages"],
+    );
+
+  });
+
+  await saveChat();
+
+  break;
+}
+
+if (data["success"] == false) {
+
+  setState(() {
+
+    allChats[currentChatIndex]["messages"][index]["text"] =
+        data["message"] ??
+        "AI is temporarily unavailable.";
+
+  });
+
+  break;
+}
     } catch (_) {
       // JSON नसेल तर ignore
     }
@@ -1015,6 +1043,41 @@ Future<void> streamText(
 
 
 void sendMessage() async {
+
+  final chat = allChats[currentChatIndex];
+
+if (chat["paused"] == true) {
+
+  final resetTime = chat["resetTime"];
+
+  if (resetTime != null &&
+      DateTime.now().isBefore(DateTime.parse(resetTime))) {
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content:Text(
+  "You've used all messages for this chat.\n\n"
+  "Try again at ${allChats[currentChatIndex]["resetTime"] == null
+      ? "--"
+      : DateFormat("h:mm a").format(
+          DateTime.parse(
+            allChats[currentChatIndex]["resetTime"],
+          ),
+        )}",
+),
+      ),
+    );
+
+    return;
+  }
+
+  // Auto reset after timer
+  chat["paused"] = false;
+  chat["messageCount"] = 0;
+  chat["resetTime"] = null;
+
+  await saveChat();
+}
 
   if (controller.text.trim().isEmpty) return;
 
@@ -2269,16 +2332,79 @@ ListTile(
     color: Colors.yellow.shade100,
     child: Text("📌 Pinned Message"),
   ),
-   Expanded(
+  // ================= PAUSED CARD =================
+
+if (allChats[currentChatIndex]["paused"] == true)
+  Container(
+    margin: const EdgeInsets.all(12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.orange.shade50,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.orange),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        const Text(
+          "Chats paused",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        Text(
+          "You've used all messages for this chat.\nTry again after the timer ends or start a new chat.",
+        ),
+
+        const SizedBox(height: 12),
+
+        Row(
+          children: [
+
+            ElevatedButton.icon(
+              onPressed: newChat,
+              icon: const Icon(Icons.add),
+              label: const Text("New Chat"),
+            ),
+
+            const SizedBox(width: 10),
+
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SubscriptionScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.workspace_premium),
+              label: const Text("Upgrade"),
+            ),
+
+          ],
+        ),
+      ],
+    ),
+  ),
+
+// ================= CHAT =================
+
+Expanded(
   child: ListView.builder(
     controller: scrollController,
     padding: const EdgeInsets.only(bottom: 10),
     itemCount: messages.length,
     itemBuilder: (context, index) {
-     return chatBubble(
-  messages[index],
-  index,
-);
+      return chatBubble(
+        messages[index],
+        index,
+      );
     },
   ),
 ),
@@ -2355,6 +2481,7 @@ const SizedBox(width: 5),
           ),
 
           child: TextField(
+  enabled: !(allChats[currentChatIndex]["paused"] ?? false),
   controller: controller,
 
   minLines: 1,
@@ -2418,21 +2545,23 @@ const SizedBox(width: 5),
         },
       ),
 
-     IconButton(
+    IconButton(
   icon: const Icon(Icons.send),
-  onPressed: () {
+  onPressed: (allChats[currentChatIndex]["paused"] ?? false)
+      ? null
+      : () {
 
-    if (selectedImage != null) {
+          if (selectedImage != null) {
 
-      uploadImage();
+            uploadImage();
 
-    } else {
+          } else {
 
-      sendMessage();
+            sendMessage();
 
-    }
+          }
 
-  },
+        },
 ),
 
     ],

@@ -1854,6 +1854,54 @@ if (!currentChat) {
     message: "Chat session not found."
   });
 }
+// ================= CHAT LIMIT =================
+
+if (currentChat.paused) {
+
+  if (
+    currentChat.resetTime &&
+    new Date() < new Date(currentChat.resetTime)
+  ) {
+
+    return res.json({
+      success: false,
+      paused: true,
+      resetTime: currentChat.resetTime,
+      message:
+        "This chat is temporarily paused."
+    });
+
+  }
+
+  // Reset chat automatically
+  currentChat.paused = false;
+  currentChat.messageCount = 0;
+  currentChat.resetTime = null;
+
+  await memory.save();
+}
+
+// ================= MESSAGE LIMIT =================
+
+if (currentChat.messageCount >= 50) {
+
+  currentChat.paused = true;
+
+  currentChat.resetTime = new Date(
+    Date.now() + 4 * 60 * 60 * 1000
+  );
+
+  await memory.save();
+
+  return res.json({
+    success: false,
+    paused: true,
+    resetTime: currentChat.resetTime,
+    message:
+      "This chat has reached its limit. Try again after the timer ends or start a new chat."
+  });
+
+}
 
 // ================= CURRENT CHAT =================
 
@@ -2405,6 +2453,30 @@ if (
     role: "assistant",
     text: aiText
   });
+
+  // Count AI reply
+  currentChat.messageCount =
+      (currentChat.messageCount || 0) + 1;
+
+  console.log(
+    "Current Chat Messages:",
+    currentChat.messageCount
+  );
+
+  // Pause this chat after 50 messages
+  if (currentChat.messageCount >= 50) {
+
+    currentChat.paused = true;
+
+    const reset = new Date();
+    reset.setHours(reset.getHours() + 4);
+
+    currentChat.resetTime = reset;
+
+    console.log("CHAT PAUSED");
+    console.log("RESET:", reset);
+
+  }
 
   await memory.save();
 
