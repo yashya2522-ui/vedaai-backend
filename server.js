@@ -2269,19 +2269,26 @@ for await (const chunk of stream) {
 }
 
 
-if (buffer.isNotEmpty) {
+if (buffer.length > 0) {
   res.write(buffer);
 }
 
 
 // ================= SAVE CHAT =================
 
-memory.chats.push({
-  role: "assistant",
-  text: aiText
-});
+if (
+  aiText &&
+  !aiText.includes("AI is temporarily unavailable")
+) {
 
-await memory.save();
+  memory.chats.push({
+    role: "assistant",
+    text: aiText
+  });
+
+  await memory.save();
+
+}
 
 
 // ================= RESPONSE =================
