@@ -2270,8 +2270,10 @@ await memory.save();
 
 // ================= RESPONSE =================
 
-res.end();
+const endTime = Date.now();
+console.log(`⚡ Response Time: ${endTime - startTime} ms`);
 
+res.end();
 
 } catch (err) {
 
