@@ -813,17 +813,14 @@ Future<String> getAIResponse(String text) async {
 
     "message": text,
 
-    "history": messages.map((msg) {
-
-      return {
-
-        "role": msg["role"],
-
-        "text": msg["text"],
-
-      };
-
-    }).toList(),
+    "history": messages
+    .map((msg) => {
+          "role": msg["role"],
+          "text": msg["text"],
+        })
+    .toList()
+    .take(15)
+    .toList(),
 
   }),
 
@@ -885,7 +882,7 @@ Future<void> streamAIResponse(
 
   request.body = jsonEncode({
   "message": text,
-  "history": history,
+  "history": history.take(15).toList(),
 });
 
     final response = await client.send(request);

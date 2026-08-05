@@ -1828,7 +1828,7 @@ const historyText = history
       msg.text.trim() !== "" &&
       msg.thinking !== true
   )
-  .slice(-20)
+  .slice(-15)
   .map(msg => {
     const role =
       msg.role === "user"
