@@ -1834,6 +1834,16 @@ app.post("/save-chats", auth, async (req, res) => {
 });
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
+
+if (!memory) {
+  memory = new Memory({
+    userId,
+    chatSessions: [],
+  });
+
+  await memory.save();
+}
+
 const currentChat = memory.chatSessions.find(
   (chat) => chat.id === chatId
 );
@@ -1843,28 +1853,9 @@ if (!currentChat) {
     success: false,
     message: "Chat session not found."
   });
-}
-if (!memory) {
-
-  memory = new Memory({
-    userId,
-    chats: []
-  });
-
 }
 
 // ================= CURRENT CHAT =================
-
-const currentChat = memory.chatSessions.find(
-  (chat) => chat.id === chatId
-);
-
-if (!currentChat) {
-  return res.status(404).json({
-    success: false,
-    message: "Chat session not found."
-  });
-}
 
 // Save user message
 currentChat.messages.push({
