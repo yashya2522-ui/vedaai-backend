@@ -1804,8 +1804,15 @@ memory.chats.push({
 await memory.save();
 
 // ================= AI INPUT =================
-const wikiText = await searchWikipedia(userMessage);
-const newsText = await getNews(userMessage);
+let wikiText = "";
+let newsText = "";
+
+if (shouldSearchWeb(userMessage)) {
+  [wikiText, newsText] = await Promise.all([
+    searchWikipedia(userMessage),
+    getNews(userMessage),
+  ]);
+}
 
 const historyText = history
   .filter(
