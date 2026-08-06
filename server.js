@@ -453,10 +453,7 @@ chatSessions: [
       default: false,
     },
 
-    resetTime: {
-      type: Date,
-      default: null,
-    },
+    resetTime: Date,
 
     messages: [
       {
