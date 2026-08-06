@@ -223,6 +223,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 console.log("========= SERVER TEST =========");
 console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
 
+/*
 (async () => {
   try {
 
@@ -241,7 +242,7 @@ console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
 
   }
 })();
-
+*/
 
 // ================= CHECK API =================
 if (!API_KEY) {
@@ -2364,13 +2365,15 @@ ${finalPrompt}
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-
+console.log("CALLING GEMINI...");
       return await ai.models.generateContentStream({
         model: "gemini-2.5-flash",
         contents: prompt,
       });
 
     } catch (err) {
+      console.log("STREAM ERROR:", err.status);
+console.log(err.message);
 
       if (err.status === 503 && attempt < 2) {
 

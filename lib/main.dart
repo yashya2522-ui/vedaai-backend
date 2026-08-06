@@ -926,6 +926,29 @@ print("========================");
     final response = await client.send(request);
 
   if (response.statusCode == 429) {
+   if (response.statusCode == 503) {
+  final body = await response.stream.bytesToString();
+
+  if (!mounted) return;
+
+  setState(() {
+    allChats[currentChatIndex]["messages"][index]["thinking"] = false;
+
+    allChats[currentChatIndex]["messages"][index]["text"] =
+        body.isEmpty
+            ? "AI is temporarily unavailable. Please try again later."
+            : body;
+
+    messages = List<Map<String, dynamic>>.from(
+      allChats[currentChatIndex]["messages"],
+    );
+  });
+
+  await saveChat();
+
+  client.close();
+  return;
+}
   final body = await response.stream.bytesToString();
 
   try {
@@ -956,7 +979,7 @@ if (response.statusCode != 200) {
 
    await for (final chunk
     in response.stream.transform(utf8.decoder)) {
-
+print("CHUNK: $chunk");
   if (!mounted) return;
 
   // Backend JSON error आला तर
@@ -1020,7 +1043,7 @@ setState(() {
 
   scrollToBottom();
 }
-
+print("STREAM FINISHED");
     await saveChat();
 print("===== ALL CHATS =====");
 print(allChats[currentChatIndex]["messages"]);
