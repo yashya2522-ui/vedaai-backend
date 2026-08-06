@@ -22,6 +22,7 @@ import 'splash_screen.dart';
 import 'subscription_screen.dart';
 import 'package:vedaai/notifications_screen.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 void main() {
   runApp(const MyApp());
 }
@@ -72,6 +73,9 @@ String userName = "User";
       "messages": []
     }
   ];
+Timer? pauseTimer;
+
+String remainingTime = "";
 
 void startNewChat() {
   setState(() {
@@ -365,12 +369,19 @@ Future<bool> checkFreeImageLimit() async {
  File? selectedPdf;
 
   @override
-  void dispose() {
-    controller.dispose();
-    scrollController.dispose();
-    flutterTts.stop();
-    super.dispose();
-  }
+void dispose() {
+
+  pauseTimer?.cancel();
+
+  controller.dispose();
+
+  scrollController.dispose();
+
+  flutterTts.stop();
+
+  super.dispose();
+
+}
 
 @override
 void initState() {
@@ -381,6 +392,9 @@ void initState() {
   loadChat();
   checkPremium();
   loadUser();
+
+
+  startPauseTimer();
 
   scrollController.addListener(() {
 
@@ -398,7 +412,6 @@ void initState() {
       });
 
     }
-
 
   });
 
@@ -611,6 +624,7 @@ currentChatIndex = 0;
 messages = [];
 
       });
+startPauseTimer();
 
     }
 
@@ -888,6 +902,10 @@ Future<void> streamAIResponse(
       "Authorization": "Bearer $token",
       "Content-Type": "application/json",
     });
+    
+print("===== CURRENT CHAT =====");
+print(allChats[currentChatIndex]);
+print("========================");
 
   request.body = jsonEncode({
   "message": text,
@@ -956,7 +974,9 @@ if (response.statusCode != 200) {
 
   await saveChat();
 
-  break;
+startPauseTimer();
+
+break;
 }
 
 if (data["success"] == false) {
@@ -1041,7 +1061,65 @@ Future<void> streamText(
 
 }
 
+void startPauseTimer() {
 
+  pauseTimer?.cancel();
+
+  pauseTimer = Timer.periodic(
+    const Duration(seconds: 1),
+    (timer) {
+
+      if (!mounted) return;
+
+      final chat = allChats[currentChatIndex];
+
+      if (chat["paused"] != true ||
+          chat["resetTime"] == null) {
+        return;
+      }
+
+      final resetTime =
+          DateTime.parse(chat["resetTime"]);
+
+      final difference =
+          resetTime.difference(DateTime.now());
+
+      if (difference.inSeconds <= 0) {
+
+        setState(() {
+
+          chat["paused"] = false;
+          chat["messageCount"] = 0;
+          chat["resetTime"] = null;
+
+          remainingTime = "";
+
+        });
+
+        saveChat();
+
+        timer.cancel();
+
+        return;
+      }
+
+      final hours = difference.inHours;
+      final minutes = difference.inMinutes % 60;
+      final seconds = difference.inSeconds % 60;
+
+      setState(() {
+
+        remainingTime =
+            "${hours.toString().padLeft(2, '0')}:"
+            "${minutes.toString().padLeft(2, '0')}:"
+            "${seconds.toString().padLeft(2, '0')}";
+
+      });
+
+    },
+  );
+
+}
 void sendMessage() async {
 
   final chat = allChats[currentChatIndex];
