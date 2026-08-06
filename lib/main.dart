@@ -610,13 +610,22 @@ final response = await http.get(
                 }
               ]
             : List<Map<String, dynamic>>.from(chats);
-
+        for (var chat in allChats) {
+  chat["id"] ??= DateTime.now().millisecondsSinceEpoch.toString();
+  chat["messageCount"] ??= 0;
+  chat["paused"] ??= false;
+  chat["resetTime"] ??= null;
+}
         // Open fresh chat after login
 
 allChats.insert(0, {
+  "id": DateTime.now().millisecondsSinceEpoch.toString(),
   "title": "New Chat",
   "messages": <Map<String, dynamic>>[],
   "favorite": false,
+  "messageCount": 0,
+  "paused": false,
+  "resetTime": null,
 });
 
 currentChatIndex = 0;
@@ -624,7 +633,8 @@ currentChatIndex = 0;
 messages = [];
 
       });
-startPauseTimer();
+      await saveChat();
+      startPauseTimer();
 
     }
 
@@ -902,7 +912,7 @@ Future<void> streamAIResponse(
       "Authorization": "Bearer $token",
       "Content-Type": "application/json",
     });
-    
+
 print("===== CURRENT CHAT =====");
 print(allChats[currentChatIndex]);
 print("========================");
