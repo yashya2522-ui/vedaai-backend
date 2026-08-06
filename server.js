@@ -2362,14 +2362,20 @@ ${searchContext}
 
 ${finalPrompt}
 `;
-
+console.log("CALLING GEMINI...");
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
 console.log("CALLING GEMINI...");
-      return await ai.models.generateContentStream({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
+     console.log("BEFORE generateContentStream");
+
+const stream = await ai.models.generateContentStream({
+  model: "gemini-2.5-flash",
+  contents: prompt,
+});
+
+console.log("AFTER generateContentStream");
+
+return stream;
 
     } catch (err) {
       console.log("STREAM ERROR:", err.status);
