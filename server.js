@@ -1715,32 +1715,6 @@ if (userId !== "guest") {
 
  user = await User.findById(userId);
 
- let memory = await Memory.findOne({
-  userId,
-});
-
-if (!memory) {
-  return res.status(404).json({
-    success: false,
-    message: "Memory not found",
-  });
-}
-
-const currentChat = memory.chatSessions.find(
-  (chat) => chat.id === chatId
-);
-
-if (!currentChat) {
-  return res.status(404).json({
-    success: false,
-    message: "Chat session not found",
-  });
-}
-
-console.log("========== CURRENT CHAT ==========");
-console.log(currentChat);
-console.log("==================================");
-
 
 const subscription = checkSubscription(user);
 const limits = getPlanLimits(user);
@@ -1792,44 +1766,8 @@ await user.save();
   }
 
 }
-  
 
-app.post("/save-chats", auth, async (req, res) => {
 
-  try {
-
-    const { chats } = req.body;
-
-    let memory = await Memory.findOne({
-      userId: req.userId,
-    });
-
-    if (!memory) {
-
-      memory = new Memory({
-        userId: req.userId,
-      });
-
-    }
-
-    memory.chatSessions = chats;
-
-    await memory.save();
-
-    res.json({
-      success: true,
-    });
-
-  } catch (err) {
-
-    res.status(500).json({
-      success: false,
-      error: err.message,
-    });
-
-  }
-
-});
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
 
@@ -2472,7 +2410,7 @@ if (
   );
 
   // Pause this chat after 50 messages
-  if (currentChat.messageCount >= 50) {
+  if ((currentChat.messageCount || 0) >= 50) {
 
     currentChat.paused = true;
 
@@ -2539,8 +2477,6 @@ res.end();
 
 });
 
-    
-  
 
 app.post("/create-order", auth, async (req, res) => {
   try {
@@ -2554,8 +2490,8 @@ if (!user) {
   });
 
 }
-const subscription = checkSubscription(user);
 
+const subscription = checkSubscription(user);
 
 if (subscription.premium) {
 
