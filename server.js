@@ -1773,7 +1773,7 @@ await user.save();
 
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
-
+console.log("🔥 MEMORY FOUND:", !!memory);
 if (!memory) {
   memory = new Memory({
     userId,
@@ -1786,6 +1786,7 @@ if (!memory) {
 const currentChat = memory.chatSessions.find(
   (chat) => chat.id === chatId
 );
+console.log("🔥 CURRENT CHAT FOUND:", !!currentChat);
 
 if (!currentChat) {
   return res.status(404).json({
