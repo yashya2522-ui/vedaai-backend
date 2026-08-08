@@ -1851,7 +1851,7 @@ if (
   user &&
   user.role !== "owner" &&
   !checkSubscription(user).premium &&
-  currentChat.messageCount >= 50
+  currentChat.messageCount >= 2
 ) {
 
   currentChat.paused = true;
