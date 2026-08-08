@@ -1844,9 +1844,15 @@ if (currentChat.paused) {
 }
 console.log("🔥 PASSED CHAT LIMIT");
 
+
 // ================= MESSAGE LIMIT =================
 
-if (currentChat.messageCount >= 50) {
+if (
+  user &&
+  user.role !== "owner" &&
+  !checkSubscription(user).premium &&
+  currentChat.messageCount >= 50
+) {
 
   currentChat.paused = true;
 
