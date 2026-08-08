@@ -1715,10 +1715,12 @@ console.log("🔍 USER ID:", userId);
 if (userId !== "guest") {
 
  user = await User.findById(userId);
-
+console.log("🔥 USER FOUND:", !!user);
 
 const subscription = checkSubscription(user);
+console.log("🔥 SUBSCRIPTION CHECKED");
 const limits = getPlanLimits(user);
+console.log("🔥 PLAN LIMITS CHECKED");
 if (subscription.expired) {
 
   await user.save();
