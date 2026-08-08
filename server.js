@@ -1702,7 +1702,7 @@ app.post("/chat", auth, async (req, res) => {
     console.log("History:", history);
     console.log("REQ HISTORY");
     console.log(JSON.stringify(history, null, 2));
-
+    console.log("✅ PASSED HISTORY");
 const userId = req.userId || "guest";
 
     if (!userMessage) {
@@ -2404,7 +2404,7 @@ if (isGreeting(userMessage)) {
   return res.end();
 
 }
-
+console.log("✅ PASSED ALL PRE-GEMINI CODE");
 console.log("🚀 ABOUT TO CALL GEMINI");
 console.log("USER MESSAGE:", userMessage);
 const stream = await callGeminiStream(
