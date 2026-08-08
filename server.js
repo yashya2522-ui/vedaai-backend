@@ -1782,6 +1782,12 @@ if (!memory) {
 
   await memory.save();
 }
+console.log("🔥 REQUEST CHAT ID:", chatId);
+
+console.log(
+  "🔥 SAVED CHAT IDS:",
+  memory.chatSessions.map(chat => chat.id)
+);
 
 const currentChat = memory.chatSessions.find(
   (chat) => chat.id === chatId
