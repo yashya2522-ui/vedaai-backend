@@ -1703,8 +1703,9 @@ app.post("/chat", auth, async (req, res) => {
     console.log("REQ HISTORY");
     console.log(JSON.stringify(history, null, 2));
     console.log("✅ PASSED HISTORY");
+    console.log("🔍 STEP AFTER HISTORY");
 const userId = req.userId || "guest";
-
+console.log("🔍 USER ID:", userId);
     if (!userMessage) {
       return res.status(400).json({ error: "Message required" });
     }
