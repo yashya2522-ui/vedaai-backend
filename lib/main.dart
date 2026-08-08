@@ -672,45 +672,11 @@ Future<void> logout() async {
   );
 
 }
-Future<void> saveChat() async {
-
-  try {
-
-    final prefs = await SharedPreferences.getInstance();
-
-    final token = prefs.getString("token");
-
-    if (token == null) return;
-
-    await http.post(
-
-      Uri.parse(
-        "https://vedaai-backend-production-bf1d.up.railway.app/save-chats",
-      ),
-
-      headers: {
-
-        "Authorization": "Bearer $token",
-
-        "Content-Type": "application/json",
-
-      },
-
-      body: jsonEncode({
-
-        "chats": allChats,
-
-      }),
-
-    );
-
-  } catch (e) {
-
-    print("SAVE CHAT ERROR: $e");
-
-  }
-
+Future saveChat() async {
+  // Chat messages are now saved by the /chat API.
+  // No separate /save-chats API is required.
 }
+
 Future<void> newChat() async {
   setState(() {
    allChats.add({

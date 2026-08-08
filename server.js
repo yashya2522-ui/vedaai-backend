@@ -520,7 +520,6 @@ chatSessions: [
 }, { timestamps: true });
 
 const Memory = mongoose.model("Memory", MemorySchema);
-
 // ================= AUTH MIDDLEWARE =================
 function auth(req, res, next) {
 
@@ -1789,17 +1788,33 @@ console.log(
   memory.chatSessions.map(chat => chat.id)
 );
 
-const currentChat = memory.chatSessions.find(
+let currentChat = memory.chatSessions.find(
   (chat) => chat.id === chatId
 );
+
 console.log("🔥 CURRENT CHAT FOUND:", !!currentChat);
 
 if (!currentChat) {
-  return res.status(404).json({
-    success: false,
-    message: "Chat session not found."
-  });
+
+  console.log("🆕 CHAT NOT FOUND — CREATING NEW CHAT");
+
+  currentChat = {
+    id: chatId,
+    title: userMessage.substring(0, 40),
+    favorite: false,
+    messageCount: 0,
+    paused: false,
+    resetTime: null,
+    messages: []
+  };
+
+  memory.chatSessions.push(currentChat);
+
+  await memory.save();
+
+  console.log("✅ NEW CHAT SAVED:", chatId);
 }
+
 console.log("🔥 PASSED CURRENT CHAT");
 // ================= CHAT LIMIT =================
 
