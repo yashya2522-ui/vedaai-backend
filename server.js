@@ -1790,6 +1790,7 @@ if (!currentChat) {
     message: "Chat session not found."
   });
 }
+console.log("🔥 PASSED CURRENT CHAT");
 // ================= CHAT LIMIT =================
 
 if (currentChat.paused) {
@@ -1816,6 +1817,7 @@ if (currentChat.paused) {
 
   await memory.save();
 }
+console.log("🔥 PASSED CHAT LIMIT");
 
 // ================= MESSAGE LIMIT =================
 
