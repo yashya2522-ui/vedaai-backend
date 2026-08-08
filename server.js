@@ -2406,6 +2406,7 @@ if (isGreeting(userMessage)) {
 }
 
 console.log("🚀 ABOUT TO CALL GEMINI");
+console.log("USER MESSAGE:", userMessage);
 const stream = await callGeminiStream(
   userMessage,
   finalPrompt
