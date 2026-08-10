@@ -60,6 +60,7 @@ class _ChatScreenState extends State<ChatScreen> {
   int copiedMessageIndex = -1;
 bool showScrollButton = false;
 bool isPremium = false;
+bool isOwner = false;
 String subscriptionType = "free";
   int currentChatIndex = 0;
 
@@ -76,6 +77,11 @@ String userName = "User";
 Timer? pauseTimer;
 
 String remainingTime = "";
+bool get isCurrentChatPaused {
+  if (allChats.isEmpty) return false;
+
+  return allChats[currentChatIndex]["paused"] == true;
+}
 
 void startNewChat() {
   setState(() {
@@ -91,6 +97,7 @@ void startNewChat() {
     currentChatIndex = 0;
   });
 }
+
 Future<void> checkPremium() async {
 
   final prefs =
@@ -388,48 +395,47 @@ void initState() {
   super.initState();
 
   checkOwner();
-
-  loadChat();
   checkPremium();
   loadUser();
 
-
-  startPauseTimer();
+  loadChat();
 
   scrollController.addListener(() {
-
     if (scrollController.offset <
         scrollController.position.maxScrollExtent - 200) {
-
       setState(() {
         showScrollButton = true;
       });
-
     } else {
-
       setState(() {
         showScrollButton = false;
       });
-
     }
-
   });
-
 }
-Future<void> checkOwner() async {
-
+Future checkOwner() async {
   final prefs = await SharedPreferences.getInstance();
 
-  print("==============");
-
-  print("ROLE = ${prefs.getString("role")}");
-
-  print("PREMIUM = ${prefs.getBool("isPremium")}");
-
-  print("PLAN = ${prefs.getString("subscriptionType")}");
+  final role = prefs.getString("role");
+  final premium = prefs.getBool("isPremium") ?? false;
+  final plan = prefs.getString("subscriptionType");
 
   print("==============");
+  print("ROLE = $role");
+  print("PREMIUM = $premium");
+  print("PLAN = $plan");
+  print("==============");
 
+  if (!mounted) return;
+
+  setState(() {
+    isOwner = role == "owner";
+
+    if (isOwner) {
+      isPremium = true;
+      subscriptionType = "lifetime";
+    }
+  });
 }
 
 Future<void> pickImage() async {
@@ -1061,13 +1067,11 @@ Future<void> streamText(
 }
 
 void startPauseTimer() {
-
   pauseTimer?.cancel();
 
   pauseTimer = Timer.periodic(
     const Duration(seconds: 1),
-    (timer) {
-
+    (timer) async {
       if (!mounted) return;
 
       final chat = allChats[currentChatIndex];
@@ -1083,19 +1087,17 @@ void startPauseTimer() {
       final difference =
           resetTime.difference(DateTime.now());
 
+      // ⏰ TIMER COMPLETE
       if (difference.inSeconds <= 0) {
-
         setState(() {
-
           chat["paused"] = false;
           chat["messageCount"] = 0;
           chat["resetTime"] = null;
 
           remainingTime = "";
-
         });
 
-        saveChat();
+        await saveChat();
 
         timer.cancel();
 
@@ -1103,22 +1105,21 @@ void startPauseTimer() {
       }
 
       final hours = difference.inHours;
-      final minutes = difference.inMinutes % 60;
-      final seconds = difference.inSeconds % 60;
+      final minutes =
+          difference.inMinutes % 60;
+      final seconds =
+          difference.inSeconds % 60;
 
       setState(() {
-
         remainingTime =
             "${hours.toString().padLeft(2, '0')}:"
             "${minutes.toString().padLeft(2, '0')}:"
             "${seconds.toString().padLeft(2, '0')}";
-
       });
-
     },
   );
-
 }
+
 void sendMessage() async {
 
   final chat = allChats[currentChatIndex];
@@ -2032,20 +2033,50 @@ if (allChats.any((c) => c["favorite"] == true))
           : Colors.black),
 ),
 
-title: Text(
+title: Row(
+  children: [
+    Expanded(
+      child: Text(
+        allChats[index]["title"] ?? "New Chat",
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: isDarkMode
+              ? Colors.white
+              : Colors.black,
+        ),
+      ),
+    ),
 
-  allChats[index]["title"] ?? "New Chat",
-
-  overflow: TextOverflow.ellipsis,
-
-  style: TextStyle(
-
-    color: isDarkMode
-        ? Colors.white
-        : Colors.black,
-
-  ),
-
+    // ⏸ PAUSED BADGE
+    if (
+  !isOwner &&
+  !isPremium &&
+  allChats[index]["paused"] == true
+)
+      Container(
+        margin: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 7,
+          vertical: 3,
+        ),
+        decoration: BoxDecoration(
+          color: isDarkMode
+              ? Colors.white12
+              : Colors.black12,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          "⏸ Paused",
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isDarkMode
+                ? Colors.white70
+                : Colors.black54,
+          ),
+        ),
+      ),
+  ],
 ),
  
  
@@ -2402,6 +2433,7 @@ ListTile(
       child: Column(
         children: [
 
+
           // CHAT LIST
          if (messages.any((m) => m["pinned"] == true))
   Container(
@@ -2409,61 +2441,164 @@ ListTile(
     color: Colors.yellow.shade100,
     child: Text("📌 Pinned Message"),
   ),
-  // ================= PAUSED CARD =================
+ // ================= PAUSED CARD =================
 
-if (allChats[currentChatIndex]["paused"] == true)
+if (
+  !isOwner &&
+  !isPremium &&
+  allChats[currentChatIndex]["paused"] == true
+)
   Container(
-    margin: const EdgeInsets.all(12),
-    padding: const EdgeInsets.all(16),
+    width: double.infinity,
+    margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+    padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.orange.shade50,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.orange),
+      color: isDarkMode
+          ? const Color(0xff1E1E1E)
+          : const Color(0xffF8F8F8),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(
+        color: isDarkMode
+            ? Colors.white24
+            : Colors.black12,
+      ),
     ),
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
 
-        const Text(
+        // ⏸ ICON
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? Colors.white10
+                : Colors.black.withOpacity(0.05),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.pause_rounded,
+            size: 28,
+            color: isDarkMode
+                ? Colors.white
+                : Colors.black87,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // TITLE
+        Text(
           "Chats paused",
+          textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
+            color: isDarkMode
+                ? Colors.white
+                : Colors.black87,
           ),
         ),
 
         const SizedBox(height: 8),
 
+        // MESSAGE
         Text(
-          "You've used all messages for this chat.\nTry again after the timer ends or start a new chat.",
+          "You've reached the message limit\nfor this chat.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: isDarkMode
+                ? Colors.white70
+                : Colors.black54,
+          ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
+        // TIMER LABEL
+        Text(
+          "Try again in",
+          style: TextStyle(
+            fontSize: 13,
+            color: isDarkMode
+                ? Colors.white60
+                : Colors.black45,
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        // TIMER
+       Text(
+  remainingTime.isEmpty ? "04:00:00" : remainingTime,
+  style: TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 1,
+    color: isDarkMode
+        ? Colors.white
+        : Colors.black87,
+  ),
+),
+
+        const SizedBox(height: 18),
+
+        // BUTTONS
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
 
-            ElevatedButton.icon(
-              onPressed: newChat,
-              icon: const Icon(Icons.add),
-              label: const Text("New Chat"),
+            // NEW CHAT
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: newChat,
+                icon: const Icon(Icons.add),
+                label: const Text("New Chat"),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ),
 
             const SizedBox(width: 10),
 
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SubscriptionScreen(),
+            // UPGRADE
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const SubscriptionScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.workspace_premium,
+                ),
+                label: const Text("Upgrade"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      const Color(0xffF59E0B),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
                   ),
-                );
-              },
-              icon: const Icon(Icons.workspace_premium),
-              label: const Text("Upgrade"),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ),
-
           ],
         ),
       ],
@@ -2570,22 +2705,20 @@ const SizedBox(width: 5),
 
   onSubmitted: (value) {
 
-    if (value.trim().isNotEmpty) {
+  if (allChats[currentChatIndex]["paused"] ?? false) {
+    return;
+  }
 
-      if (selectedImage != null) {
+  if (value.trim().isNotEmpty) {
 
-        uploadImage();
-
-      } else {
-
-        sendMessage();
-
-      }
-
+    if (selectedImage != null) {
+      uploadImage();
+    } else {
+      sendMessage();
     }
 
-  },
-
+  }
+},
             decoration: const InputDecoration(
 
   hintText: "Ask anything...",

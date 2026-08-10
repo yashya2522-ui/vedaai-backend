@@ -1,9 +1,12 @@
+
+import { useEffect, useState } from "react";
 import "./../App.css";
 
 import { FiPlus, FiSearch, FiSettings } from "react-icons/fi";
 import { HiOutlineUser } from "react-icons/hi";
 import { RiVipCrownLine } from "react-icons/ri";
 import { BsRobot } from "react-icons/bs";
+
 import "./Sidebar.css";
 
 function Sidebar({
@@ -12,96 +15,177 @@ function Sidebar({
   setMessages,
   setCurrentChatId,
   createNewChat
-})
- {
+}) {
+
+  // ================= USER =================
+  const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+
+    const name =
+      localStorage.getItem("name") ||
+      localStorage.getItem("userName") ||
+      "User";
+
+    const email =
+      localStorage.getItem("email") ||
+      "";
+
+    const premium =
+      localStorage.getItem("isPremium") === "true";
+
+    const role =
+      localStorage.getItem("role") ||
+      "";
+
+    setUserName(name);
+    setUserEmail(email);
+    setIsPremium(premium);
+    setIsOwner(role === "owner");
+
+  }, []);
 
   return (
+
     <div className="sidebar">
 
+      {/* ================= LOGO ================= */}
+
       <div className="logo">
-  <BsRobot className="logo-icon" />
-  <span>VedaAI</span>
-</div>
-
-<button 
-  className="new-chat-btn"
-  onClick={createNewChat}
->
-
-  <FiPlus />
-  <span>New Chat</span>
-</button>
-
-<div className="search-box">
-  <FiSearch className="search-icon" />
-
-  <input
-    type="text"
-    placeholder="Search..."
-  />
-</div>
-<div className="history">
-
-  <h4>Chat History</h4>
+        <BsRobot />
+        <span>VedaAI</span>
+      </div>
 
 
-  {
-    chatSessions && chatSessions.length > 0 ?
+      {/* ================= NEW CHAT ================= */}
 
-    chatSessions.map((chat)=>(
-
-      <div
-        key={chat.id}
-       className={
-  chat.id === currentChatId
-    ? "history-item active"
-    : "history-item"
-}
-        onClick={()=>{
-          
-          setMessages(chat.messages);
-          setCurrentChatId(chat.id);
-
-        }}
+      <button
+        className="new-chat-btn"
+        onClick={createNewChat}
       >
+        <FiPlus />
+        New Chat
+      </button>
 
-        💬 {chat.title}
+
+      {/* ================= SEARCH ================= */}
+
+      <button className="search-btn">
+        <FiSearch />
+        Search
+      </button>
+
+
+      {/* ================= CHAT HISTORY ================= */}
+
+      <div className="chat-history">
+
+        {chatSessions && chatSessions.length > 0 ?
+
+          chatSessions.map((chat) => (
+
+            <div
+              key={chat.id}
+              className={
+                chat.id === currentChatId
+                  ? "history-item active"
+                  : "history-item"
+              }
+              onClick={() => {
+
+                setMessages(
+                  chat.messages || []
+                );
+
+                setCurrentChatId(chat.id);
+
+              }}
+            >
+
+              💬 {chat.title || "New Chat"}
+
+            </div>
+
+          ))
+
+          :
+
+          <p className="empty-history">
+            No chats yet
+          </p>
+
+        }
 
       </div>
 
-    ))
 
-    :
-
-    <p className="empty-history">
-      No chats yet
-    </p>
-
-  }
-
-
-</div>
+      {/* ================= BOTTOM USER ================= */}
 
       <div className="sidebar-bottom">
 
-        <button>
-  <HiOutlineUser />
-  <span>Profile</span>
-</button>
+        <div className="user-profile">
 
-<button>
-  <FiSettings />
-  <span>Settings</span>
-</button>
+          <div className="user-avatar">
+            <HiOutlineUser />
+          </div>
 
-<button>
-  <RiVipCrownLine />
-  <span>Premium</span>
-</button>
+          <div className="user-info">
+
+            <div className="user-name">
+              {userName}
+            </div>
+
+            {userEmail && (
+              <div className="user-email">
+                {userEmail}
+              </div>
+            )}
+
+            <div className="user-plan">
+
+              {isOwner ? (
+
+                <>
+                  <RiVipCrownLine />
+                  Owner
+                </>
+
+              ) : isPremium ? (
+
+                <>
+                  <RiVipCrownLine />
+                  Premium
+                </>
+
+              ) : (
+
+                <>
+                  Free Plan
+                </>
+
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        {/* SETTINGS */}
+
+        <button className="settings-btn">
+          <FiSettings />
+          Settings
+        </button>
 
       </div>
 
     </div>
+
   );
 }
 

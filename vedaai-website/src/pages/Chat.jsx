@@ -8,35 +8,110 @@ import AiMessage from "../components/AiMessage";
 function Chat() {
 
   const [message, setMessage] = useState("");
-  
-  const [file,setFile] = useState(null);
- const [messages, setMessages] = useState([]);
+
+const [file, setFile] = useState(null);
+
+const [messages, setMessages] = useState([]);
+
 const [chatSessions, setChatSessions] = useState([]);
+
 const [currentChatId, setCurrentChatId] = useState(null);
+
 const [isThinking, setIsThinking] = useState(false);
+
+const [remainingTime, setRemainingTime] = useState("");
+
+const [isOwner, setIsOwner] = useState(false);
+
+const [isPremium, setIsPremium] = useState(false);
+
 const chatEndRef = useRef(null);
 
 useEffect(() => {
-
   const savedChats = localStorage.getItem("vedaChats");
 
   if (savedChats) {
-
     const parsedChats = JSON.parse(savedChats);
 
     setChatSessions(parsedChats);
 
     if (parsedChats.length > 0) {
-
       setCurrentChatId(parsedChats[0].id);
+      setMessages(parsedChats[0].messages || []);
+    }
+  }
+}, []);
 
-      setMessages(parsedChats[0].messages);
+useEffect(() => {
+  const role = localStorage.getItem("role");
+  const premium =
+    localStorage.getItem("isPremium") === "true";
 
+  setIsOwner(role === "owner");
+  setIsPremium(premium);
+
+  console.log("WEB ROLE:", role);
+  console.log("WEB PREMIUM:", premium);
+}, []);
+
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    if (!currentChatId) return;
+
+    const chat = chatSessions.find(
+      c => String(c.id) === String(currentChatId)
+    );
+
+    if (!chat || !chat.resetTime) {
+      setRemainingTime("");
+      return;
     }
 
-  }
+    const difference =
+      new Date(chat.resetTime).getTime() -
+      Date.now();
 
-}, []);
+    if (difference <= 0) {
+      setChatSessions(prev =>
+        prev.map(c =>
+          String(c.id) === String(currentChatId)
+            ? {
+                ...c,
+                paused: false,
+                resetTime: null,
+                messageCount: 0
+              }
+            : c
+        )
+      );
+
+      setRemainingTime("");
+      return;
+    }
+
+    const hours = Math.floor(
+      difference / (1000 * 60 * 60)
+    );
+
+    const minutes = Math.floor(
+      (difference / (1000 * 60)) % 60
+    );
+
+    const seconds = Math.floor(
+      (difference / 1000) % 60
+    );
+
+    setRemainingTime(
+      `${String(hours).padStart(2, "0")}:` +
+      `${String(minutes).padStart(2, "0")}:` +
+      `${String(seconds).padStart(2, "0")}`
+    );
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [currentChatId, chatSessions]);
+
 
 useEffect(() => {
 
@@ -191,16 +266,35 @@ const sendMessage = async () => {
         },
 
 
-        body:JSON.stringify({
-
-          message:userText
-
-        })
+       body: JSON.stringify({
+  message: userText,
+  chatId: String(chatId),
+  history: messages
+})
 
       }
     );
 
+const data = await response.clone().json().catch(() => null);
 
+if (data?.paused === true) {
+
+  setChatSessions(prev =>
+    prev.map(chat =>
+      String(chat.id) === String(chatId)
+        ? {
+            ...chat,
+            paused: true,
+            resetTime: data.resetTime,
+          }
+        : chat
+    )
+  );
+
+  setRemainingTime("");
+
+  return;
+}
 
     if(!response.ok){
 
@@ -454,6 +548,52 @@ if (file.type === "application/pdf") {
         <div className="chat-container">
 
             <h1>VedaAI Chat 🤖</h1>
+            {!isOwner &&
+ !isPremium &&
+ chatSessions.find(
+   chat => String(chat.id) === String(currentChatId)
+ )?.paused === true && (
+  <div className="paused-card">
+
+    <div className="paused-icon">⏸</div>
+
+    <h2>Chats paused</h2>
+
+    <p>
+      You've reached the message limit
+      <br />
+      for this chat.
+    </p>
+
+    <span>Try again in</span>
+
+    <strong>
+      {remainingTime || "04:00:00"}
+    </strong>
+
+    <div className="paused-buttons">
+
+      <button
+        onClick={createNewChat}
+        className="new-chat-btn"
+      >
+        ＋ New Chat
+      </button>
+
+      <button
+        onClick={() => {
+          window.location.href = "/subscription";
+        }}
+        className="upgrade-btn"
+      >
+        👑 Upgrade
+      </button>
+
+    </div>
+
+  </div>
+)}
+
 <div className="chat-box">
 
   {messages.length === 0 && (
@@ -566,17 +706,27 @@ if (file.type === "application/pdf") {
                     />
                 </label>
 
-                <input
-                    placeholder="Ask anything..."
-                    value={message}
-                    onChange={(e)=>setMessage(e.target.value)}
-                    onKeyDown={(e)=>{
-                        if(e.key==="Enter"){
-                            sendMessage();
-                        }
-                    }}
-                />
+              
+<input
+  placeholder="Ask anything..."
+  value={message}
 
+  disabled={
+    !isOwner &&
+    !isPremium &&
+    chatSessions.find(
+      chat => String(chat.id) === String(currentChatId)
+    )?.paused === true
+  }
+
+  onChange={(e) => setMessage(e.target.value)}
+
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  }}
+/>
                 <button
                     className="send-btn"
                     onClick={sendMessage}

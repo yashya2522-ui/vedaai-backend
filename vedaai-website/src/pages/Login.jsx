@@ -26,8 +26,21 @@ function Login() {
       return;
     }
 
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("name", data.name);
+   
+localStorage.setItem("token", data.token);
+localStorage.setItem("name", data.name || "");
+localStorage.setItem("email", data.email || "");
+localStorage.setItem("role", data.role || "user");
+localStorage.setItem(
+  "isPremium",
+  String(data.isPremium || false)
+);
+
+alert("Login Successful ✅");
+
+navigate("/");
+
+
 
     alert("Login Successful ✅");
 
