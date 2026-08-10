@@ -926,7 +926,7 @@ Future<String> getAIResponse(String text) async {
   }
 }
 
-Future<void> streamAIResponse(
+Future streamAIResponse(
   String text,
   int index,
   List<Map<String, dynamic>> history,
@@ -952,259 +952,443 @@ Future<void> streamAIResponse(
       "Content-Type": "application/json",
     });
 
-print("===== CURRENT CHAT =====");
-print(allChats[currentChatIndex]);
-print("========================");
+    print("===== CURRENT CHAT =====");
+    print(allChats[currentChatIndex]);
+    print("========================");
 
-  request.body = jsonEncode({
-  "message": text,
-  "history": history.take(15).toList(),
-  "chatId": allChats[currentChatIndex]["id"],
-});
+    request.body = jsonEncode({
+      "message": text,
+      "history": history.take(15).toList(),
+      "chatId": allChats[currentChatIndex]["id"],
+    });
 
     final response = await client.send(request);
 
-  if (response.statusCode == 429) {
-   if (response.statusCode == 503) {
-  final body = await response.stream.bytesToString();
+    // ==================================================
+    // SERVER ERROR
+    // ==================================================
 
-  if (!mounted) return;
+    if (response.statusCode != 200) {
+      final body = await response.stream.bytesToString();
 
-  setState(() {
-    allChats[currentChatIndex]["messages"][index]["thinking"] = false;
+      if (!mounted) {
+        client.close();
+        return;
+      }
 
-    allChats[currentChatIndex]["messages"][index]["text"] =
-        body.isEmpty
-            ? "AI is temporarily unavailable. Please try again later."
-            : body;
+      setState(() {
+        allChats[currentChatIndex]
+                ["messages"][index]["thinking"] =
+            false;
 
-    messages = List<Map<String, dynamic>>.from(
-      allChats[currentChatIndex]["messages"],
-    );
-  });
+        allChats[currentChatIndex]
+                ["messages"][index]["text"] =
+            body.isEmpty
+                ? "Server Error: ${response.statusCode}"
+                : body;
 
-  await saveChat();
+        messages =
+            List<Map<String, dynamic>>.from(
+          allChats[currentChatIndex]["messages"],
+        );
+      });
 
-  client.close();
-  return;
-}
-  final body = await response.stream.bytesToString();
+      await saveChat();
 
-  try {
-    final data = jsonDecode(body);
+      client.close();
+      return;
+    }
 
-    if (!mounted) return;
+    // ==================================================
+    // SOURCES
+    // ==================================================
 
-    setState(() {
-      allChats[currentChatIndex]["messages"][index]["text"] =
-          data["message"] ??
-          "VedaAI is temporarily busy. Please try again later.";
+    List<Map<String, dynamic>> receivedSources = [];
 
-      messages = List<Map<String, dynamic>>.from(
-        allChats[currentChatIndex]["messages"],
-      );
-    });
+    // ==================================================
+    // STREAM BUFFER
+    // ==================================================
 
-    await saveChat();
-    client.close();
-    return;
+    String streamBuffer = "";
 
-  } catch (_) {}
-}
+    // ==================================================
+    // READ STREAM
+    // ==================================================
 
-if (response.statusCode != 200) {
-  throw Exception("Server Error");
-}
+    await for (
+      final chunk
+          in response.stream.transform(utf8.decoder)
+    ) {
+      print("CHUNK: $chunk");
 
-// ================= SOURCES =================
-List<Map<String, dynamic>> receivedSources = [];
-String streamBuffer = "";
+      if (!mounted) {
+        client.close();
+        return;
+      }
 
-  await for (final chunk
-    in response.stream.transform(utf8.decoder)) {
+      // ==============================================
+      // ADD CHUNK TO BUFFER
+      // ==============================================
 
-  print("CHUNK: $chunk");
+      streamBuffer += chunk;
 
-  if (!mounted) return;
+      // ==============================================
+      // SPLIT NEW LINES
+      // ==============================================
 
-  // ============================================
-  // Add incoming data to buffer
-  // ============================================
+      final parts = streamBuffer.split("\n");
 
-  streamBuffer += chunk;
+      // Last part may be incomplete
+      streamBuffer = parts.removeLast();
 
-  // Backend प्रत्येक JSON message newline ने पाठवतो
-  final parts = streamBuffer.split("\n");
+      // ==============================================
+      // PROCESS COMPLETE LINES
+      // ==============================================
 
-  // शेवटचा incomplete भाग buffer मध्ये ठेव
-  streamBuffer = parts.removeLast();
+      for (final part in parts) {
+        final line = part.trim();
 
-  for (final part in parts) {
+        if (line.isEmpty) {
+          continue;
+        }
 
-    final line = part.trim();
+        // ============================================
+        // JSON MESSAGE
+        // ============================================
 
-    if (line.isEmpty) continue;
+        if (line.startsWith("{")) {
+          try {
+            final data = jsonDecode(line);
 
-    // ============================================
-    // 1. BACKEND JSON MESSAGE
-    // ============================================
+            // ========================================
+            // SOURCES
+            // ========================================
 
-    if (line.startsWith("{")) {
+            if (data["type"] == "sources") {
+              final sourceList = data["sources"];
 
-      try {
+              if (sourceList is List) {
+                receivedSources =
+                    List<Map<String, dynamic>>.from(
+                  sourceList.map(
+                    (source) =>
+                        Map<String, dynamic>.from(
+                      source,
+                    ),
+                  ),
+                );
 
-        final data = jsonDecode(line);
+                print("📚 RECEIVED SOURCES:");
+                print(receivedSources);
 
-        // ========================================
-        // SOURCES
-        // ========================================
+                setState(() {
+                  allChats[currentChatIndex]
+                          ["messages"][index]["sources"] =
+                      receivedSources;
 
-        if (data["type"] == "sources") {
+                  messages =
+                      List<Map<String, dynamic>>.from(
+                    allChats[currentChatIndex]
+                        ["messages"],
+                  );
+                });
+              }
 
-          final sourceList = data["sources"];
+              // JSON source message AI text मध्ये add करू नको
+              continue;
+            }
 
-          if (sourceList is List) {
+            // ========================================
+            // PAUSED CHAT
+            // ========================================
 
-            receivedSources =
-                List<Map<String, dynamic>>.from(
-              sourceList.map(
-                (source) =>
-                    Map<String, dynamic>.from(source),
-              ),
-            );
+            if (data["paused"] == true) {
+              setState(() {
+                allChats[currentChatIndex]["paused"] =
+                    true;
 
-            print("📚 RECEIVED SOURCES:");
-            print(receivedSources);
+                allChats[currentChatIndex]
+                        ["resetTime"] =
+                    data["resetTime"];
 
-            // Message मध्ये sources save
+                allChats[currentChatIndex]
+                        ["messages"][index]["text"] =
+                    data["message"] ??
+                        "This chat is temporarily paused.";
+
+                allChats[currentChatIndex]
+                        ["messages"][index]["thinking"] =
+                    false;
+
+                messages =
+                    List<Map<String, dynamic>>.from(
+                  allChats[currentChatIndex]
+                      ["messages"],
+                );
+              });
+
+              await saveChat();
+
+              startPauseTimer();
+
+              continue;
+            }
+
+            // ========================================
+            // BACKEND ERROR
+            // ========================================
+
+            if (data["success"] == false) {
+              setState(() {
+                allChats[currentChatIndex]
+                        ["messages"][index]["text"] =
+                    data["message"] ??
+                        "VedaAI is temporarily unavailable.";
+
+                allChats[currentChatIndex]
+                        ["messages"][index]["thinking"] =
+                    false;
+
+                messages =
+                    List<Map<String, dynamic>>.from(
+                  allChats[currentChatIndex]
+                      ["messages"],
+                );
+              });
+
+              continue;
+            }
+
+            // जर JSON दुसरा काही response असेल
+            continue;
+          } catch (e) {
+            print("Not JSON: $line");
+          }
+        }
+
+        // ============================================
+        // NORMAL AI TEXT
+        // ============================================
+
+        setState(() {
+          allChats[currentChatIndex]
+                  ["messages"][index]["thinking"] =
+              false;
+
+          allChats[currentChatIndex]
+                  ["messages"][index]["text"] +=
+              line;
+
+          messages =
+              List<Map<String, dynamic>>.from(
+            allChats[currentChatIndex]["messages"],
+          );
+        });
+
+        scrollToBottom();
+      }
+    }
+
+    // ==================================================
+    // IMPORTANT:
+    // PROCESS REMAINING BUFFER
+    // ==================================================
+
+    final remaining = streamBuffer.trim();
+
+    if (remaining.isNotEmpty && mounted) {
+      print("🟡 REMAINING BUFFER: $remaining");
+
+      // जर remaining JSON असेल
+      if (remaining.startsWith("{")) {
+        try {
+          final data = jsonDecode(remaining);
+
+          // ==========================================
+          // REMAINING SOURCES
+          // ==========================================
+
+          if (data["type"] == "sources") {
+            final sourceList = data["sources"];
+
+            if (sourceList is List) {
+              receivedSources =
+                  List<Map<String, dynamic>>.from(
+                sourceList.map(
+                  (source) =>
+                      Map<String, dynamic>.from(source),
+                ),
+              );
+
+              setState(() {
+                allChats[currentChatIndex]
+                        ["messages"][index]["sources"] =
+                    receivedSources;
+
+                messages =
+                    List<Map<String, dynamic>>.from(
+                  allChats[currentChatIndex]
+                      ["messages"],
+                );
+              });
+            }
+          }
+
+          // ==========================================
+          // REMAINING PAUSED RESPONSE
+          // ==========================================
+
+          else if (data["paused"] == true) {
             setState(() {
+              allChats[currentChatIndex]["paused"] =
+                  true;
 
               allChats[currentChatIndex]
-                  ["messages"][index]["sources"] =
-                  receivedSources;
+                      ["resetTime"] =
+                  data["resetTime"];
+
+              allChats[currentChatIndex]
+                      ["messages"][index]["text"] =
+                  data["message"] ??
+                      "This chat is temporarily paused.";
+
+              allChats[currentChatIndex]
+                      ["messages"][index]["thinking"] =
+                  false;
 
               messages =
                   List<Map<String, dynamic>>.from(
                 allChats[currentChatIndex]
                     ["messages"],
               );
-
             });
 
+            startPauseTimer();
           }
 
-          // Source JSON AI text मध्ये add करू नको
-          continue;
-        }
+          // ==========================================
+          // REMAINING BACKEND ERROR
+          // ==========================================
 
-        // ========================================
-        // PAUSED CHAT
-        // ========================================
+          else if (data["success"] == false) {
+            setState(() {
+              allChats[currentChatIndex]
+                      ["messages"][index]["text"] =
+                  data["message"] ??
+                      "VedaAI is temporarily unavailable.";
 
-        if (data["paused"] == true) {
+              allChats[currentChatIndex]
+                      ["messages"][index]["thinking"] =
+                  false;
+
+              messages =
+                  List<Map<String, dynamic>>.from(
+                allChats[currentChatIndex]
+                    ["messages"],
+              );
+            });
+          }
+        } catch (e) {
+          // Remaining data normal AI text आहे
+          print("🟡 REMAINING TEXT IS NOT JSON");
 
           setState(() {
-
-            allChats[currentChatIndex]["paused"] =
-                true;
-
-            allChats[currentChatIndex]["resetTime"] =
-                data["resetTime"];
-
-            allChats[currentChatIndex]
-                    ["messages"][index]["text"] =
-                data["message"] ??
-                    "This chat is temporarily paused.";
-
             allChats[currentChatIndex]
                     ["messages"][index]["thinking"] =
                 false;
 
-            messages =
-                List<Map<String, dynamic>>.from(
-              allChats[currentChatIndex]
-                  ["messages"],
-            );
-
-          });
-
-          await saveChat();
-
-          startPauseTimer();
-
-          continue;
-        }
-
-        // ========================================
-        // BACKEND ERROR
-        // ========================================
-
-        if (data["success"] == false) {
-
-          setState(() {
-
             allChats[currentChatIndex]
-                    ["messages"][index]["text"] =
-                data["message"] ??
-                    "VedaAI is temporarily unavailable.";
-
-            allChats[currentChatIndex]
-                    ["messages"][index]["thinking"] =
-                false;
+                    ["messages"][index]["text"] +=
+                remaining;
 
             messages =
                 List<Map<String, dynamic>>.from(
-              allChats[currentChatIndex]
-                  ["messages"],
+              allChats[currentChatIndex]["messages"],
             );
-
           });
 
-          continue;
+          scrollToBottom();
         }
+      } else {
+        // ============================================
+        // NORMAL REMAINING AI TEXT
+        // ============================================
 
-      } catch (e) {
+        setState(() {
+          allChats[currentChatIndex]
+                  ["messages"][index]["thinking"] =
+              false;
 
-        // JSON नसेल तर normal AI text समज
-        print("Not JSON: $line");
+          allChats[currentChatIndex]
+                  ["messages"][index]["text"] +=
+              remaining;
 
+          messages =
+              List<Map<String, dynamic>>.from(
+            allChats[currentChatIndex]["messages"],
+          );
+        });
+
+        scrollToBottom();
       }
     }
 
-    // ============================================
-    // 2. NORMAL AI TEXT
-    // ============================================
+    // ==================================================
+    // STREAM FINISHED
+    // ==================================================
+
+    print("STREAM FINISHED");
+
+    // Make absolutely sure thinking is false
+    if (mounted) {
+      setState(() {
+        allChats[currentChatIndex]
+                ["messages"][index]["thinking"] =
+            false;
+
+        messages =
+            List<Map<String, dynamic>>.from(
+          allChats[currentChatIndex]["messages"],
+        );
+      });
+    }
+
+    // ==================================================
+    // SAVE CHAT
+    // ==================================================
+
+    await saveChat();
+
+    print("===== ALL CHATS =====");
+    print(allChats[currentChatIndex]["messages"]);
+    print("=====================");
+
+    // ==================================================
+    // CLOSE CLIENT
+    // ==================================================
+
+    client.close();
+  } catch (e) {
+    print("❌ STREAM ERROR: $e");
+
+    if (!mounted) return;
 
     setState(() {
-
       allChats[currentChatIndex]
               ["messages"][index]["thinking"] =
           false;
 
       allChats[currentChatIndex]
-              ["messages"][index]["text"] +=
-          line;
+              ["messages"][index]["text"] =
+          "Something went wrong. Please try again.";
 
       messages =
           List<Map<String, dynamic>>.from(
-        allChats[currentChatIndex]
-            ["messages"],
+        allChats[currentChatIndex]["messages"],
       );
-
     });
 
-    scrollToBottom();
-  }
-}
-print("STREAM FINISHED");
     await saveChat();
-print("===== ALL CHATS =====");
-print(allChats[currentChatIndex]["messages"]);
-print("=====================");
-    client.close();
-
-  } catch (e) {
-    print(e);
   }
 }
 
