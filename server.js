@@ -3518,6 +3518,58 @@ DO NOT create a fake "Sources" section if no real source information is availabl
 
 If source information is provided by the application, use that information accurately.
 
+
+IMPORTANT CURRENT PRODUCT PRICE RULES:
+
+When the user asks for the current/latest price of a product:
+
+1. Determine the user's likely country or market from the available
+   conversation or application context.
+
+2. If the user is in India or the Indian market is implied,
+   prioritize Indian prices in INR (₹).
+
+3. Prefer current Indian sources such as:
+   - Official manufacturer website
+   - Amazon India
+   - Flipkart
+   - Croma
+   - Reliance Digital
+   - Vijay Sales
+   - Other verified Indian retailers
+
+4. Do NOT use US, UK or other-country prices as the primary answer
+   when the user is asking about the Indian market.
+
+5. Do NOT convert a foreign price into INR and present it as an
+   Indian retail price.
+
+6. If an Indian price cannot be reliably verified, clearly say so.
+   Do not guess.
+
+7. Always identify the exact variant when price depends on:
+   - RAM
+   - Storage
+   - Model
+   - Colour
+   - Region
+   - Offer
+
+8. If different retailers have different prices, explain that the
+   price varies by retailer, variant and current offers.
+
+9. Prefer the most recent verified price available.
+
+10. Keep the normal AI answer clean and readable.
+
+11. Do not manually create a "Sources" section inside the answer.
+    The application will display verified source cards separately.
+
+12. Never mention a retailer as a source unless that retailer's
+    information was actually provided by the web search results.
+
+13. Never invent a price, retailer, URL, source or availability status.
+
 ==================================================
 15. FACTUAL ACCURACY
 ==================================================
@@ -4049,23 +4101,25 @@ console.log("🔎 SMART SEARCH QUERY:", smartQuery);
     "============================="
   );
 
-  // ==================================================
-  // 3. SEARCH CONTEXT
-  // ==================================================
-  let searchContext = "";
+ 
+// ==================================================
+// 3. SEARCH CONTEXT
+// ==================================================
+let searchContext = "";
 
-  if (webResults.length > 0) {
-    searchContext =
-      "Latest verified web search results:\n\n" +
-      webResults
-        .map(
-          (item, i) =>
-            `${i + 1}. ${item.title}\n` +
-            `${item.content}\n` +
-            `Source: ${item.url}`
-        )
-        .join("\n\n");
-  }
+if (webResults.length > 0) {
+  searchContext =
+    "Latest verified web search results:\n\n" +
+    webResults
+      .map(
+        (item, i) =>
+          `${i + 1}. ${item.title}\n` +
+          `${item.content}\n` +
+          `Source: ${item.url}`
+      )
+      .join("\n\n");
+}
+
 
   // ==================================================
   // 4. GEMINI PROMPT
@@ -4093,32 +4147,47 @@ IMPORTANT SOURCE RULES:
 
 When web search results are available:
 
-1. Use the search results to answer the user's question accurately.
+1. Use the verified search results to answer the user's question
+   accurately.
 
 2. For current, latest, today's, live, recent, price, news,
-government, political, product, software-version or other
-time-sensitive questions, prefer the most recent reliable result.
+   government, political, product, software-version and other
+   time-sensitive questions, prefer the most recent reliable
+   information.
 
-3. Never invent a current fact when the search results do not
-support it.
+3. Never invent:
+   - prices
+   - dates
+   - names
+   - facts
+   - availability
+   - URLs
+   - sources
 
-4. If multiple reliable sources disagree, clearly explain the
-difference instead of silently choosing an unsupported answer.
+4. If multiple reliable sources disagree, explain the difference
+   when it is important.
 
-5. Do not fabricate sources, URLs, prices, dates, names or facts.
+5. The backend separately extracts verified source metadata and
+   sends it to the frontend.
 
-6. The backend will send verified source metadata separately
-to the frontend.
+6. Do NOT create a Sources section inside the AI answer.
 
-7. Do NOT manually create fake source links inside the answer.
+7. Do NOT manually create source cards.
 
-8. Do NOT write a "Sources" section inside the AI answer.
-The application UI will display the sources separately.
+8. Do NOT put raw URLs inside the normal AI answer.
 
-9. Do not mention internal search tools such as Tavily.
+9. Do NOT invent citations.
 
-10. If no web search was performed, do not pretend that
-the information was verified from the web.
+10. Do NOT mention internal tools such as Tavily.
+
+11. If no web search was performed, do not claim that the answer
+    was verified from the web.
+
+12. Keep the normal AI answer clean and natural.
+
+The application UI is responsible for displaying the source cards.
+
+
 
 WEB SEARCH RESULTS:
 
@@ -4377,22 +4446,30 @@ res.setHeader(
 let buffer = "";
 
 // ================= SEND SOURCES =================
+// Sources are sent separately before the AI response.
+
 if (sources.length > 0) {
   res.write(
-    JSON.stringify({
-      type: "sources",
-      sources: sources,
-    }) + "\n"
+    "<<<VEDAAI_SOURCES_START>>>\n"
+  );
+
+  res.write(
+    JSON.stringify(sources)
+  );
+
+  res.write(
+    "\n<<<VEDAAI_SOURCES_END>>>\n"
   );
 }
 
-// ==================================================
-// READ GEMINI STREAM
-// ==================================================
+// Tell frontend that AI response is starting
+res.write(
+  "<<<VEDAAI_RESPONSE_START>>>\n"
+);
 
-for await (
-  const chunk of stream
-) {
+// ================= READ GEMINI STREAM =================
+
+for await (const chunk of stream) {
 
   const text =
     chunk.text || "";
@@ -4405,21 +4482,31 @@ for await (
 
   buffer += text;
 
+  // Send AI text in chunks
+  // without changing its Markdown formatting.
 
-  // Send chunks to Flutter
-  if (
-    buffer.length >= 40
-  ) {
+  if (buffer.length >= 40) {
 
-    res.write(
-      buffer
-    );
+    res.write(buffer);
 
     buffer = "";
-
   }
-
 }
+
+// Send remaining AI text
+
+if (buffer.length > 0) {
+
+  res.write(buffer);
+
+  buffer = "";
+}
+
+// Tell frontend that AI response is complete
+
+res.write(
+  "\n<<<VEDAAI_RESPONSE_END>>>\n"
+);
 
 
 // ==================================================

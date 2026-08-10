@@ -353,3 +353,104 @@
     }
 
 }
+
+/* ==================================================
+   COMPACT SOURCE CARDS
+   ================================================== */
+
+.source-logo {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.source-logo img {
+  width: 20px;
+  height: 20px;
+
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* ================= SEARCHING UI ================= */
+
+.searching-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin: 8px 0 12px 44px;
+
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+/* Navy Blue Searching Dot */
+.searching-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+
+  background: #0b2a5b;
+  border-radius: 50%;
+
+  animation: searchingPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes searchingPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.searching-text {
+  font-weight: 500;
+}
+
+.searching-dots {
+  display: flex;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+.searching-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+
+  animation: searchingDot 1.2s infinite ease-in-out;
+}
+
+.searching-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.searching-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes searchingDot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}

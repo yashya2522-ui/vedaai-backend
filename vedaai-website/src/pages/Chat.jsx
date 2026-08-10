@@ -21,6 +21,9 @@ const [isThinking, setIsThinking] = useState(false);
 
 const [remainingTime, setRemainingTime] = useState("");
 
+const [isSearching, setIsSearching] = useState(false);
+const [sources, setSources] = useState([]);
+
 const [isOwner, setIsOwner] = useState(false);
 
 const [isPremium, setIsPremium] = useState(false);
@@ -139,6 +142,44 @@ useEffect(() => {
 
 }, [chatSessions]);
 
+const isSearchQuestion = (text) => {
+  const searchWords = [
+    "current",
+    "latest",
+    "today",
+    "now",
+    "price",
+    "cost",
+    "news",
+    "recent",
+    "weather",
+    "available",
+    "availability",
+    "who is",
+    "which is",
+    "when is",
+    "आत्ता",
+    "आत्ताचा",
+    "आत्ताची",
+    "आत्ताचे",
+    "आज",
+    "आजचा",
+    "आजची",
+    "सध्याचा",
+    "सध्याची",
+    "सध्याचे",
+    "किंमत",
+    "भाव",
+    "न्यूज",
+    "ताजी माहिती"
+  ];
+
+  const lowerText = text.toLowerCase();
+
+  return searchWords.some(word =>
+    lowerText.includes(word.toLowerCase())
+  );
+};
 
 const createNewChat = () => {
 
@@ -161,6 +202,7 @@ const sendMessage = async () => {
 
 
   const userText = message;
+  setSources([]);
 
   let chatId = currentChatId;
 
@@ -226,18 +268,24 @@ const sendMessage = async () => {
 
   setMessage("");
 
+const searching = isSearchQuestion(userText);
 
+setIsThinking(true);
+setIsSearching(searching);
 
-  // ADD THINKING MESSAGE
-  const thinkingMessage = {
+// ADD THINKING MESSAGE
+const thinkingMessage = {
+  role: "ai",
+  text: searching
+    ? "Searching the web..."
+    : "VedaAI is thinking...",
+  thinking: true
+};
 
-    role:"ai",
-
-    text:"VedaAI is thinking...",
-
-    thinking:true
-
-  };
+setMessages(prev => [
+  ...prev,
+  thinkingMessage
+]);
 
 
   setMessages(prev => [
@@ -306,108 +354,259 @@ if (data?.paused === true) {
 
 
 
-    const reader =
-    response.body.getReader();
+    
+const reader =
+response.body.getReader();
 
+const decoder =
+new TextDecoder();
 
-    const decoder =
-    new TextDecoder();
+let aiText = "";
+let streamBuffer = "";
 
+let receivingSources = false;
+let receivingResponse = false;
 
+// Searching state ON
+setIsSearching(true);
 
-    let aiText = "";
+while (true) {
 
+  const {
+    done,
+    value
+  } = await reader.read();
 
+  if (done) {
+    break;
+  }
 
-    while(true){
+  const chunk =
+    decoder.decode(
+      value,
+      {
+        stream: true
+      }
+    );
 
+  streamBuffer += chunk;
 
-      const {
-        done,
-        value
-      } = await reader.read();
+  // ==============================================
+  // SOURCE START
+  // ==============================================
 
+  if (
+    streamBuffer.includes(
+      "<<<VEDAAI_SOURCES_START>>>"
+    )
+  ) {
 
+    receivingSources = true;
 
-      if(done)
-        break;
+    streamBuffer =
+      streamBuffer.replace(
+        "<<<VEDAAI_SOURCES_START>>>",
+        ""
+      );
+  }
 
+  // ==============================================
+  // SOURCE END
+  // ==============================================
 
+  if (
+    receivingSources &&
+    streamBuffer.includes(
+      "<<<VEDAAI_SOURCES_END>>>"
+    )
+  ) {
 
-      const chunk =
-      decoder.decode(
-        value,
-        {
-          stream:true
-        }
+    const parts =
+      streamBuffer.split(
+        "<<<VEDAAI_SOURCES_END>>>"
       );
 
+    const sourceData =
+      parts[0].trim();
 
+    streamBuffer =
+      parts.slice(1).join(
+        "<<<VEDAAI_SOURCES_END>>>"
+      );
 
-      aiText += chunk;
+    try {
 
+      const parsedSources =
+        JSON.parse(sourceData);
 
+      console.log(
+        "📚 VEDAAI SOURCES:",
+        parsedSources
+      );
 
-      // UPDATE SAME THINKING MESSAGE
-      setMessages(prev => {
+      setSources(
+        parsedSources || []
+      );
 
-        const updated = [...prev];
+    } catch (error) {
 
-
-        updated[updated.length - 1] = {
-
-          role:"ai",
-
-          text:aiText,
-
-          thinking:false
-
-        };
-
-
-        return updated;
-
-      });
-
-
-
-      // AUTO SCROLL
-      chatEndRef.current?.scrollIntoView({
-
-        behavior:"smooth"
-
-      });
-
-
+      console.log(
+        "❌ SOURCE PARSE ERROR:",
+        error
+      );
     }
 
+    receivingSources = false;
+  }
 
+  // ==============================================
+  // RESPONSE START
+  // ==============================================
 
-    // SAVE AI MESSAGE
+  if (
+    streamBuffer.includes(
+      "<<<VEDAAI_RESPONSE_START>>>"
+    )
+  ) {
 
-    const aiMessage = {
+    receivingResponse = true;
 
-      role:"ai",
+    streamBuffer =
+      streamBuffer.replace(
+        "<<<VEDAAI_RESPONSE_START>>>",
+        ""
+      );
 
-      text:aiText
+    // Searching finished
+    setIsSearching(false);
+  }
 
-    };
+  // ==============================================
+  // RESPONSE END
+  // ==============================================
 
+  if (
+    receivingResponse &&
+    streamBuffer.includes(
+      "<<<VEDAAI_RESPONSE_END>>>"
+    )
+  ) {
 
+    const parts =
+      streamBuffer.split(
+        "<<<VEDAAI_RESPONSE_END>>>"
+      );
 
-    setChatSessions(prev =>
+    const responseText =
+      parts[0];
 
-      prev.map(chat =>
+    streamBuffer =
+      parts.slice(1).join(
+        "<<<VEDAAI_RESPONSE_END>>>"
+      );
 
-        chat.id === chatId
+    aiText += responseText;
 
-        ?
+    receivingResponse = false;
 
-        {
+    setIsSearching(false);
+
+  } else if (
+    receivingResponse &&
+    streamBuffer.length > 0
+  ) {
+
+    // Keep AI response exactly as received
+    aiText += streamBuffer;
+
+    streamBuffer = "";
+
+    setIsSearching(false);
+  }
+
+  // ==============================================
+  // UPDATE AI MESSAGE
+  // ==============================================
+
+  if (aiText) {
+
+    setMessages(prev => {
+
+      const updated =
+        [...prev];
+
+      updated[
+        updated.length - 1
+      ] = {
+
+        role: "ai",
+
+        text: aiText,
+
+        thinking: false
+
+      };
+
+      return updated;
+
+    });
+
+    // AUTO SCROLL
+
+    chatEndRef.current?.scrollIntoView({
+      behavior: "smooth"
+    });
+  }
+}
+
+// ==============================================
+// STREAM FINISHED
+// ==============================================
+
+setIsSearching(false);
+
+// ==============================================
+// FINAL AI MESSAGE
+// ==============================================
+
+const aiMessage = {
+
+  role: "ai",
+
+  text: aiText
+
+};
+
+// Replace temporary thinking message
+
+setMessages(prev => {
+
+  const updated =
+    [...prev];
+
+  updated[
+    updated.length - 1
+  ] = aiMessage;
+
+  return updated;
+
+});
+
+// ==============================================
+// SAVE CHAT HISTORY
+// ==============================================
+
+setChatSessions(prev =>
+
+  prev.map(chat =>
+
+    chat.id === chatId
+
+      ? {
 
           ...chat,
 
-          messages:[
+          messages: [
 
             ...chat.messages,
 
@@ -417,13 +616,15 @@ if (data?.paused === true) {
 
         }
 
-        :
+      : chat
 
-        chat
+  )
 
-      )
+);
 
-    );
+
+
+
 
 
 
@@ -531,222 +732,253 @@ if (file.type === "application/pdf") {
 
 };
 
-  return (
-   
-    <div className="chat-layout">
+return (
+  <div className="chat-layout">
 
     <Sidebar
-  chatSessions={chatSessions}
-  currentChatId={currentChatId}
-  setMessages={setMessages}
-  setCurrentChatId={setCurrentChatId}
-  createNewChat={createNewChat}
-/>
+      chatSessions={chatSessions}
+      currentChatId={currentChatId}
+      setMessages={setMessages}
+      setCurrentChatId={setCurrentChatId}
+      createNewChat={createNewChat}
+    />
 
     <div className="chat-main">
 
-        <div className="chat-container">
+      <div className="chat-container">
 
-            <h1>VedaAI Chat 🤖</h1>
-            {!isOwner &&
- !isPremium &&
- chatSessions.find(
-   chat => String(chat.id) === String(currentChatId)
- )?.paused === true && (
-  <div className="paused-card">
+        <h1>VedaAI Chat 🤖</h1>
 
-    <div className="paused-icon">⏸</div>
+        {/* ================= PAUSED CHAT ================= */}
+        {!isOwner &&
+          !isPremium &&
+          chatSessions.find(
+            chat =>
+              String(chat.id) === String(currentChatId)
+          )?.paused === true && (
+            <div className="paused-container">
 
-    <h2>Chats paused</h2>
+              <div className="paused-icon">⏸</div>
 
-    <p>
-      You've reached the message limit
-      <br />
-      for this chat.
-    </p>
+              <h2>Chats paused</h2>
 
-    <span>Try again in</span>
+              <p>
+                You've reached the message limit
+                <br />
+                for this chat.
+              </p>
 
-    <strong>
-      {remainingTime || "04:00:00"}
-    </strong>
+              <span>Try again in</span>
 
-    <div className="paused-buttons">
+              <strong>
+                {remainingTime || "04:00:00"}
+              </strong>
 
-      <button
-        onClick={createNewChat}
-        className="new-chat-btn"
-      >
-        ＋ New Chat
-      </button>
+              <div className="paused-buttons">
 
-      <button
-        onClick={() => {
-          window.location.href = "/subscription";
-        }}
-        className="upgrade-btn"
-      >
-        👑 Upgrade
-      </button>
-
-    </div>
-
-  </div>
-)}
-
-<div className="chat-box">
-
-  {messages.length === 0 && (
-    <div className="welcome">
-      <h2>👋 Welcome to VedaAI</h2>
-      <p>Ask anything to get started.</p>
-    </div>
-  )}
-   
-   {isThinking && (
-  <div className="ai-message">
-
-    <div className="ai-header">
-
-      <div className="ai-avatar">
-        🤖
-      </div>
-
-      <div className="ai-name">
-        VedaAI
-      </div>
-
-    </div>
-
-
-    <div className="ai-content thinking-content">
-      VedaAI is thinking...
-    </div>
-
-  </div>
-)}
-
- {messages.map((msg,index)=>(
-
-  <div
-    key={index}
-    className={
-      msg.role === "user"
-      ? "message-row user-row"
-      : "message-row ai-row"
-    }
-  >
-
-   
-
-
- {
-  msg.role === "ai" ? (
-
-   <AiMessage 
-  text={msg.text}
-  thinking={isThinking}
-/>
-
-  ) : (
-
-    <div className="user-wrapper">
-
-      <div className="user-msg">
-        {msg.text}
-      </div>
-
-      <div className="user-avatar">👤
-        
-      </div>
-
-    </div>
-
-  )
-}
-
-
-  </div>
-
-))}
-
-<div ref={chatEndRef}></div>
-
-</div>
-
-
-{file && (
-  <div className="file-name">
-    📎 {file.name}
-  </div>
-)}
-            <div className="chat-input">
-
-                {/* PDF */}
-
-                <label className="upload-btn">
-                    📄
-                    <input
-                        hidden
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e)=>setFile(e.target.files[0])}
-                    />
-                </label>
-
-                {/* Image */}
-
-                <label className="upload-btn">
-                    🖼️
-                    <input
-                        hidden
-                        type="file"
-                        accept="image/*"
-                        onChange={(e)=>setFile(e.target.files[0])}
-                    />
-                </label>
-
-              
-<input
-  placeholder="Ask anything..."
-  value={message}
-
-  disabled={
-    !isOwner &&
-    !isPremium &&
-    chatSessions.find(
-      chat => String(chat.id) === String(currentChatId)
-    )?.paused === true
-  }
-
-  onChange={(e) => setMessage(e.target.value)}
-
-  onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
-  }}
-/>
                 <button
-                    className="send-btn"
-                    onClick={sendMessage}
+                  onClick={createNewChat}
+                  className="new-chat-btn"
                 >
-                    ➤
+                  ＋ New Chat
                 </button>
 
+                <button
+                  onClick={() => {
+                    window.location.href =
+                      "/subscription";
+                  }}
+                  className="upgrade-btn"
+                >
+                  👑 Upgrade
+                </button>
+
+              </div>
+
             </div>
+          )}
+
+        {/* ================= WELCOME ================= */}
+        {messages.length === 0 && (
+          <div className="welcome-message">
+            👋 Welcome to VedaAI
+            <br />
+            Ask anything to get started.
+          </div>
+        )}
+
+       {/* ================= SEARCHING ================= */}
+        {isSearching && (
+  <div className="searching-container">
+    <div className="searching-dot"></div>
+
+    <div className="searching-text">
+      Searching...
+    </div>
+
+    <div className="searching-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+)}
+
+
+        {/* ================= MESSAGES ================= */}
+        <div className="messages-container">
+
+          {messages.map((msg, index) => (
+
+            msg.role === "ai" ? (
+
+              <AiMessage
+                key={index}
+                message={msg}
+              />
+
+            ) : (
+
+              <div
+                className="user-wrapper"
+                key={index}
+              >
+
+                <div className="user-msg">
+                  {msg.text}
+                </div>
+
+                <div className="user-avatar">
+                  👤
+                </div>
+
+              </div>
+
+            )
+
+          ))}
 
         </div>
 
+        {/* ================= SOURCES ================= */}
+{sources && sources.length > 0 && (
+  <div className="sources-container">
+
+    <div className="sources-title">
+      Sources
     </div>
 
+    <div className="sources-list">
+
+      {sources.map((source, index) => (
+        <a
+          key={index}
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="source-card"
+        >
+
+         <div className="source-logo">
+  <img
+    src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=64`}
+    alt=""
+    onError={(e) => {
+      e.currentTarget.style.display = "none";
+    }}
+  />
 </div>
 
+          <div className="source-info">
 
+            <div className="source-name">
+              {source.title}
+            </div>
 
-  );
+            <div className="source-domain">
+              {source.domain}
+            </div>
 
+          </div>
+
+        </a>
+      ))}
+
+    </div>
+
+  </div>
+)}
+
+          
+      
+
+        {/* ================= INPUT AREA ================= */}
+        <div className="chat-input-area">
+
+          {/* PDF */}
+          <label className="upload-btn">
+            📄
+
+            <input
+              hidden
+              type="file"
+              accept="application/pdf"
+              onChange={(e) =>
+                setFile(e.target.files[0])
+              }
+            />
+          </label>
+
+          {/* IMAGE */}
+          <label className="upload-btn">
+            🖼️
+
+            <input
+              hidden
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setFile(e.target.files[0])
+              }
+            />
+          </label>
+
+          <input
+            placeholder="Ask anything..."
+            value={message}
+            disabled={
+              !isOwner &&
+              !isPremium &&
+              chatSessions.find(
+                chat =>
+                  String(chat.id) ===
+                  String(currentChatId)
+              )?.paused === true
+            }
+            onChange={(e) =>
+              setMessage(e.target.value)
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                sendMessage();
+              }
+            }}
+          />
+
+          <button
+            className="send-btn"
+            onClick={sendMessage}
+          >
+            ➤
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+);
 }
-
-
 export default Chat;
