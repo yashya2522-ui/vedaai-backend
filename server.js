@@ -88,8 +88,8 @@ const ai = new GoogleGenAI({
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 
-// ================= SHOULD SEARCH WEB =================
-function shouldSearchWeb(query) {
+// ================= SMART WEB SEARCH DECISION =================
+function shouldSearchWeb(query, history = []) {
 
   if (!query || typeof query !== "string") {
     return false;
@@ -97,64 +97,133 @@ function shouldSearchWeb(query) {
 
   const q = query.toLowerCase().trim();
 
-  // --------------------------------------------------
-  // 1. CURRENT / LATEST INFORMATION
-  // --------------------------------------------------
+  // ============================================================
+  // 1. EXPLICIT SEARCH / VERIFICATION REQUEST
+  // ============================================================
+
+  const explicitSearchKeywords = [
+    "search this",
+    "search web",
+    "search online",
+    "look up",
+    "find online",
+    "check online",
+    "check this",
+    "verify this",
+    "verify online",
+    "search kar",
+    "check kar",
+    "verify kar",
+    "online check kar",
+    "internet var bagh",
+    "google var bagh",
+    "तपासून सांग",
+    "तपासून सांगा",
+    "खरं आहे का",
+    "खरे आहे का",
+    "खरं आहे की नाही",
+    "verify करून सांग",
+    "शोधून सांग",
+    "शोधून सांगा",
+    "ऑनलाइन तपासा"
+  ];
+
+  if (explicitSearchKeywords.some(k => q.includes(k))) {
+    return true;
+  }
+
+  // ============================================================
+  // 2. CURRENT / LIVE / LATEST INFORMATION
+  // ============================================================
 
   const currentKeywords = [
-
-    // English
     "today",
     "latest",
     "current",
     "currently",
     "now",
-    "recent",
-    "newest",
-    "breaking",
+    "right now",
+    "just now",
     "live",
+    "recent",
+    "recently",
+    "breaking",
     "this year",
     "this month",
     "this week",
 
-    // Marathi
     "आज",
     "आत्ता",
     "सध्या",
-    "नवीन",
-    "ताज्या",
-    "ताजे",
-    "सध्याचे",
-    "सध्याची",
+    "आत्ताचा",
+    "आत्ताची",
+    "आत्ताचे",
     "सध्याचा",
-    "अलीकडील",
-
-    // Hindi
-    "आज",
-    "अभी",
-    "वर्तमान",
-    "नवीनतम",
+    "सध्याची",
+    "सध्याचे",
     "ताजा",
-    "ताज़ा"
+    "ताजे",
+    "ताजी",
+    "ताज्या",
+    "नवीनतम",
+    "अलीकडील"
   ];
 
   if (currentKeywords.some(k => q.includes(k))) {
     return true;
   }
 
+  // ============================================================
+  // 3. SPORTS / LIVE SCORE
+  // ============================================================
 
-  // --------------------------------------------------
-  // 2. NEWS
-  // --------------------------------------------------
+  const sportsKeywords = [
+    "cricket",
+    "football",
+    "tennis",
+    "ipl",
+    "match",
+    "score",
+    "live score",
+    "current score",
+    "runs",
+    "wicket",
+    "overs",
+    "result",
+    "winner",
+    "schedule",
+    "points table",
+    "ranking",
+    "world cup",
+    "championship",
+
+    "सामना",
+    "स्कोअर",
+    "स्कोर",
+    "धावा",
+    "विकेट",
+    "ओव्हर",
+    "निकाल",
+    "विजेता",
+    "वेळापत्रक"
+  ];
+
+  if (sportsKeywords.some(k => q.includes(k))) {
+    return true;
+  }
+
+  // ============================================================
+  // 4. NEWS
+  // ============================================================
 
   const newsKeywords = [
-
     "news",
-    "news today",
     "latest news",
+    "today news",
     "breaking news",
-    "बातम्या",
+    "news today",
     "बातमी",
+    "बातम्या",
     "आजच्या बातम्या",
     "ताज्या बातम्या",
     "न्यूज",
@@ -165,120 +234,15 @@ function shouldSearchWeb(query) {
     return true;
   }
 
-
-  // --------------------------------------------------
-  // 3. POLITICS / GOVERNMENT
-  // --------------------------------------------------
-
-  const governmentKeywords = [
-
-    "prime minister",
-    "president",
-    "chief minister",
-    "minister",
-    "deputy minister",
-    "deputy chief minister",
-    "mp",
-    "mla",
-    "minister of",
-    "government",
-    "election",
-    "politician",
-    "political party",
-
-    "पंतप्रधान",
-    "राष्ट्रपती",
-    "मुख्यमंत्री",
-    "उपमुख्यमंत्री",
-    "मंत्री",
-    "आमदार",
-    "खासदार",
-    "सरकार",
-    "निवडणूक",
-    "राजकारणी",
-    "राजकीय पक्ष"
-  ];
-
-  if (governmentKeywords.some(k => q.includes(k))) {
-    return true;
-  }
-
-
-  // --------------------------------------------------
-  // 4. PERSON / ENTITY RESEARCH
-  // --------------------------------------------------
-
-  const researchPatterns = [
-
-    "who is",
-    "who are",
-    "what is",
-    "what are",
-    "information about",
-    "information on",
-    "details about",
-    "details of",
-    "profile of",
-    "biography of",
-
-    "कोण आहेत",
-    "कोण आहे",
-    "माहिती दे",
-    "माहिती सांगा",
-    "माहिती पाहिजे",
-    "यांच्याबद्दल",
-    "याच्याबद्दल",
-    "कोणाचे आहेत",
-    "कोणाची आहेत",
-    "कुणाचे आहेत"
-  ];
-
-  if (researchPatterns.some(k => q.includes(k))) {
-    return true;
-  }
-
-
-  // --------------------------------------------------
-  // 5. SPORTS
-  // --------------------------------------------------
-
-  const sportsKeywords = [
-
-    "ipl",
-    "cricket",
-    "football",
-    "tennis",
-    "match",
-    "score",
-    "live score",
-    "winner",
-    "result",
-    "schedule",
-    "ranking",
-    "points table",
-    "world cup",
-    "championship",
-
-    "सामना",
-    "स्कोअर",
-    "निकाल",
-    "विजेता",
-    "वेळापत्रक"
-  ];
-
-  if (sportsKeywords.some(k => q.includes(k))) {
-    return true;
-  }
-
-
-  // --------------------------------------------------
-  // 6. MONEY / MARKET / FINANCE
-  // --------------------------------------------------
+  // ============================================================
+  // 5. MONEY / MARKET / PRICES
+  // ============================================================
 
   const financeKeywords = [
-
     "gold price",
+    "gold rate",
     "silver price",
+    "silver rate",
     "stock price",
     "share price",
     "market price",
@@ -293,10 +257,17 @@ function shouldSearchWeb(query) {
     "usd inr",
     "forex",
 
+    "gold cha rate",
+    "gold cha price",
+    "gold price kiti",
     "सोन्याचा भाव",
-    "सोने दर",
+    "सोन्याचे भाव",
+    "सोन्याचा दर",
+    "सोन्याचे दर",
+    "सोने किती",
     "चांदीचा भाव",
-    "चांदी दर",
+    "चांदीचे भाव",
+    "चांदीचा दर",
     "शेअर भाव",
     "शेअर किंमत",
     "बाजारभाव",
@@ -307,13 +278,11 @@ function shouldSearchWeb(query) {
     return true;
   }
 
-
-  // --------------------------------------------------
-  // 7. WEATHER
-  // --------------------------------------------------
+  // ============================================================
+  // 6. WEATHER
+  // ============================================================
 
   const weatherKeywords = [
-
     "weather",
     "temperature",
     "forecast",
@@ -333,13 +302,47 @@ function shouldSearchWeb(query) {
     return true;
   }
 
+  // ============================================================
+  // 7. GOVERNMENT / POLITICS / ELECTION
+  // ============================================================
 
-  // --------------------------------------------------
-  // 8. CURRENT GOVERNMENT SCHEMES / JOBS
-  // --------------------------------------------------
+  const governmentKeywords = [
+    "prime minister",
+    "president",
+    "chief minister",
+    "deputy chief minister",
+    "minister",
+    "mp",
+    "mla",
+    "government",
+    "election",
+    "politician",
+    "political party",
+    "cabinet",
+
+    "पंतप्रधान",
+    "राष्ट्रपती",
+    "मुख्यमंत्री",
+    "उपमुख्यमंत्री",
+    "मंत्री",
+    "आमदार",
+    "खासदार",
+    "सरकार",
+    "निवडणूक",
+    "राजकारणी",
+    "राजकीय पक्ष",
+    "मंत्रिमंडळ"
+  ];
+
+  if (governmentKeywords.some(k => q.includes(k))) {
+    return true;
+  }
+
+  // ============================================================
+  // 8. GOVERNMENT SCHEMES / JOBS / SCHOLARSHIPS
+  // ============================================================
 
   const schemeKeywords = [
-
     "government scheme",
     "govt scheme",
     "new scheme",
@@ -365,16 +368,16 @@ function shouldSearchWeb(query) {
     return true;
   }
 
-
-  // --------------------------------------------------
-  // 9. SOFTWARE / TECHNOLOGY CURRENT VERSION
-  // --------------------------------------------------
+  // ============================================================
+  // 9. TECHNOLOGY / SOFTWARE CURRENT INFORMATION
+  // ============================================================
 
   const technologyKeywords = [
-
     "latest version",
     "current version",
     "new version",
+    "latest update",
+    "new update",
     "release",
     "released",
     "documentation",
@@ -395,151 +398,361 @@ function shouldSearchWeb(query) {
     return true;
   }
 
+  // ============================================================
+  // 10. YEAR DETECTION
+  // ============================================================
 
-  // --------------------------------------------------
-  // 10. SPECIFIC YEAR
-  // --------------------------------------------------
-
-  const yearPattern = /\b(2024|2025|2026|2027|2028|2029|2030)\b/;
+  const yearPattern =
+    /\b(2024|2025|2026|2027|2028|2029|2030)\b/;
 
   if (yearPattern.test(q)) {
     return true;
   }
 
+  // ============================================================
+  // 11. PERSON / COMPANY / LOCATION RESEARCH
+  // ============================================================
 
-  // --------------------------------------------------
-  // 11. LOCATION + PERSON / COMPANY RESEARCH
-  // --------------------------------------------------
+  const researchKeywords = [
+    "who is",
+    "who are",
+    "information about",
+    "information on",
+    "details about",
+    "details of",
+    "profile of",
+    "biography of",
+
+    "कोण आहेत",
+    "कोण आहे",
+    "माहिती दे",
+    "माहिती सांगा",
+    "माहिती पाहिजे",
+    "यांच्याबद्दल",
+    "याच्याबद्दल"
+  ];
+
+  if (researchKeywords.some(k => q.includes(k))) {
+    return true;
+  }
+
+  // ============================================================
+  // 12. LOCATION BASED QUESTIONS
+  // ============================================================
 
   const locationKeywords = [
-
-    "panhala",
     "kolhapur",
+    "panhala",
     "pune",
     "mumbai",
     "maharashtra",
     "india",
 
-    "तालुका",
-    "जिल्हा",
-    "गाव",
+    "कोल्हापूर",
+    "पन्हाळा",
+    "पुणे",
+    "मुंबई",
     "महाराष्ट्र",
     "भारत"
   ];
 
-  const personKeywords = [
-
-    "who",
-    "person",
-    "personality",
-    "officer",
-    "assistant",
-    "pa",
-    "personal assistant",
-    "secretary",
-    "founder",
-    "director",
-    "owner",
-
-    "कोण",
-    "व्यक्ती",
-    "अधिकारी",
-    "सहाय्यक",
-    "स्वीय सहाय्यक",
-    "सचिव",
-    "संस्थापक",
-    "मालक"
+  const locationQuestionKeywords = [
+    "near",
+    "nearby",
+    "in",
+    "around",
+    "मधला",
+    "मधली",
+    "मधले",
+    "जवळ",
+    "मध्ये",
+    "इथे",
+    "इथला",
+    "इथली",
+    "इथले"
   ];
 
-  const hasLocation = locationKeywords.some(k => q.includes(k));
-  const hasPerson = personKeywords.some(k => q.includes(k));
+  const hasLocation =
+    locationKeywords.some(k => q.includes(k));
 
-  if (hasLocation && hasPerson) {
+  const hasLocationQuestion =
+    locationQuestionKeywords.some(k => q.includes(k));
+
+  if (hasLocation && hasLocationQuestion) {
     return true;
   }
 
+  // ============================================================
+  // 13. FOLLOW-UP / CONTEXT BASED SEARCH
+  // ============================================================
+  // Example:
+  // User: आज India ची match आहे
+  // User: आत्ता score किती?
+  //
+  // "score" current message मध्ये आहे,
+  // पण खाली history देखील तपासली जाते.
 
-  // --------------------------------------------------
-  // 12. EXPLICIT USER REQUEST
-  // --------------------------------------------------
+  if (Array.isArray(history) && history.length > 0) {
 
-  const explicitSearchKeywords = [
+    const recentHistory = history
+      .slice(-6)
+      .map(msg => msg?.text || "")
+      .join(" ")
+      .toLowerCase();
 
-    "search this",
-    "search web",
-    "search online",
-    "look up",
-    "find online",
-    "check online",
-    "verify this",
-    "verify online",
-    "check this",
-    "internet var bagh",
-    "google var bagh",
-    "online check kar",
-    "search kar",
-    "check kar",
-    "verify kar",
-    "शोध",
-    "ऑनलाइन तपासा",
-    "तपासून सांग",
-    "खरं आहे का",
-    "खरे आहे का",
-    "verify करून सांग"
-  ];
+    const contextKeywords = [
+      "match",
+      "cricket",
+      "football",
+      "score",
+      "gold",
+      "silver",
+      "stock",
+      "share",
+      "weather",
+      "news",
+      "election",
+      "minister",
+      "government",
+      "price",
+      "rate",
 
-  if (explicitSearchKeywords.some(k => q.includes(k))) {
-    return true;
+      "सामना",
+      "स्कोअर",
+      "स्कोर",
+      "सोने",
+      "सोन्याचा",
+      "चांदी",
+      "हवामान",
+      "बातमी",
+      "निवडणूक",
+      "मंत्री",
+      "सरकार",
+      "भाव",
+      "दर"
+    ];
+
+    const currentQuestionIsShort =
+      q.split(/\s+/).length <= 12;
+
+    const historyHasCurrentTopic =
+      contextKeywords.some(k =>
+        recentHistory.includes(k)
+      );
+
+    const followUpWords = [
+      "score",
+      "current score",
+      "result",
+      "winner",
+      "how much",
+      "price",
+      "rate",
+      "now",
+      "right now",
+      "latest",
+
+      "किती",
+      "किती आहे",
+      "आत्ता",
+      "सध्या",
+      "आत्ताचा",
+      "आत्ताची",
+      "आत्ताचे",
+      "निकाल",
+      "भाव",
+      "दर"
+    ];
+
+    const looksLikeFollowUp =
+      followUpWords.some(k => q.includes(k));
+
+    if (
+      currentQuestionIsShort &&
+      historyHasCurrentTopic &&
+      looksLikeFollowUp
+    ) {
+      console.log("🧠 CONTEXT WEB SEARCH ENABLED");
+      return true;
+    }
   }
 
-
-  // --------------------------------------------------
+  // ============================================================
   // DEFAULT
-  // --------------------------------------------------
+  // ============================================================
 
   return false;
 }
 
 // ================= WEB CACHE =================
 const webCache = new Map();
+
 const CACHE_TIME = 10 * 60 * 1000; // 10 minutes
 
-// ================= WEB SEARCH =================
 
-async function searchWeb(query) {
+// ================= BUILD SMART SEARCH QUERY =================
+function buildSearchQuery(query, history = []) {
+
+  if (!query || typeof query !== "string") {
+    return "";
+  }
+
+  const currentQuestion = query.trim();
+
+  // --------------------------------------------------
+  // Get recent conversation context
+  // --------------------------------------------------
+
+  let context = "";
+
+  if (Array.isArray(history) && history.length > 0) {
+
+    context = history
+      .slice(-6)
+      .filter(msg =>
+        msg &&
+        msg.text &&
+        msg.thinking !== true
+      )
+      .map(msg => msg.text)
+      .join(" ");
+  }
+
+  // --------------------------------------------------
+  // If current question is already complete,
+  // search it directly.
+  // --------------------------------------------------
+
+  const shortQuestion =
+    currentQuestion.split(/\s+/).length <= 12;
+
+  const followUpWords = [
+    "score",
+    "current score",
+    "live score",
+    "result",
+    "winner",
+    "price",
+    "rate",
+    "latest",
+    "current",
+    "now",
+    "right now",
+
+    "किती",
+    "किती आहे",
+    "आत्ता",
+    "सध्या",
+    "निकाल",
+    "भाव",
+    "दर",
+    "सध्याचा",
+    "सध्याची",
+    "सध्याचे"
+  ];
+
+  const isFollowUp =
+    followUpWords.some(word =>
+      currentQuestion.toLowerCase().includes(word)
+    );
+
+  // --------------------------------------------------
+  // Context-based search
+  // --------------------------------------------------
+
+  if (
+    shortQuestion &&
+    isFollowUp &&
+    context.trim()
+  ) {
+
+    const smartQuery =
+      `${context} ${currentQuestion}`;
+
+    console.log("🧠 SMART SEARCH QUERY:");
+    console.log(smartQuery);
+
+    return smartQuery.substring(0, 400);
+  }
+
+  // --------------------------------------------------
+  // Normal search
+  // --------------------------------------------------
+
+  return currentQuestion.substring(0, 400);
+}
+
+
+// ================= WEB SEARCH =================
+async function searchWeb(query, history = []) {
+
   try {
 
     const searchStart = Date.now();
 
-    const key = query.trim().toLowerCase();
+    // Build context-aware search query
+    const searchQuery =
+      buildSearchQuery(query, history);
+
+    if (!searchQuery) {
+      return [];
+    }
+
+    const key =
+      searchQuery.trim().toLowerCase();
+
+    // --------------------------------------------------
+    // CACHE CHECK
+    // --------------------------------------------------
 
     const cached = webCache.get(key);
 
-    if (cached && Date.now() - cached.time < CACHE_TIME) {
+    if (
+      cached &&
+      Date.now() - cached.time < CACHE_TIME
+    ) {
 
-      console.log("CACHE HIT");
+      console.log("✅ WEB CACHE HIT");
 
       console.log(
-        `TAVILY TIME: ${Date.now() - searchStart} ms (CACHE)`
+        `TAVILY TIME: ${
+          Date.now() - searchStart
+        } ms (CACHE)`
       );
 
       return cached.results;
-
     }
 
-    console.log("CACHE MISS");
+    console.log("🌐 WEB CACHE MISS");
+
+    console.log(
+      "🔎 TAVILY SEARCH QUERY:",
+      searchQuery
+    );
+
+    // --------------------------------------------------
+    // TAVILY SEARCH
+    // --------------------------------------------------
 
     const response = await axios.post(
       "https://api.tavily.com/search",
       {
         api_key: process.env.TAVILY_API_KEY,
-        query: query.substring(0, 400),
+
+        query: searchQuery,
+
         search_depth: "advanced",
+
         max_results: 5,
       }
     );
 
-    const results = response.data.results || [];
+    const results =
+      response.data.results || [];
+
+    // --------------------------------------------------
+    // SAVE CACHE
+    // --------------------------------------------------
 
     webCache.set(key, {
       results,
@@ -547,13 +760,26 @@ async function searchWeb(query) {
     });
 
     console.log(
-      `TAVILY TIME: ${Date.now() - searchStart} ms`
+      `🌐 TAVILY TIME: ${
+        Date.now() - searchStart
+      } ms`
+    );
+
+    console.log(
+      "📚 WEB RESULTS:",
+      results.length
     );
 
     return results;
 
   } catch (err) {
-    console.log("TAVILY ERROR:", err.response?.data || err.message);
+
+    console.log(
+      "❌ TAVILY ERROR:",
+      err.response?.data ||
+      err.message
+    );
+
     return [];
   }
 }
@@ -2252,7 +2478,7 @@ await memory.save();
 let wikiText = "";
 let newsText = "";
 
-if (shouldSearchWeb(userMessage)) {
+if (shouldSearchWeb(userMessage, history)) {
   [wikiText, newsText] = await Promise.all([
     searchWikipedia(userMessage),
     getNews(userMessage),
@@ -3396,13 +3622,20 @@ Assistant:
 
 
 // ================= GEMINI =================
-async function callGeminiStream(userMessage, finalPrompt) {
+async function callGeminiStream(
+  userMessage,
+  finalPrompt,
+  history = []
+) {
 
   let webResults = [];
 
   if (shouldSearchWeb(userMessage)) {
     console.log("WEB SEARCH ENABLED");
-    webResults = await searchWeb(userMessage);
+    webResults = await searchWeb(
+  userMessage,
+  history
+);
   } else {
     console.log("WEB SEARCH SKIPPED");
   }
@@ -3505,7 +3738,8 @@ console.log("🚀 ABOUT TO CALL GEMINI");
 console.log("USER MESSAGE:", userMessage);
 const stream = await callGeminiStream(
   userMessage,
-  finalPrompt
+  finalPrompt,
+  history
 );
 
 let aiText = "";
