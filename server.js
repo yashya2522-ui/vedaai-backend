@@ -2441,7 +2441,10 @@ if (currentChat.paused) {
   await memory.save();
 }
 console.log("🔥 PASSED CHAT LIMIT");
-
+console.log("🟢 BEFORE FINAL PROMPT");
+console.log("🟢 USER MESSAGE:", userMessage);
+console.log("🟢 HISTORY LENGTH:", history.length);
+console.log("🟢 ABOUT TO ENTER PRE-GEMINI");
 
 // ================= MESSAGE LIMIT =================
 
