@@ -660,20 +660,34 @@ function buildSearchQuery(query, history = []) {
   // Context-based search
   // --------------------------------------------------
 
+ if (
+  shortQuestion &&
+  isFollowUp &&
+  context.trim()
+) {
+
+  // Current question already exists in history,
+  // so avoid adding it twice.
   if (
-    shortQuestion &&
-    isFollowUp &&
-    context.trim()
+    context.toLowerCase().includes(
+      currentQuestion.toLowerCase()
+    )
   ) {
 
-    const smartQuery =
-      `${context} ${currentQuestion}`;
-
     console.log("🧠 SMART SEARCH QUERY:");
-    console.log(smartQuery);
+    console.log(context);
 
-    return smartQuery.substring(0, 400);
+    return context.substring(0, 400);
   }
+
+  const smartQuery =
+    `${context} ${currentQuestion}`;
+
+  console.log("🧠 SMART SEARCH QUERY:");
+  console.log(smartQuery);
+
+  return smartQuery.substring(0, 400);
+}
 
   // --------------------------------------------------
   // Normal search
@@ -3642,10 +3656,6 @@ async function callGeminiStream(
 
 console.log("🔎 SMART SEARCH QUERY:", smartQuery);
 
-webResults = await searchWeb(
-  userMessage,
-  history
-);
 
     // 🌐 Tavily search
     webResults = await searchWeb(
@@ -3731,7 +3741,7 @@ webResults = await searchWeb(
   // ==================================================
   // 4. GEMINI PROMPT
   // ==================================================
-  const prompt = `
+const prompt = `
 You are VedaAI.
 
 You are an advanced AI assistant created by
@@ -3749,6 +3759,17 @@ IMPORTANT WEB SEARCH RULES:
 - If the sources disagree, explain the uncertainty.
 - Answer naturally according to the user's language.
 - Use conversation history to understand follow-up questions.
+
+IMPORTANT SOURCE DISPLAY RULES:
+
+- Use the web search results internally to answer accurately.
+- DO NOT show source URLs in your answer.
+- DO NOT write "Sources".
+- DO NOT list website names or domains.
+- DO NOT include links unless the user explicitly asks for sources or links.
+- DO NOT mention that a web search was performed.
+- Give the user a natural direct answer.
+- The web search results are internal information for generating the answer.
 
 WEB SEARCH RESULTS:
 
