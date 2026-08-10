@@ -3409,6 +3409,35 @@ async function callGeminiStream(userMessage, finalPrompt) {
 
   let searchContext = "";
 
+  // ================= SOURCES =================
+let sources = [];
+
+if (webResults.length > 0) {
+  sources = webResults
+    .filter(item => item.url)
+    .map(item => {
+      let domain = "";
+
+      try {
+        domain = new URL(item.url).hostname
+          .replace(/^www\./, "");
+      } catch (e) {
+        domain = "";
+      }
+
+      return {
+        title: item.title || domain || "Web Source",
+        url: item.url,
+        domain: domain,
+      };
+    })
+    .slice(0, 5);
+}
+
+console.log("========== SOURCES ==========");
+console.log(JSON.stringify(sources, null, 2));
+console.log("=============================");
+
   if (webResults.length > 0) {
     searchContext =
       "Latest web search results:\n\n" +
