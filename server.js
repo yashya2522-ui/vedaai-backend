@@ -2576,6 +2576,7 @@ const historyText = history
   })
   .join("\n\n");
 
+console.log("🟣 BEFORE SYSTEM PROMPT");
 const SYSTEM_PROMPT = `
 You are VedaAI, an advanced general-purpose AI assistant created by Yash Krishnat Patil.
 
@@ -3649,6 +3650,7 @@ PRACTICAL GUIDANCE
 END OF VedaAI SYSTEM PROMPT
 ==================================================
 `;
+console.log("🟣 AFTER SYSTEM PROMPT");
 
 let pdfInstruction = "";
 
@@ -3692,7 +3694,7 @@ ${userMessage}
 
 Assistant:
 `;
-
+console.log("🟣 FINAL PROMPT CREATED");
 // ================= GEMINI =================
 async function callGeminiStream(
   userMessage,
