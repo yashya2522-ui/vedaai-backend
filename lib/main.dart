@@ -23,6 +23,7 @@ import 'subscription_screen.dart';
 import 'package:vedaai/notifications_screen.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -949,71 +950,185 @@ if (response.statusCode != 200) {
   throw Exception("Server Error");
 }
 
-   await for (final chunk
+// ================= SOURCES =================
+List<Map<String, dynamic>> receivedSources = [];
+String streamBuffer = "";
+
+  await for (final chunk
     in response.stream.transform(utf8.decoder)) {
-print("CHUNK: $chunk");
+
+  print("CHUNK: $chunk");
+
   if (!mounted) return;
 
-  // Backend JSON error आला तर
-  if (chunk.trim().startsWith("{")) {
-    try {
-      final data = jsonDecode(chunk);
+  // ============================================
+  // Add incoming data to buffer
+  // ============================================
 
-      if (data["paused"] == true) {
+  streamBuffer += chunk;
 
-  setState(() {
+  // Backend प्रत्येक JSON message newline ने पाठवतो
+  final parts = streamBuffer.split("\n");
 
-    allChats[currentChatIndex]["paused"] = true;
+  // शेवटचा incomplete भाग buffer मध्ये ठेव
+  streamBuffer = parts.removeLast();
 
-    allChats[currentChatIndex]["resetTime"] =
-        data["resetTime"];
+  for (final part in parts) {
 
-    allChats[currentChatIndex]["messages"][index]["text"] =
-        data["message"];
+    final line = part.trim();
 
-    messages = List<Map<String, dynamic>>.from(
-      allChats[currentChatIndex]["messages"],
-    );
+    if (line.isEmpty) continue;
 
-  });
+    // ============================================
+    // 1. BACKEND JSON MESSAGE
+    // ============================================
 
-  await saveChat();
+    if (line.startsWith("{")) {
 
-startPauseTimer();
+      try {
 
-break;
-}
+        final data = jsonDecode(line);
 
-if (data["success"] == false) {
+        // ========================================
+        // SOURCES
+        // ========================================
 
-  setState(() {
+        if (data["type"] == "sources") {
 
-    allChats[currentChatIndex]["messages"][index]["text"] =
-        data["message"] ??
-        "AI is temporarily unavailable.";
+          final sourceList = data["sources"];
 
-  });
+          if (sourceList is List) {
 
-  break;
-}
-    } catch (_) {
-      // JSON नसेल तर ignore
+            receivedSources =
+                List<Map<String, dynamic>>.from(
+              sourceList.map(
+                (source) =>
+                    Map<String, dynamic>.from(source),
+              ),
+            );
+
+            print("📚 RECEIVED SOURCES:");
+            print(receivedSources);
+
+            // Message मध्ये sources save
+            setState(() {
+
+              allChats[currentChatIndex]
+                  ["messages"][index]["sources"] =
+                  receivedSources;
+
+              messages =
+                  List<Map<String, dynamic>>.from(
+                allChats[currentChatIndex]
+                    ["messages"],
+              );
+
+            });
+
+          }
+
+          // Source JSON AI text मध्ये add करू नको
+          continue;
+        }
+
+        // ========================================
+        // PAUSED CHAT
+        // ========================================
+
+        if (data["paused"] == true) {
+
+          setState(() {
+
+            allChats[currentChatIndex]["paused"] =
+                true;
+
+            allChats[currentChatIndex]["resetTime"] =
+                data["resetTime"];
+
+            allChats[currentChatIndex]
+                    ["messages"][index]["text"] =
+                data["message"] ??
+                    "This chat is temporarily paused.";
+
+            allChats[currentChatIndex]
+                    ["messages"][index]["thinking"] =
+                false;
+
+            messages =
+                List<Map<String, dynamic>>.from(
+              allChats[currentChatIndex]
+                  ["messages"],
+            );
+
+          });
+
+          await saveChat();
+
+          startPauseTimer();
+
+          continue;
+        }
+
+        // ========================================
+        // BACKEND ERROR
+        // ========================================
+
+        if (data["success"] == false) {
+
+          setState(() {
+
+            allChats[currentChatIndex]
+                    ["messages"][index]["text"] =
+                data["message"] ??
+                    "VedaAI is temporarily unavailable.";
+
+            allChats[currentChatIndex]
+                    ["messages"][index]["thinking"] =
+                false;
+
+            messages =
+                List<Map<String, dynamic>>.from(
+              allChats[currentChatIndex]
+                  ["messages"],
+            );
+
+          });
+
+          continue;
+        }
+
+      } catch (e) {
+
+        // JSON नसेल तर normal AI text समज
+        print("Not JSON: $line");
+
+      }
     }
+
+    // ============================================
+    // 2. NORMAL AI TEXT
+    // ============================================
+
+    setState(() {
+
+      allChats[currentChatIndex]
+              ["messages"][index]["thinking"] =
+          false;
+
+      allChats[currentChatIndex]
+              ["messages"][index]["text"] +=
+          line;
+
+      messages =
+          List<Map<String, dynamic>>.from(
+        allChats[currentChatIndex]
+            ["messages"],
+      );
+
+    });
+
+    scrollToBottom();
   }
-
-setState(() {
-
-  allChats[currentChatIndex]["messages"][index]["thinking"] = false;
-
-  allChats[currentChatIndex]["messages"][index]["text"] += chunk;
-
-  messages = List<Map<String, dynamic>>.from(
-    allChats[currentChatIndex]["messages"],
-  );
-
-});
-
-  scrollToBottom();
 }
 print("STREAM FINISHED");
     await saveChat();
@@ -1461,6 +1576,10 @@ Widget chatBubble(
   int index,
 ) {
   bool isUser = msg["role"] == "user";
+  final List<Map<String, dynamic>> sources =
+    List<Map<String, dynamic>>.from(
+  msg["sources"] ?? [],
+);
 
   return GestureDetector(
     onLongPress: () {
@@ -1779,7 +1898,199 @@ const SizedBox(height: 8),
         ),
       ),
     ),
+if (!isUser && sources.isNotEmpty)
+  Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Sources",
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode
+                ? Colors.white70
+                : Colors.black54,
+          ),
+        ),
 
+        const SizedBox(height: 8),
+
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: sources.map((source) {
+            final title =
+                source["title"]?.toString() ??
+                "Web Source";
+
+            final url =
+                source["url"]?.toString() ?? "";
+
+            final domain =
+                source["domain"]?.toString() ?? "";
+
+            // Website logo साठी favicon
+            final logoUrl = domain.isNotEmpty
+                ? "https://www.google.com/s2/favicons?domain=$domain&sz=64"
+                : "";
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(14),
+
+              onTap: url.isEmpty
+                  ? null
+                  : () async {
+                      final uri = Uri.tryParse(url);
+
+                      if (uri == null) return;
+
+                      try {
+                        await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      } catch (e) {
+                        print(
+                          "SOURCE URL ERROR: $e",
+                        );
+                      }
+                    },
+
+              child: Container(
+                constraints: const BoxConstraints(
+                  maxWidth: 220,
+                ),
+
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xff0F172A)
+                      : const Color(0xffF1F5F9),
+
+                  borderRadius:
+                      BorderRadius.circular(14),
+
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white12
+                        : Colors.black12,
+                  ),
+                ),
+
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+
+                    // ================= LOGO =================
+                    ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(6),
+
+                      child: logoUrl.isNotEmpty
+                          ? Image.network(
+                              logoUrl,
+                              width: 26,
+                              height: 26,
+                              fit: BoxFit.contain,
+
+                              errorBuilder:
+                                  (
+                                context,
+                                error,
+                                stackTrace,
+                              ) {
+                                return const Icon(
+                                  Icons.language,
+                                  size: 26,
+                                  color: Colors.cyan,
+                                );
+                              },
+                            )
+                          : const Icon(
+                              Icons.language,
+                              size: 26,
+                              color: Colors.cyan,
+                            ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // ================= WEBSITE NAME =================
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
+                        mainAxisSize:
+                            MainAxisSize.min,
+
+                        children: [
+
+                          Text(
+                            domain.isNotEmpty
+                                ? domain
+                                : "Web Source",
+
+                            maxLines: 1,
+
+                            overflow:
+                                TextOverflow.ellipsis,
+
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDarkMode
+                                  ? Colors.white54
+                                  : Colors.black54,
+                            ),
+                          ),
+
+                          const SizedBox(height: 2),
+
+                          Text(
+                            title,
+
+                            maxLines: 1,
+
+                            overflow:
+                                TextOverflow.ellipsis,
+
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight:
+                                  FontWeight.w600,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 5),
+
+                    Icon(
+                      Icons.open_in_new,
+                      size: 14,
+                      color: isDarkMode
+                          ? Colors.white54
+                          : Colors.black45,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    ),
+  ),
   if (msg["image"] != null &&
       msg["image"].toString().isNotEmpty)
     Padding(

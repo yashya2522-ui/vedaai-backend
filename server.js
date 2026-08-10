@@ -3657,6 +3657,7 @@ async function callGeminiStream(
 console.log("🔎 SMART SEARCH QUERY:", smartQuery);
 
 
+
     // 🌐 Tavily search
     webResults = await searchWeb(
       smartQuery,
@@ -3910,6 +3911,12 @@ const stream =
   );
 
 
+  // ================= SOURCES FOR FRONTEND =================
+const sources = stream.vedaSources || [];
+
+console.log("📚 SOURCES TO SEND:", sources);
+
+
 // ==================================================
 // AI RESPONSE
 // ==================================================
@@ -3975,6 +3982,15 @@ res.setHeader(
 
 let buffer = "";
 
+// ================= SEND SOURCES =================
+if (sources.length > 0) {
+  res.write(
+    JSON.stringify({
+      type: "sources",
+      sources: sources,
+    }) + "\n"
+  );
+}
 
 // ==================================================
 // READ GEMINI STREAM
