@@ -4181,40 +4181,41 @@ res.end();
 
 } catch (err) {
 
-  console.log("========== GEMINI ERROR ==========");
-  console.log(err);
+console.log("========== GEMINI ERROR ==========");
+console.log(err);
 
+console.log("❌ FINAL ERROR:", err);
+console.log("❌ ERROR MESSAGE:", err.message);
+console.log("❌ ERROR STATUS:", err.status);
+console.log("❌ ERROR STACK:", err.stack);
 
-  if (
-    err.status === 429 ||
-    err.message.includes("429") ||
-    err.message.includes("RESOURCE_EXHAUSTED")
-  ) {
+if (
+err.status === 429 ||
+err.message.includes("429") ||
+err.message.includes("RESOURCE_EXHAUSTED")
+) {
 
-    return res.end(
-      "AI is temporarily busy. Please try again in a few seconds."
-    );
+return res.end(
+  "AI is temporarily busy. Please try again in a few seconds."
+);
 
-  }
+}
 
+if (
+err.status === 503 ||
+err.message.includes("503") ||
+err.message.includes("UNAVAILABLE")
+) {
 
-  if (
-    err.status === 503 ||
-    err.message.includes("503") ||
-    err.message.includes("UNAVAILABLE")
-  ) {
+return res.end(
+  "AI is temporarily unavailable. Please try again later."
+);
 
-    return res.end(
-      "AI is temporarily unavailable. Please try again later."
-    );
+}
 
-  }
-
-
-  return res.end(
-    "Something went wrong. Please try again later."
-  );
-
+return res.end(
+"Something went wrong. Please try again later."
+);
 
 }
 
