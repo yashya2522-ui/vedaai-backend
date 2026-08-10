@@ -2577,7 +2577,7 @@ const historyText = history
   .join("\n\n");
 
 console.log("🟣 BEFORE SYSTEM PROMPT");
-const prompt = `
+const SYSTEM_PROMPT = `
 You are VedaAI.
 You are an advanced AI assistant created by
 Yash Krishnat Patil.
