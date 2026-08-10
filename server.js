@@ -3635,12 +3635,17 @@ async function callGeminiStream(
     console.log("🌐 WEB SEARCH ENABLED");
 
     // 🧠 Context-aware search query
-    const smartQuery = buildSmartSearchQuery(
-      userMessage,
-      history
-    );
+   const smartQuery = buildSearchQuery(
+  userMessage,
+  history
+);
 
-    console.log("🔎 SMART SEARCH QUERY:", smartQuery);
+console.log("🔎 SMART SEARCH QUERY:", smartQuery);
+
+webResults = await searchWeb(
+  userMessage,
+  history
+);
 
     // 🌐 Tavily search
     webResults = await searchWeb(
