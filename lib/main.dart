@@ -582,76 +582,142 @@ Future<void> speak(String text) async {
 
   await flutterTts.speak(text);
 }  
-Future<void> loadChat() async {
 
+Future loadChat() async {
   try {
-
     final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
 
-final token = prefs.getString("token");
+    if (token == null) return;
 
-if (token == null) return;
+    final response = await http.get(
+      Uri.parse(
+        "https://vedaai-backend-production-bf1d.up.railway.app/load-chats",
+      ),
+      headers: {
+        "Authorization": "Bearer $token",
+      },
+    );
 
-final response = await http.get(
-  Uri.parse(
-    "https://vedaai-backend-production-bf1d.up.railway.app/load-chats",
-  ),
-  headers: {
-    "Authorization": "Bearer $token",
-  },
-);
     if (response.statusCode == 200) {
-
       final data = jsonDecode(response.body);
 
       final chats = data["chats"] ?? [];
 
-      setState(() {
+      List<Map<String, dynamic>> loadedChats = [];
 
-        allChats = chats.isEmpty
-            ? [
-                {
-                  "title": "New Chat",
-                  "messages": [],
-                  "favorite": false,
-                }
-              ]
-            : List<Map<String, dynamic>>.from(chats);
-        for (var chat in allChats) {
-  chat["id"] ??= DateTime.now().millisecondsSinceEpoch.toString();
-  chat["messageCount"] ??= 0;
-  chat["paused"] ??= false;
-  chat["resetTime"] ??= null;
-}
-        // Open fresh chat after login
+      if (chats is List) {
+        for (final rawChat in chats) {
+          if (rawChat is! Map) continue;
 
-allChats.insert(0, {
-  "id": DateTime.now().millisecondsSinceEpoch.toString(),
-  "title": "New Chat",
-  "messages": <Map<String, dynamic>>[],
-  "favorite": false,
-  "messageCount": 0,
-  "paused": false,
-  "resetTime": null,
-});
+          final chat =
+              Map<String, dynamic>.from(rawChat);
 
-currentChatIndex = 0;
+          // ==============================
+          // ENSURE CHAT ID
+          // ==============================
 
-messages = [];
+          final existingId =
+              chat["id"] ??
+              chat["_id"] ??
+              chat["chatId"];
 
+          chat["id"] =
+              existingId?.toString().isNotEmpty == true
+                  ? existingId.toString()
+                  : DateTime.now()
+                      .millisecondsSinceEpoch
+                      .toString();
+
+          // ==============================
+          // DEFAULT VALUES
+          // ==============================
+
+          chat["title"] ??= "New Chat";
+
+          chat["messages"] ??=
+              <Map<String, dynamic>>[];
+
+          chat["favorite"] ??= false;
+
+          chat["messageCount"] ??= 0;
+
+          chat["paused"] ??= false;
+
+          chat["resetTime"] ??= null;
+
+          loadedChats.add(chat);
+        }
+      }
+
+      // ==============================
+      // IF NO CHATS
+      // ==============================
+
+      if (loadedChats.isEmpty) {
+        loadedChats.add({
+          "id": DateTime.now()
+              .millisecondsSinceEpoch
+              .toString(),
+          "title": "New Chat",
+          "messages": <Map<String, dynamic>>[],
+          "favorite": false,
+          "messageCount": 0,
+          "paused": false,
+          "resetTime": null,
+        });
+      }
+
+      // ==============================
+      // OPEN FRESH CHAT
+      // ==============================
+
+      final freshChatId =
+          DateTime.now()
+              .millisecondsSinceEpoch
+              .toString();
+
+      loadedChats.insert(0, {
+        "id": freshChatId,
+        "title": "New Chat",
+        "messages": <Map<String, dynamic>>[],
+        "favorite": false,
+        "messageCount": 0,
+        "paused": false,
+        "resetTime": null,
       });
+
+      setState(() {
+        allChats = loadedChats;
+
+        currentChatIndex = 0;
+
+        messages = [];
+      });
+
+      // ==============================
+      // DEBUG
+      // ==============================
+
+      print("========== CHAT IDS ==========");
+
+      for (final chat in allChats) {
+        print(
+          "CHAT ID: ${chat["id"]}",
+        );
+      }
+
+      print("==============================");
+
       await saveChat();
+
       startPauseTimer();
-
     }
-
   } catch (e) {
-
     print("LOAD CHAT ERROR: $e");
-
   }
-
 }
+
 Future<void> logout() async {
 
   final prefs = await SharedPreferences.getInstance();

@@ -1030,37 +1030,46 @@ const MemorySchema = new mongoose.Schema({
     name: String
   },
 
-  // NORMAL CHAT
-chatSessions: [
-  {
-    id: String,
+  chatSessions: [
+{
+  id: {
+    type: String,
+    required: true,
+  },
 
-    title: String,
+  title: {
+    type: String,
+    default: "New Chat",
+  },
 
-    favorite: {
-      type: Boolean,
-      default: false,
-    },
+  favorite: {
+    type: Boolean,
+    default: false,
+  },
 
-    messageCount: {
-      type: Number,
-      default: 0,
-    },
+  messageCount: {
+    type: Number,
+    default: 0,
+  },
 
-    paused: {
-      type: Boolean,
-      default: false,
-    },
+  paused: {
+    type: Boolean,
+    default: false,
+  },
 
-    resetTime: Date,
+  resetTime: Date,
 
-    messages: [
-      {
-        role: String,
-        text: String,
-      }
-    ]
-  }
+  messages: [
+    {
+      role: String,
+      text: String,
+      sources: {
+        type: Array,
+        default: [],
+      },
+    }
+  ]
+}
 ],
   // PINNED MESSAGES
   pins: [
@@ -2370,7 +2379,10 @@ await user.save();
 
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
+
 console.log("🔥 MEMORY FOUND:", !!memory);
+
+// ================= CREATE MEMORY IF NOT EXISTS =================
 if (!memory) {
   memory = new Memory({
     userId,
@@ -2378,39 +2390,83 @@ if (!memory) {
   });
 
   await memory.save();
-}
-console.log("🔥 REQUEST CHAT ID:", chatId);
 
+  console.log("🆕 NEW MEMORY CREATED");
+}
+
+// ================= FIX OLD CHAT IDS =================
+let chatIdsFixed = false;
+
+for (const chat of memory.chatSessions) {
+  if (!chat.id) {
+    chat.id =
+      Date.now().toString() +
+      Math.floor(Math.random() * 1000);
+
+    chatIdsFixed = true;
+  }
+}
+
+if (chatIdsFixed) {
+  await memory.save();
+
+  console.log("✅ OLD CHAT IDS FIXED");
+}
+
+// ================= REQUEST CHAT ID =================
+console.log(
+  "🔥 REQUEST CHAT ID:",
+  String(chatId)
+);
+
+// ================= SAVED CHAT IDS =================
 console.log(
   "🔥 SAVED CHAT IDS:",
-  memory.chatSessions.map(chat => chat.id)
+  memory.chatSessions.map(
+    chat => String(chat.id)
+  )
 );
 
+// ================= FIND CURRENT CHAT =================
 let currentChat = memory.chatSessions.find(
-  (chat) => chat.id === chatId
+  chat => String(chat.id) === String(chatId)
 );
 
-console.log("🔥 CURRENT CHAT FOUND:", !!currentChat);
+console.log(
+  "🔥 CURRENT CHAT FOUND:",
+  !!currentChat
+);
 
+// ================= CREATE CHAT IF NOT FOUND =================
 if (!currentChat) {
-
-  console.log("🆕 CHAT NOT FOUND — CREATING NEW CHAT");
+  console.log(
+    "🆕 CHAT NOT FOUND — CREATING NEW CHAT"
+  );
 
   currentChat = {
-    id: chatId,
+    id: String(chatId),
+
     title: userMessage.substring(0, 40),
+
     favorite: false,
+
     messageCount: 0,
+
     paused: false,
+
     resetTime: null,
-    messages: []
+
+    messages: [],
   };
 
   memory.chatSessions.push(currentChat);
 
   await memory.save();
 
-  console.log("✅ NEW CHAT SAVED:", chatId);
+  console.log(
+    "✅ NEW CHAT SAVED:",
+    String(chatId)
+  );
 }
 
 console.log("🔥 PASSED CURRENT CHAT");
