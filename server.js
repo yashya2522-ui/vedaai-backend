@@ -3620,101 +3620,203 @@ ${userMessage}
 Assistant:
 `;
 
-
 // ================= GEMINI =================
 async function callGeminiStream(
   userMessage,
   finalPrompt,
   history = []
 ) {
-
   let webResults = [];
 
+  // ==================================================
+  // 1. SMART WEB SEARCH
+  // ==================================================
   if (shouldSearchWeb(userMessage)) {
-    console.log("WEB SEARCH ENABLED");
+    console.log("🌐 WEB SEARCH ENABLED");
+
+    // 🧠 Context-aware search query
+    const smartQuery = buildSmartSearchQuery(
+      userMessage,
+      history
+    );
+
+    console.log("🔎 SMART SEARCH QUERY:", smartQuery);
+
+    // 🌐 Tavily search
     webResults = await searchWeb(
-  userMessage,
-  history
-);
+      smartQuery,
+      history
+    );
+
+    console.log(
+      "📚 WEB RESULTS:",
+      webResults.length
+    );
   } else {
-    console.log("WEB SEARCH SKIPPED");
+    console.log("🌐 WEB SEARCH SKIPPED");
   }
 
+  // ==================================================
+  // 2. SOURCES
+  // ==================================================
+  let sources = [];
+
+  if (webResults.length > 0) {
+    sources = webResults
+      .filter(item => item.url)
+      .map(item => {
+        let domain = "";
+
+        try {
+          domain = new URL(item.url)
+            .hostname
+            .replace(/^www\./, "");
+        } catch (e) {
+          domain = "";
+        }
+
+        return {
+          title:
+            item.title ||
+            domain ||
+            "Web Source",
+
+          url: item.url,
+
+          domain: domain,
+        };
+      })
+      .slice(0, 5);
+  }
+
+  console.log(
+    "========== SOURCES =========="
+  );
+
+  console.log(
+    JSON.stringify(
+      sources,
+      null,
+      2
+    )
+  );
+
+  console.log(
+    "============================="
+  );
+
+  // ==================================================
+  // 3. SEARCH CONTEXT
+  // ==================================================
   let searchContext = "";
-
-  // ================= SOURCES =================
-let sources = [];
-
-if (webResults.length > 0) {
-  sources = webResults
-    .filter(item => item.url)
-    .map(item => {
-      let domain = "";
-
-      try {
-        domain = new URL(item.url).hostname
-          .replace(/^www\./, "");
-      } catch (e) {
-        domain = "";
-      }
-
-      return {
-        title: item.title || domain || "Web Source",
-        url: item.url,
-        domain: domain,
-      };
-    })
-    .slice(0, 5);
-}
-
-console.log("========== SOURCES ==========");
-console.log(JSON.stringify(sources, null, 2));
-console.log("=============================");
 
   if (webResults.length > 0) {
     searchContext =
-      "Latest web search results:\n\n" +
+      "Latest verified web search results:\n\n" +
       webResults
         .map(
           (item, i) =>
-            `${i + 1}. ${item.title}\n${item.content}\nSource: ${item.url}`
+            `${i + 1}. ${item.title}\n` +
+            `${item.content}\n` +
+            `Source: ${item.url}`
         )
         .join("\n\n");
   }
 
+  // ==================================================
+  // 4. GEMINI PROMPT
+  // ==================================================
   const prompt = `
 You are VedaAI.
-   Use the web search results below if they are available.
-If the web results contain the answer, always prefer them over your internal knowledge.
+
+You are an advanced AI assistant created by
+Yash Krishnat Patil.
+
+IMPORTANT WEB SEARCH RULES:
+
+- If web search results are available, use them.
+- Prefer recent and verified web information.
+- For current information such as live sports,
+  current prices, today's news, weather,
+  current government information and latest updates,
+  prefer web search results.
+- Do not invent current information.
+- If the sources disagree, explain the uncertainty.
+- Answer naturally according to the user's language.
+- Use conversation history to understand follow-up questions.
+
+WEB SEARCH RESULTS:
 
 ${searchContext}
 
 ${finalPrompt}
+
+Answer the user's current question clearly and naturally.
 `;
-console.log("CALLING GEMINI...");
-  for (let attempt = 1; attempt <= 2; attempt++) {
+
+  console.log(
+    "========== CALLING GEMINI =========="
+  );
+
+  // ==================================================
+  // 5. GEMINI STREAM
+  // ==================================================
+  for (
+    let attempt = 1;
+    attempt <= 2;
+    attempt++
+  ) {
     try {
-console.log("CALLING GEMINI...");
-     console.log("BEFORE generateContentStream");
+      console.log(
+        `🤖 GEMINI ATTEMPT: ${attempt}`
+      );
 
-const stream = await ai.models.generateContentStream({
-  model: "gemini-2.5-flash",
-  contents: prompt,
-});
+      console.log(
+        "BEFORE generateContentStream"
+      );
 
-console.log("AFTER generateContentStream");
+      const stream =
+        await ai.models.generateContentStream({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+        });
 
-return stream;
+      console.log(
+        "AFTER generateContentStream"
+      );
+
+      // Sources पुढे response मध्ये वापरण्यासाठी
+      // function object वर temporarily store
+      stream.vedaSources = sources;
+
+      return stream;
 
     } catch (err) {
-      console.log("STREAM ERROR:", err.status);
-console.log(err.message);
+      console.log(
+        "❌ STREAM ERROR:",
+        err.status
+      );
 
-      if (err.status === 503 && attempt < 2) {
+      console.log(
+        err.message
+      );
 
-        console.log("Gemini busy. Retrying stream...");
+      // Retry 503
+      if (
+        err.status === 503 &&
+        attempt < 2
+      ) {
+        console.log(
+          "⏳ Gemini busy. Retrying..."
+        );
 
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(
+          resolve =>
+            setTimeout(
+              resolve,
+              1000
+            )
+        );
 
         continue;
       }
@@ -3723,62 +3825,180 @@ console.log(err.message);
     }
   }
 }
+
+
 // ================= CALL GEMINI =================
-res.setHeader("Content-Type", "text/plain; charset=utf-8");
-res.setHeader("Transfer-Encoding", "chunked");
+
+res.setHeader(
+  "Content-Type",
+  "text/plain; charset=utf-8"
+);
+
+res.setHeader(
+  "Transfer-Encoding",
+  "chunked"
+);
+
+
+// ==================================================
+// GREETING
+// ==================================================
 
 if (isGreeting(userMessage)) {
 
-  res.write("Hello! 👋 How can I help you today?");
-  return res.end();
+  res.write(
+    "Hello! 👋 How can I help you today?"
+  );
 
+  return res.end();
 }
-console.log("✅ PASSED ALL PRE-GEMINI CODE");
-console.log("🚀 ABOUT TO CALL GEMINI");
-console.log("USER MESSAGE:", userMessage);
-const stream = await callGeminiStream(
-  userMessage,
-  finalPrompt,
-  history
+
+
+// ==================================================
+// DEBUG
+// ==================================================
+
+console.log(
+  "✅ PASSED ALL PRE-GEMINI CODE"
 );
 
+console.log(
+  "🚀 ABOUT TO CALL GEMINI"
+);
+
+console.log(
+  "USER MESSAGE:",
+  userMessage
+);
+
+
+// ==================================================
+// CALL GEMINI
+// ==================================================
+
+const stream =
+  await callGeminiStream(
+    userMessage,
+    finalPrompt,
+    history
+  );
+
+
+// ==================================================
+// AI RESPONSE
+// ==================================================
+
 let aiText = "";
-console.log("========== GEMINI DEBUG ==========");
-console.log("API KEY EXISTS:", !!API_KEY);
-console.log("API KEY LENGTH:", API_KEY ? API_KEY.length : 0);
-console.log("API KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
-console.log("=================================");
+
+console.log(
+  "========== GEMINI DEBUG =========="
+);
+
+console.log(
+  "API KEY EXISTS:",
+  !!API_KEY
+);
+
+console.log(
+  "API KEY LENGTH:",
+  API_KEY
+    ? API_KEY.length
+    : 0
+);
+
+console.log(
+  "API KEY PREFIX:",
+  API_KEY
+    ? API_KEY.substring(0, 6)
+    : "NONE"
+);
+
+console.log(
+  "================================="
+);
 
 
+// ==================================================
+// STREAM RESPONSE HEADERS
+// ==================================================
 
-// ================= AI RESPONSE =================
-res.setHeader("Content-Type", "text/event-stream");
-res.setHeader("Cache-Control", "no-cache");
-res.setHeader("Connection", "keep-alive");
-res.setHeader("Transfer-Encoding", "chunked");
+res.setHeader(
+  "Content-Type",
+  "text/event-stream"
+);
+
+res.setHeader(
+  "Cache-Control",
+  "no-cache"
+);
+
+res.setHeader(
+  "Connection",
+  "keep-alive"
+);
+
+res.setHeader(
+  "Transfer-Encoding",
+  "chunked"
+);
+
+
+// ==================================================
+// STREAM BUFFER
+// ==================================================
 
 let buffer = "";
 
-for await (const chunk of stream) {
 
-  const text = chunk.text || "";
+// ==================================================
+// READ GEMINI STREAM
+// ==================================================
+
+for await (
+  const chunk of stream
+) {
+
+  const text =
+    chunk.text || "";
+
+  if (!text) {
+    continue;
+  }
 
   aiText += text;
 
   buffer += text;
 
-  if (buffer.length >= 40) {
-    res.write(buffer);
+
+  // Send chunks to Flutter
+  if (
+    buffer.length >= 40
+  ) {
+
+    res.write(
+      buffer
+    );
+
     buffer = "";
+
   }
 
 }
 
 
-if (buffer.length > 0) {
-  res.write(buffer);
-}
+// ==================================================
+// SEND REMAINING BUFFER
+// ==================================================
 
+if (
+  buffer.length > 0
+) {
+
+  res.write(
+    buffer
+  );
+
+}
 
 // ================= SAVE CHAT =================
 
