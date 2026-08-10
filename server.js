@@ -3962,13 +3962,17 @@ console.log(
 // CALL GEMINI
 // ==================================================
 
-const stream =
-  await callGeminiStream(
-    userMessage,
-    finalPrompt,
-    history
-  );
+console.log("🟣 BEFORE CALL GEMINI CHECK");
+console.log("🟣 USER MESSAGE:", userMessage);
+console.log("🟣 FINAL PROMPT EXISTS:", !!finalPrompt);
 
+const stream = await callGeminiStream(
+  userMessage,
+  finalPrompt,
+  history
+);
+
+console.log("🟢 GEMINI STREAM RECEIVED");
 
   // ================= SOURCES FOR FRONTEND =================
 const sources = stream.vedaSources || [];
