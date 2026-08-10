@@ -1575,11 +1575,12 @@ Widget chatBubble(
   Map<String, dynamic> msg,
   int index,
 ) {
-  bool isUser = msg["role"] == "user";
+  final bool isUser = msg["role"] == "user";
+
   final List<Map<String, dynamic>> sources =
-    List<Map<String, dynamic>>.from(
-  msg["sources"] ?? [],
-);
+      List<Map<String, dynamic>>.from(
+    msg["sources"] ?? [],
+  );
 
   return GestureDetector(
     onLongPress: () {
@@ -1593,7 +1594,6 @@ Widget chatBubble(
         builder: (context) {
           return Wrap(
             children: [
-
               ListTile(
                 leading: const Icon(Icons.copy),
                 title: const Text("Copy"),
@@ -1631,9 +1631,9 @@ Widget chatBubble(
                 onTap: () {
                   Navigator.pop(context);
 
-                  TextEditingController editController =
+                  final editController =
                       TextEditingController(
-                    text: msg["text"],
+                    text: msg["text"] ?? "",
                   );
 
                   showDialog(
@@ -1653,7 +1653,6 @@ Widget chatBubble(
                               });
 
                               saveChat();
-
                               Navigator.pop(context);
                             },
                             child: const Text("Save"),
@@ -1675,7 +1674,6 @@ Widget chatBubble(
                   });
 
                   saveChat();
-
                   Navigator.pop(context);
                 },
               ),
@@ -1697,7 +1695,6 @@ Widget chatBubble(
                   });
 
                   saveChat();
-
                   Navigator.pop(context);
                 },
               ),
@@ -1707,437 +1704,437 @@ Widget chatBubble(
       );
     },
 
-    child: Align(
+    child: Container(
+      width: double.infinity,
 
-  alignment: isUser
-      ? Alignment.centerRight
-      : Alignment.centerLeft,
-
-  child: Container(
-
-    margin: const EdgeInsets.symmetric(
-      vertical: 10,
-      horizontal: 8,
-    ),
-
-    padding: const EdgeInsets.symmetric(
-      horizontal: 18,
-      vertical: 14,
-    ),
-
-    constraints: BoxConstraints(
-      maxWidth: MediaQuery.of(context).size.width * 0.80,
-    ),
-
-    decoration: BoxDecoration(
-
-      gradient: isUser
-          ? const LinearGradient(
-              colors: [
-  Color(0xff3B82F6),
-  Color(0xff60A5FA),
-]
-            )
-          : null,
-
-      color: isUser
-          ? null
-          : (isDarkMode
-              ? const Color(0xff1E293B)
-              : Colors.white),
-
-      borderRadius: BorderRadius.only(
-        topLeft: const Radius.circular(22),
-        topRight: const Radius.circular(22),
-        bottomLeft: Radius.circular(
-          isUser ? 22 : 4,
-        ),
-        bottomRight: Radius.circular(
-          isUser ? 4 : 22,
-        ),
+      margin: EdgeInsets.only(
+        top: 8,
+        bottom: 8,
+        left: isUser ? 60 : 12,
+        right: isUser ? 12 : 12,
       ),
-
-      border: Border.all(
-        color: isUser
-            ? Colors.transparent
-            : Colors.white24,
-      ),
-
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.15),
-          blurRadius: 15,
-          offset: const Offset(0, 5),
-        ),
-      ],
-    ),
 
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
 
-       children: [
-  Row(
-  children: [
+        children: [
 
-    Expanded(
-      child: Text(
-        isUser ? "👤 You" : "🤖 VedaAI",
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-          color: isDarkMode
-              ? Colors.white
-              : Colors.black,
-        ),
-      ),
-    ),
+          // ==================================================
+          // USER / AI HEADER
+          // ==================================================
 
-    if (!isUser)
-      TextButton.icon(
-        onPressed: () async {
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
 
-          await Clipboard.setData(
-            ClipboardData(
-              text: msg["text"] ?? "",
-            ),
-          );
+              if (!isUser)
+                Container(
+                  width: 28,
+                  height: 28,
 
-          setState(() {
-            copiedMessageIndex = index;
-          });
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
 
-          Future.delayed(
-            const Duration(seconds: 2),
-            () {
-              if (!mounted) return;
+                    gradient:
+                        const LinearGradient(
+                      colors: [
+                        Color(0xff06B6D4),
+                        Color(0xff3B82F6),
+                      ],
+                    ),
 
-              setState(() {
-                copiedMessageIndex = -1;
-              });
-            },
-          );
-        },
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.cyan
+                            .withOpacity(0.25),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
 
-        icon: Icon(
-          copiedMessageIndex == index
-              ? Icons.check
-              : Icons.copy,
-          size: 18,
-          color: Colors.cyan,
-        ),
-
-        label: Text(
-          copiedMessageIndex == index
-              ? "Copied"
-              : "Copy",
-          style: const TextStyle(
-            color: Colors.cyan,
-            fontSize: 12,
-          ),
-        ),
-      ),
-
-  ],
-),
-
-const SizedBox(height: 8),
-
-  if (msg["thinking"] == true)
-
-    Row(
-      children: [
-
-        Text(
-          "Thinking",
-          style: TextStyle(
-            fontSize: 15,
-            color: isDarkMode
-                ? Colors.white70
-                : Colors.black54,
-          ),
-        ),
-
-        const SizedBox(width: 8),
-
-        LoadingAnimationWidget.threeArchedCircle(
-          size: 18,
-          color: Colors.cyan,
-        ),
-
-      ],
-    )
-
-  else
-
-    MarkdownBody(
-      data: msg["text"] ?? "",
-      selectable: true,
-      styleSheet: MarkdownStyleSheet(
-        p: TextStyle(
-          fontSize: 16,
-          height: 1.7,
-          color: isDarkMode
-              ? Colors.white
-              : Colors.black,
-        ),
-
-        h1: const TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
-
-        h2: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-
-        h3: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
-if (!isUser && sources.isNotEmpty)
-  Padding(
-    padding: const EdgeInsets.only(top: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Sources",
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: isDarkMode
-                ? Colors.white70
-                : Colors.black54,
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: sources.map((source) {
-            final title =
-                source["title"]?.toString() ??
-                "Web Source";
-
-            final url =
-                source["url"]?.toString() ?? "";
-
-            final domain =
-                source["domain"]?.toString() ?? "";
-
-            // Website logo साठी favicon
-            final logoUrl = domain.isNotEmpty
-                ? "https://www.google.com/s2/favicons?domain=$domain&sz=64"
-                : "";
-
-            return InkWell(
-              borderRadius: BorderRadius.circular(14),
-
-              onTap: url.isEmpty
-                  ? null
-                  : () async {
-                      final uri = Uri.tryParse(url);
-
-                      if (uri == null) return;
-
-                      try {
-                        await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
-                        );
-                      } catch (e) {
-                        print(
-                          "SOURCE URL ERROR: $e",
-                        );
-                      }
-                    },
-
-              child: Container(
-                constraints: const BoxConstraints(
-                  maxWidth: 220,
-                ),
-
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? const Color(0xff0F172A)
-                      : const Color(0xffF1F5F9),
-
-                  borderRadius:
-                      BorderRadius.circular(14),
-
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white12
-                        : Colors.black12,
+                  child: const Center(
+                    child: Text(
+                      "V",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight:
+                            FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
 
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              if (!isUser)
+                const SizedBox(width: 8),
 
-                    // ================= LOGO =================
-                    ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(6),
-
-                      child: logoUrl.isNotEmpty
-                          ? Image.network(
-                              logoUrl,
-                              width: 26,
-                              height: 26,
-                              fit: BoxFit.contain,
-
-                              errorBuilder:
-                                  (
-                                context,
-                                error,
-                                stackTrace,
-                              ) {
-                                return const Icon(
-                                  Icons.language,
-                                  size: 26,
-                                  color: Colors.cyan,
-                                );
-                              },
-                            )
-                          : const Icon(
-                              Icons.language,
-                              size: 26,
-                              color: Colors.cyan,
-                            ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // ================= WEBSITE NAME =================
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-
-                        mainAxisSize:
-                            MainAxisSize.min,
-
-                        children: [
-
-                          Text(
-                            domain.isNotEmpty
-                                ? domain
-                                : "Web Source",
-
-                            maxLines: 1,
-
-                            overflow:
-                                TextOverflow.ellipsis,
-
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isDarkMode
-                                  ? Colors.white54
-                                  : Colors.black54,
-                            ),
-                          ),
-
-                          const SizedBox(height: 2),
-
-                          Text(
-                            title,
-
-                            maxLines: 1,
-
-                            overflow:
-                                TextOverflow.ellipsis,
-
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight:
-                                  FontWeight.w600,
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 5),
-
-                    Icon(
-                      Icons.open_in_new,
-                      size: 14,
-                      color: isDarkMode
-                          ? Colors.white54
-                          : Colors.black45,
-                    ),
-                  ],
+              Text(
+                isUser ? "You" : "VedaAI",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight:
+                      FontWeight.w600,
+                  color: isDarkMode
+                      ? Colors.white70
+                      : Colors.black54,
                 ),
               ),
-            );
-          }).toList(),
-        ),
-      ],
-    ),
-  ),
-  if (msg["image"] != null &&
-      msg["image"].toString().isNotEmpty)
-    Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          msg["image"],
-          height: 220,
-          fit: BoxFit.cover,
-        ),
-      ),
-    ),
 
-  if (msg["pinned"] == true)
-    const Padding(
-      padding: EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
+              if (isUser)
+                const SizedBox(width: 6),
 
-          Icon(
-            Icons.push_pin,
-            size: 14,
-            color: Colors.orange,
+              if (isUser)
+                const Icon(
+                  Icons.person_outline,
+                  size: 18,
+                ),
+            ],
           ),
 
-          SizedBox(width: 4),
+          const SizedBox(height: 6),
 
-          Text(
-            "Pinned",
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.orange,
+          // ==================================================
+          // MESSAGE CONTENT
+          // ==================================================
+
+          if (msg["thinking"] == true)
+
+            Row(
+              children: [
+                Text(
+                  "Thinking",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDarkMode
+                        ? Colors.white70
+                        : Colors.black54,
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                LoadingAnimationWidget
+                    .threeArchedCircle(
+                  size: 18,
+                  color: Colors.cyan,
+                ),
+              ],
+            )
+
+          else
+
+            Padding(
+              padding: EdgeInsets.only(
+                left: isUser ? 0 : 36,
+                right: isUser ? 0 : 8,
+              ),
+
+              child: MarkdownBody(
+                data: msg["text"] ?? "",
+                selectable: true,
+
+                styleSheet:
+                    MarkdownStyleSheet(
+                  p: TextStyle(
+                    fontSize: 16,
+                    height: 1.65,
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
+
+                  h1: TextStyle(
+                    fontSize: 24,
+                    fontWeight:
+                        FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black,
+                  ),
+
+                  h2: TextStyle(
+                    fontSize: 20,
+                    fontWeight:
+                        FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black,
+                  ),
+
+                  h3: TextStyle(
+                    fontSize: 18,
+                    fontWeight:
+                        FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black,
+                  ),
+
+                  code: TextStyle(
+                    fontSize: 14,
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
+                ),
+              ),
             ),
-          ),
 
+          // ==================================================
+          // COPY BUTTON
+          // ==================================================
+
+          if (!isUser &&
+              msg["thinking"] != true)
+
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 36,
+                top: 5,
+              ),
+
+              child: Align(
+                alignment:
+                    Alignment.centerLeft,
+
+                child: InkWell(
+                  borderRadius:
+                      BorderRadius.circular(8),
+
+                  onTap: () async {
+                    await Clipboard.setData(
+                      ClipboardData(
+                        text: msg["text"] ?? "",
+                      ),
+                    );
+
+                    setState(() {
+                      copiedMessageIndex = index;
+                    });
+
+                    Future.delayed(
+                      const Duration(
+                        seconds: 2,
+                      ),
+                      () {
+                        if (!mounted) return;
+
+                        setState(() {
+                          copiedMessageIndex =
+                              -1;
+                        });
+                      },
+                    );
+                  },
+
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.all(6),
+
+                    child: Row(
+                      mainAxisSize:
+                          MainAxisSize.min,
+                      children: [
+
+                        Icon(
+                          copiedMessageIndex ==
+                                  index
+                              ? Icons.check
+                              : Icons.copy,
+                          size: 16,
+                          color: isDarkMode
+                              ? Colors.white54
+                              : Colors.black45,
+                        ),
+
+                        const SizedBox(
+                          width: 5,
+                        ),
+
+                        Text(
+                          copiedMessageIndex ==
+                                  index
+                              ? "Copied"
+                              : "Copy",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDarkMode
+                                ? Colors.white54
+                                : Colors.black45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // ==================================================
+          // SOURCES
+          // ==================================================
+
+          if (!isUser &&
+              sources.isNotEmpty)
+
+            Padding(
+              padding:
+                  const EdgeInsets.only(
+                left: 36,
+                top: 8,
+              ),
+
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+
+                children:
+                    sources.map((source) {
+
+                  final title =
+                      source["title"]
+                              ?.toString() ??
+                          "Web Source";
+
+                  final domain =
+                      source["domain"]
+                              ?.toString() ??
+                          "";
+
+                  final url =
+                      source["url"]
+                              ?.toString() ??
+                          "";
+
+                  final logoUrl =
+                      domain.isNotEmpty
+                          ? "https://www.google.com/s2/favicons?domain=$domain&sz=64"
+                          : "";
+
+                  return GestureDetector(
+                   onTap: url.isEmpty
+    ? null
+    : () async {
+        final uri = Uri.tryParse(url);
+
+        if (uri == null) return;
+
+        try {
+          await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+        } catch (e) {
+          print("SOURCE URL ERROR: $e");
+        }
+      },
+
+                    child: Container(
+                      width: 32,
+                      height: 32,
+
+                      decoration:
+                          BoxDecoration(
+                        shape:
+                            BoxShape.circle,
+
+                        color: isDarkMode
+                            ? const Color(
+                                0xff1E293B)
+                            : const Color(
+                                0xffF1F5F9),
+
+                        border:
+                            Border.all(
+                          color: isDarkMode
+                              ? Colors.white12
+                              : Colors.black12,
+                        ),
+                      ),
+
+                      padding:
+                          const EdgeInsets.all(
+                        5,
+                      ),
+
+                      child:
+                          logoUrl.isNotEmpty
+                              ? ClipOval(
+                                  child:
+                                      Image.network(
+                                    logoUrl,
+                                    fit: BoxFit
+                                        .contain,
+
+                                    errorBuilder:
+                                        (
+                                      context,
+                                      error,
+                                      stackTrace,
+                                    ) {
+                                      return Icon(
+                                        Icons
+                                            .language,
+                                        size: 18,
+                                        color: isDarkMode
+                                            ? Colors.white54
+                                            : Colors.black45,
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.language,
+                                  size: 18,
+                                  color: isDarkMode
+                                      ? Colors.white54
+                                      : Colors.black45,
+                                ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+          // ==================================================
+          // PINNED
+          // ==================================================
+
+          if (msg["pinned"] == true)
+
+            Padding(
+              padding:
+                  const EdgeInsets.only(
+                left: 36,
+                top: 6,
+              ),
+
+              child: Row(
+                children: const [
+                  Icon(
+                    Icons.push_pin,
+                    size: 13,
+                    color: Colors.orange,
+                  ),
+
+                  SizedBox(width: 4),
+
+                  Text(
+                    "Pinned",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     ),
-
-],
-      ),
-    ), // Container
-
-  ), // Align
-
-); // GestureDetector
+  );
 }
 
   @override
