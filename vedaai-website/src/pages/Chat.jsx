@@ -355,203 +355,89 @@ if (data?.paused === true) {
 
 
     
-const reader =
-response.body.getReader();
-
-const decoder =
-new TextDecoder();
+  const reader = response.body.getReader();
+const decoder = new TextDecoder();
 
 let aiText = "";
 let streamBuffer = "";
 
-let receivingSources = false;
-let receivingResponse = false;
-
-// Searching state ON
 setIsSearching(true);
 
 while (true) {
-
-  const {
-    done,
-    value
-  } = await reader.read();
+  const { done, value } = await reader.read();
 
   if (done) {
     break;
   }
 
-  const chunk =
-    decoder.decode(
-      value,
-      {
-        stream: true
-      }
-    );
+  const chunk = decoder.decode(value, {
+    stream: true
+  });
 
   streamBuffer += chunk;
 
   // ==============================================
-  // SOURCE START
+  // SOURCE JSON MESSAGE
   // ==============================================
 
-  if (
-    streamBuffer.includes(
-      "<<<VEDAAI_SOURCES_START>>>"
-    )
-  ) {
+  const lines = streamBuffer.split("\n");
 
-    receivingSources = true;
+  // शेवटची incomplete line buffer मध्ये ठेव
+  streamBuffer = lines.pop() || "";
 
-    streamBuffer =
-      streamBuffer.replace(
-        "<<<VEDAAI_SOURCES_START>>>",
-        ""
-      );
-  }
+  for (const line of lines) {
 
-  // ==============================================
-  // SOURCE END
-  // ==============================================
+    if (!line.trim()) {
+      continue;
+    }
 
-  if (
-    receivingSources &&
-    streamBuffer.includes(
-      "<<<VEDAAI_SOURCES_END>>>"
-    )
-  ) {
-
-    const parts =
-      streamBuffer.split(
-        "<<<VEDAAI_SOURCES_END>>>"
-      );
-
-    const sourceData =
-      parts[0].trim();
-
-    streamBuffer =
-      parts.slice(1).join(
-        "<<<VEDAAI_SOURCES_END>>>"
-      );
+    // ============================================
+    // SOURCES
+    // ============================================
 
     try {
 
-      const parsedSources =
-        JSON.parse(sourceData);
+      const parsed = JSON.parse(line);
 
-      console.log(
-        "📚 VEDAAI SOURCES:",
-        parsedSources
-      );
+      if (parsed.type === "sources") {
 
-      setSources(
-        parsedSources || []
-      );
+        console.log(
+          "📚 SOURCES RECEIVED:",
+          parsed.sources
+        );
+
+        setSources(
+          parsed.sources || []
+        );
+
+        continue;
+      }
 
     } catch (error) {
-
-      console.log(
-        "❌ SOURCE PARSE ERROR:",
-        error
-      );
+      // JSON नाही → normal AI text
     }
 
-    receivingSources = false;
-  }
+    // ============================================
+    // NORMAL AI RESPONSE
+    // ============================================
 
-  // ==============================================
-  // RESPONSE START
-  // ==============================================
-
-  if (
-    streamBuffer.includes(
-      "<<<VEDAAI_RESPONSE_START>>>"
-    )
-  ) {
-
-    receivingResponse = true;
-
-    streamBuffer =
-      streamBuffer.replace(
-        "<<<VEDAAI_RESPONSE_START>>>",
-        ""
-      );
-
-    // Searching finished
-    setIsSearching(false);
-  }
-
-  // ==============================================
-  // RESPONSE END
-  // ==============================================
-
-  if (
-    receivingResponse &&
-    streamBuffer.includes(
-      "<<<VEDAAI_RESPONSE_END>>>"
-    )
-  ) {
-
-    const parts =
-      streamBuffer.split(
-        "<<<VEDAAI_RESPONSE_END>>>"
-      );
-
-    const responseText =
-      parts[0];
-
-    streamBuffer =
-      parts.slice(1).join(
-        "<<<VEDAAI_RESPONSE_END>>>"
-      );
-
-    aiText += responseText;
-
-    receivingResponse = false;
+    aiText += line;
 
     setIsSearching(false);
-
-  } else if (
-    receivingResponse &&
-    streamBuffer.length > 0
-  ) {
-
-    // Keep AI response exactly as received
-    aiText += streamBuffer;
-
-    streamBuffer = "";
-
-    setIsSearching(false);
-  }
-
-  // ==============================================
-  // UPDATE AI MESSAGE
-  // ==============================================
-
-  if (aiText) {
 
     setMessages(prev => {
 
-      const updated =
-        [...prev];
+      const updated = [...prev];
 
-      updated[
-        updated.length - 1
-      ] = {
-
+      updated[updated.length - 1] = {
         role: "ai",
-
         text: aiText,
-
         thinking: false
-
       };
 
       return updated;
 
     });
-
-    // AUTO SCROLL
 
     chatEndRef.current?.scrollIntoView({
       behavior: "smooth"
@@ -560,7 +446,42 @@ while (true) {
 }
 
 // ==============================================
-// STREAM FINISHED
+// REMAINING BUFFER
+// ==============================================
+
+if (streamBuffer.trim()) {
+
+  try {
+
+    const parsed =
+      JSON.parse(streamBuffer);
+
+    if (parsed.type === "sources") {
+
+      console.log(
+        "📚 FINAL SOURCES:",
+        parsed.sources
+      );
+
+      setSources(
+        parsed.sources || []
+      );
+
+    } else {
+
+      aiText += streamBuffer;
+
+    }
+
+  } catch (error) {
+
+    aiText += streamBuffer;
+
+  }
+}
+
+// ==============================================
+// SEARCHING FINISHED
 // ==============================================
 
 setIsSearching(false);
@@ -570,23 +491,16 @@ setIsSearching(false);
 // ==============================================
 
 const aiMessage = {
-
   role: "ai",
-
   text: aiText
-
 };
-
-// Replace temporary thinking message
 
 setMessages(prev => {
 
-  const updated =
-    [...prev];
+  const updated = [...prev];
 
-  updated[
-    updated.length - 1
-  ] = aiMessage;
+  updated[updated.length - 1] =
+    aiMessage;
 
   return updated;
 
@@ -603,17 +517,12 @@ setChatSessions(prev =>
     chat.id === chatId
 
       ? {
-
           ...chat,
 
           messages: [
-
             ...chat.messages,
-
             aiMessage
-
           ]
-
         }
 
       : chat
@@ -623,13 +532,7 @@ setChatSessions(prev =>
 );
 
 
-
-
-
-
-
   }
-
 
 
   catch(error){
