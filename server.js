@@ -648,100 +648,116 @@ function buildSearchQuery(query, history = []) {
   const currentQuestion = query.trim();
 
   // --------------------------------------------------
-  // Get recent conversation context
+  // Current question is already complete
   // --------------------------------------------------
 
-  let context = "";
+  const words = currentQuestion
+    .split(/\s+/)
+    .filter(Boolean);
 
-  if (Array.isArray(history) && history.length > 0) {
-
-    context = history
-      .slice(-6)
-      .filter(msg =>
-        msg &&
-        msg.text &&
-        msg.thinking !== true
-      )
-      .map(msg => msg.text)
-      .join(" ");
-  }
+  const isVeryShortQuestion = words.length <= 6;
 
   // --------------------------------------------------
-  // If current question is already complete,
-  // search it directly.
+  // Follow-up question detection
   // --------------------------------------------------
 
-  const shortQuestion =
-    currentQuestion.split(/\s+/).length <= 12;
+  const followUpPatterns = [
+    /\bwhat about\b/i,
+    /\bhow about\b/i,
+    /\bwhat happened\b/i,
+    /\bany update\b/i,
+    /\bany updates\b/i,
+    /\blatest\b/i,
+    /\bcurrent\b/i,
+    /\bupdate\b/i,
+    /\bnow\b/i,
+    /\btoday\b/i,
 
-  const followUpWords = [
-    "score",
-    "current score",
-    "live score",
-    "result",
-    "winner",
-    "price",
-    "rate",
-    "latest",
-    "current",
-    "now",
-    "right now",
+    /\batta\b/i,
+    /\battachi\b/i,
+    /\battachya\b/i,
+    /\bsadhya\b/i,
+    /\baaj\b/i,
+    /\baajchi\b/i,
+    /\bnavin\b/i,
+    /\bkay zala\b/i,
+    /\bkay zalay\b/i,
+    /\bkay batmi\b/i,
 
-    "किती",
-    "किती आहे",
-    "आत्ता",
-    "सध्या",
-    "निकाल",
-    "भाव",
-    "दर",
-    "सध्याचा",
-    "सध्याची",
-    "सध्याचे"
+    /आत्ता/,
+    /सध्या/,
+    /आज/,
+    /नवीन/,
+    /ताजी/,
+    /ताजे/,
+    /अपडेट/,
+    /काय झालं/,
+    /काय झालंय/,
+    /काय बातमी/
   ];
 
-  const isFollowUp =
-    followUpWords.some(word =>
-      currentQuestion.toLowerCase().includes(word)
+  const looksLikeFollowUp =
+    followUpPatterns.some(pattern =>
+      pattern.test(currentQuestion)
     );
 
   // --------------------------------------------------
-  // Context-based search
+  // Get previous conversation context
   // --------------------------------------------------
 
- if (
-  shortQuestion &&
-  isFollowUp &&
-  context.trim()
-) {
+  let previousContext = "";
 
-  // Current question already exists in history,
-  // so avoid adding it twice.
-  if (
-    context.toLowerCase().includes(
-      currentQuestion.toLowerCase()
-    )
-  ) {
+  if (Array.isArray(history) && history.length > 0) {
 
-    console.log("🧠 SMART SEARCH QUERY:");
-    console.log(context);
-
-    return context.substring(0, 400);
+    previousContext = history
+      .slice(-8)
+      .filter(msg =>
+        msg &&
+        typeof msg.text === "string" &&
+        msg.text.trim() &&
+        msg.thinking !== true
+      )
+      .map(msg => msg.text.trim())
+      .join("\n");
   }
 
-  const smartQuery =
-    `${context} ${currentQuestion}`;
-
-  console.log("🧠 SMART SEARCH QUERY:");
-  console.log(smartQuery);
-
-  return smartQuery.substring(0, 400);
-}
-
   // --------------------------------------------------
-  // Normal search
+  // Follow-up question
   // --------------------------------------------------
 
-  return currentQuestion.substring(0, 400);
+  if (
+    isVeryShortQuestion &&
+    looksLikeFollowUp &&
+    previousContext
+  ) {
+
+    const smartQuery =
+      `${previousContext}\n${currentQuestion}`;
+
+    console.log(
+      "🧠 FOLLOW-UP SEARCH QUERY:"
+    );
+
+    console.log(
+      smartQuery.substring(0, 500)
+    );
+
+    return smartQuery.substring(0, 500);
+  }
+
+  // --------------------------------------------------
+  // Normal question
+  // --------------------------------------------------
+
+  console.log(
+    "🧠 DIRECT SEARCH QUERY:"
+  );
+
+  console.log(
+    currentQuestion
+  );
+
+  return currentQuestion.substring(0, 500);
 }
 
 
