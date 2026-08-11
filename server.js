@@ -4399,6 +4399,9 @@ function filterWebResults(results = []) {
         a._relevanceScore
     );
 }
+
+const rankedWebResults = filterWebResults(webResults);
+
 // ==================================================
 // 3. SEARCH CONTEXT
 // ==================================================
