@@ -4025,7 +4025,7 @@ async function callGeminiStream(
   // ==================================================
   // 1. SMART WEB SEARCH
   // ==================================================
-  if (shouldSearchWeb(userMessage)) {
+  if (shouldSearchWeb(userMessage, history)) {
     console.log("🌐 WEB SEARCH ENABLED");
 
     // 🧠 Context-aware search query
