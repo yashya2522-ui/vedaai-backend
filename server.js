@@ -4200,6 +4200,8 @@ ${memory.pdfUri}
 console.log("========== HISTORY ==========");
 console.log(historyText);
 console.log("=============================");
+let wikiText = "";
+let newsText = "";
 
 const finalPrompt = `
 ${SYSTEM_PROMPT}
