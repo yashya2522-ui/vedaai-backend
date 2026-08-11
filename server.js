@@ -88,7 +88,10 @@ const ai = new GoogleGenAI({
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 
-// ================= SMART WEB SEARCH DECISION =================
+// ==================================================
+// SMART WEB SEARCH DECISION
+// ==================================================
+
 function shouldSearchWeb(query, history = []) {
 
   if (!query || typeof query !== "string") {
@@ -97,11 +100,11 @@ function shouldSearchWeb(query, history = []) {
 
   const q = query.toLowerCase().trim();
 
-  // ============================================================
-  // 1. EXPLICIT SEARCH / VERIFICATION REQUEST
-  // ============================================================
+  // ==================================================
+  // 1. EXPLICIT SEARCH / VERIFICATION
+  // ==================================================
 
-  const explicitSearchKeywords = [
+  const explicitSearchPatterns = [
     "search this",
     "search web",
     "search online",
@@ -128,15 +131,21 @@ function shouldSearchWeb(query, history = []) {
     "ऑनलाइन तपासा"
   ];
 
-  if (explicitSearchKeywords.some(k => q.includes(k))) {
+  if (
+    explicitSearchPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: EXPLICIT SEARCH");
     return true;
   }
 
-  // ============================================================
-  // 2. CURRENT / LIVE / LATEST INFORMATION
-  // ============================================================
 
-  const currentKeywords = [
+  // ==================================================
+  // 2. CURRENT / LATEST / RECENT
+  // ==================================================
+
+  const currentPatterns = [
     "today",
     "latest",
     "current",
@@ -169,63 +178,272 @@ function shouldSearchWeb(query, history = []) {
     "अलीकडील"
   ];
 
-  if (currentKeywords.some(k => q.includes(k))) {
+  if (
+    currentPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: CURRENT/LATEST");
     return true;
   }
 
-  // ============================================================
-// ROMAN MARATHI CURRENT / UPDATE QUESTIONS
-// ============================================================
 
-const romanCurrentPatterns = [
-  /\batta\b/,
-  /\battachi\b/,
-  /\battachya\b/,
-  /\battachा\b/,
-  /\baata\b/,
-  /\baatachi\b/,
-  /\baatacha\b/,
-  /\baaj\b/,
-  /\baajchi\b/,
-  /\baajcha\b/,
-  /\baajche\b/,
-  /\bkal\b/,
-  /\bkalchi\b/,
-  /\bkalcha\b/,
-  /\bkalche\b/,
-  /\bparva\b/,
-  /\bsadhya\b/,
-  /\bsadhyachi\b/,
-  /\bsadhyacha\b/,
-  /\bnavin\b/,
-  /\blatest\b/,
-  /\bupdate\b/,
-  /\bupdates\b/,
-  /\bcurrent update\b/,
-  /\bkay update\b/,
-  /\bkay zala\b/,
-  /\bkay zalay\b/,
-  /\bkay chalalay\b/,
-  /\bkay chalale\b/,
-  /\bkay batmi\b/,
-  /\bnavi mahiti\b/,
-  /\bnavi news\b/
-];
+  // ==================================================
+  // 3. CURRENT POSITION / OFFICE HOLDER
+  // ==================================================
 
-if (
-  romanCurrentPatterns.some(pattern =>
-    pattern.test(q)
-  )
-) {
-  console.log("🟢 ROMAN MARATHI CURRENT SEARCH ENABLED");
-  return true;
-}
+  const positionPatterns = [
+    "who is the cm",
+    "who is cm",
+    "who is chief minister",
+    "who is the chief minister",
 
-  // ============================================================
-  // 3. SPORTS / LIVE SCORE
-  // ============================================================
+    "who is the pm",
+    "who is pm",
+    "who is prime minister",
+    "who is the prime minister",
 
-  const sportsKeywords = [
+    "who is the president",
+    "who is president",
+
+    "who is the governor",
+    "who is governor",
+
+    "who is the deputy cm",
+    "who is deputy cm",
+    "who is deputy chief minister",
+
+    "who is the minister",
+    "who is minister",
+
+    "current cm",
+    "current pm",
+    "current president",
+    "current governor",
+    "current minister",
+    "current ceo",
+
+    "cm kon",
+    "cm कोण",
+    "मुख्यमंत्री कोण",
+    "पंतप्रधान कोण",
+    "राष्ट्रपती कोण",
+    "राज्यपाल कोण",
+    "मंत्री कोण",
+    "उपमुख्यमंत्री कोण",
+
+    "kon ahe",
+    "kon aahe",
+    "कोण आहे",
+    "कोण आहेत"
+  ];
+
+  const positionWords = [
+    "chief minister",
+    "prime minister",
+    "president",
+    "governor",
+    "minister",
+    "deputy minister",
+    "deputy cm",
+    "deputy chief minister",
+    "cm",
+    "pm",
+    "mla",
+    "mp",
+    "ceo",
+    "chairman",
+    "director",
+    "mayor",
+
+    "मुख्यमंत्री",
+    "पंतप्रधान",
+    "राष्ट्रपती",
+    "राज्यपाल",
+    "मंत्री",
+    "उपमुख्यमंत्री",
+    "आमदार",
+    "खासदार",
+    "महापौर"
+  ];
+
+  const asksWho =
+    positionPatterns.some(pattern =>
+      q.includes(pattern)
+    );
+
+  const containsPosition =
+    positionWords.some(word =>
+      q.includes(word)
+    );
+
+  if (asksWho && containsPosition) {
+    console.log("🌐 SEARCH REASON: CURRENT POSITION/OFFICE HOLDER");
+    return true;
+  }
+
+
+  // ==================================================
+  // 4. PRICE / PRODUCT CURRENT INFORMATION
+  // ==================================================
+
+  const pricePatterns = [
+    "price",
+    "cost",
+    "rate",
+    "how much",
+    "किंमत",
+    "किंमती",
+    "किती आहे",
+    "कितीला",
+    "भाव",
+    "दर",
+
+    "price sang",
+    "price kiti",
+    "price kay",
+    "kiti price",
+    "kiti la",
+    "kiti rupaye",
+    "rate kiti",
+    "rate sang"
+  ];
+
+  const productPatterns = [
+    "phone",
+    "mobile",
+    "smartphone",
+    "laptop",
+    "tv",
+    "television",
+    "watch",
+    "tablet",
+    "iphone",
+    "samsung",
+    "vivo",
+    "oppo",
+    "oneplus",
+    "realme",
+    "xiaomi",
+    "redmi",
+    "motorola",
+    "pixel",
+    "macbook",
+    "airpods",
+    "headphones",
+    "camera",
+    "gpu",
+    "graphics card",
+    "processor",
+    "ssd",
+    "ram",
+
+    "मोबाईल",
+    "फोन",
+    "लॅपटॉप",
+    "टीव्ही",
+    "कॅमेरा"
+  ];
+
+  const asksPrice =
+    pricePatterns.some(pattern =>
+      q.includes(pattern)
+    );
+
+  const mentionsProduct =
+    productPatterns.some(pattern =>
+      q.includes(pattern)
+    );
+
+  if (asksPrice && mentionsProduct) {
+    console.log("🌐 SEARCH REASON: PRODUCT PRICE");
+    return true;
+  }
+
+
+  // ==================================================
+  // 5. FINANCE / MARKET
+  // ==================================================
+
+  const financePatterns = [
+    "gold price",
+    "gold rate",
+    "silver price",
+    "silver rate",
+    "stock price",
+    "share price",
+    "market price",
+    "sensex",
+    "nifty",
+    "bitcoin",
+    "crypto",
+    "cryptocurrency",
+    "exchange rate",
+    "dollar rate",
+    "usd inr",
+    "forex",
+
+    "सोन्याचा भाव",
+    "सोन्याचा दर",
+    "चांदीचा भाव",
+    "चांदीचा दर",
+    "शेअर भाव",
+    "शेअर किंमत",
+    "बाजारभाव",
+    "डॉलरचा भाव"
+  ];
+
+  if (
+    financePatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: FINANCE/MARKET");
+    return true;
+  }
+
+
+  // ==================================================
+  // 6. NEWS
+  // ==================================================
+
+  const newsPatterns = [
+    "news",
+    "latest news",
+    "today news",
+    "breaking news",
+    "news today",
+
+    "बातमी",
+    "बातम्या",
+    "आजच्या बातम्या",
+    "ताज्या बातम्या",
+    "न्यूज",
+    "समाचार",
+
+    "update",
+    "updates",
+    "update kay",
+    "kay update",
+    "काय अपडेट",
+    "अपडेट काय"
+  ];
+
+  if (
+    newsPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: NEWS");
+    return true;
+  }
+
+
+  // ==================================================
+  // 7. SPORTS
+  // ==================================================
+
+  const sportsPatterns = [
     "cricket",
     "football",
     "tennis",
@@ -256,81 +474,21 @@ if (
     "वेळापत्रक"
   ];
 
-  if (sportsKeywords.some(k => q.includes(k))) {
+  if (
+    sportsPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: SPORTS");
     return true;
   }
 
-  // ============================================================
-  // 4. NEWS
-  // ============================================================
 
-  const newsKeywords = [
-    "news",
-    "latest news",
-    "today news",
-    "breaking news",
-    "news today",
-    "बातमी",
-    "बातम्या",
-    "आजच्या बातम्या",
-    "ताज्या बातम्या",
-    "न्यूज",
-    "समाचार"
-  ];
+  // ==================================================
+  // 8. WEATHER
+  // ==================================================
 
-  if (newsKeywords.some(k => q.includes(k))) {
-    return true;
-  }
-
-  // ============================================================
-  // 5. MONEY / MARKET / PRICES
-  // ============================================================
-
-  const financeKeywords = [
-    "gold price",
-    "gold rate",
-    "silver price",
-    "silver rate",
-    "stock price",
-    "share price",
-    "market price",
-    "sensex",
-    "nifty",
-    "bitcoin",
-    "crypto",
-    "cryptocurrency",
-    "exchange rate",
-    "dollar rate",
-    "rupee rate",
-    "usd inr",
-    "forex",
-
-    "gold cha rate",
-    "gold cha price",
-    "gold price kiti",
-    "सोन्याचा भाव",
-    "सोन्याचे भाव",
-    "सोन्याचा दर",
-    "सोन्याचे दर",
-    "सोने किती",
-    "चांदीचा भाव",
-    "चांदीचे भाव",
-    "चांदीचा दर",
-    "शेअर भाव",
-    "शेअर किंमत",
-    "बाजारभाव",
-    "डॉलरचा भाव"
-  ];
-
-  if (financeKeywords.some(k => q.includes(k))) {
-    return true;
-  }
-
-  // ============================================================
-  // 6. WEATHER
-  // ============================================================
-
-  const weatherKeywords = [
+  const weatherPatterns = [
     "weather",
     "temperature",
     "forecast",
@@ -346,55 +504,57 @@ if (
     "हवामानाचा अंदाज"
   ];
 
-  if (weatherKeywords.some(k => q.includes(k))) {
+  if (
+    weatherPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: WEATHER");
     return true;
   }
 
-  // ============================================================
-  // 7. GOVERNMENT / POLITICS / ELECTION
-  // ============================================================
 
-  const governmentKeywords = [
-    "prime minister",
-    "president",
-    "chief minister",
-    "deputy chief minister",
-    "minister",
-    "mp",
-    "mla",
-    "government",
+  // ==================================================
+  // 9. GOVERNMENT / POLITICS / ELECTION
+  // ==================================================
+
+  const governmentPatterns = [
     "election",
+    "government",
     "politician",
     "political party",
     "cabinet",
+    "assembly election",
+    "lok sabha election",
+    "vidhan sabha",
 
-    "पंतप्रधान",
-    "राष्ट्रपती",
-    "मुख्यमंत्री",
-    "उपमुख्यमंत्री",
-    "मंत्री",
-    "आमदार",
-    "खासदार",
-    "सरकार",
     "निवडणूक",
+    "सरकार",
     "राजकारणी",
     "राजकीय पक्ष",
-    "मंत्रिमंडळ"
+    "मंत्रिमंडळ",
+    "विधानसभा",
+    "लोकसभा"
   ];
 
-  if (governmentKeywords.some(k => q.includes(k))) {
+  if (
+    governmentPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: GOVERNMENT/POLITICS");
     return true;
   }
 
-  // ============================================================
-  // 8. GOVERNMENT SCHEMES / JOBS / SCHOLARSHIPS
-  // ============================================================
 
-  const schemeKeywords = [
+  // ==================================================
+  // 10. GOVERNMENT SCHEMES / JOBS
+  // ==================================================
+
+  const schemePatterns = [
     "government scheme",
     "govt scheme",
     "new scheme",
-    "latest scheme",
     "scholarship",
     "government job",
     "latest job",
@@ -412,15 +572,21 @@ if (
     "अधिसूचना"
   ];
 
-  if (schemeKeywords.some(k => q.includes(k))) {
+  if (
+    schemePatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: SCHEME/JOB");
     return true;
   }
 
-  // ============================================================
-  // 9. TECHNOLOGY / SOFTWARE CURRENT INFORMATION
-  // ============================================================
 
-  const technologyKeywords = [
+  // ==================================================
+  // 11. TECHNOLOGY CURRENT INFORMATION
+  // ==================================================
+
+  const technologyPatterns = [
     "latest version",
     "current version",
     "new version",
@@ -430,7 +596,6 @@ if (
     "released",
     "documentation",
     "official documentation",
-    "api docs",
     "latest api",
     "new feature",
     "latest feature",
@@ -442,26 +607,33 @@ if (
     "नवीन आवृत्ती"
   ];
 
-  if (technologyKeywords.some(k => q.includes(k))) {
+  if (
+    technologyPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: TECHNOLOGY CURRENT");
     return true;
   }
 
-  // ============================================================
-  // 10. YEAR DETECTION
-  // ============================================================
 
-  const yearPattern =
-    /\b(2024|2025|2026|2027|2028|2029|2030)\b/;
+  // ==================================================
+  // 12. YEAR DETECTION
+  // ==================================================
 
-  if (yearPattern.test(q)) {
+  if (
+    /\b(2024|2025|2026|2027|2028|2029|2030)\b/.test(q)
+  ) {
+    console.log("🌐 SEARCH REASON: YEAR");
     return true;
   }
 
-  // ============================================================
-  // 11. PERSON / COMPANY / LOCATION RESEARCH
-  // ============================================================
 
-  const researchKeywords = [
+  // ==================================================
+  // 13. PERSON / COMPANY RESEARCH
+  // ==================================================
+
+  const researchPatterns = [
     "who is",
     "who are",
     "information about",
@@ -471,8 +643,8 @@ if (
     "profile of",
     "biography of",
 
-    "कोण आहेत",
     "कोण आहे",
+    "कोण आहेत",
     "माहिती दे",
     "माहिती सांगा",
     "माहिती पाहिजे",
@@ -480,79 +652,33 @@ if (
     "याच्याबद्दल"
   ];
 
-  if (researchKeywords.some(k => q.includes(k))) {
+  if (
+    researchPatterns.some(pattern =>
+      q.includes(pattern)
+    )
+  ) {
+    console.log("🌐 SEARCH REASON: ENTITY RESEARCH");
     return true;
   }
 
-  // ============================================================
-  // 12. LOCATION BASED QUESTIONS
-  // ============================================================
 
-  const locationKeywords = [
-    "kolhapur",
-    "panhala",
-    "pune",
-    "mumbai",
-    "maharashtra",
-    "india",
-
-    "कोल्हापूर",
-    "पन्हाळा",
-    "पुणे",
-    "मुंबई",
-    "महाराष्ट्र",
-    "भारत"
-  ];
-
-  const locationQuestionKeywords = [
-    "near",
-    "nearby",
-    "in",
-    "around",
-    "मधला",
-    "मधली",
-    "मधले",
-    "जवळ",
-    "मध्ये",
-    "इथे",
-    "इथला",
-    "इथली",
-    "इथले"
-  ];
-
-  const hasLocation =
-    locationKeywords.some(k => q.includes(k));
-
-  const hasLocationQuestion =
-    locationQuestionKeywords.some(k => q.includes(k));
-
-  if (hasLocation && hasLocationQuestion) {
-    return true;
-  }
-
-  // ============================================================
-  // 13. FOLLOW-UP / CONTEXT BASED SEARCH
-  // ============================================================
-  // Example:
-  // User: आज India ची match आहे
-  // User: आत्ता score किती?
-  //
-  // "score" current message मध्ये आहे,
-  // पण खाली history देखील तपासली जाते.
+  // ==================================================
+  // 14. CONTEXT-BASED FOLLOW-UP
+  // ==================================================
 
   if (Array.isArray(history) && history.length > 0) {
 
     const recentHistory = history
-      .slice(-6)
+      .slice(-8)
       .map(msg => msg?.text || "")
       .join(" ")
       .toLowerCase();
 
-    const contextKeywords = [
-      "match",
-      "cricket",
-      "football",
+    const contextTopics = [
+      "price",
+      "rate",
       "score",
+      "match",
       "gold",
       "silver",
       "stock",
@@ -562,72 +688,81 @@ if (
       "election",
       "minister",
       "government",
-      "price",
-      "rate",
+      "vivo",
+      "samsung",
+      "iphone",
+      "oneplus",
+      "phone",
+      "laptop",
 
-      "सामना",
+      "भाव",
+      "दर",
       "स्कोअर",
-      "स्कोर",
+      "सामना",
       "सोने",
-      "सोन्याचा",
       "चांदी",
       "हवामान",
       "बातमी",
       "निवडणूक",
       "मंत्री",
       "सरकार",
-      "भाव",
-      "दर"
+      "मोबाईल",
+      "फोन",
+      "लॅपटॉप"
     ];
 
-    const currentQuestionIsShort =
-      q.split(/\s+/).length <= 12;
-
-    const historyHasCurrentTopic =
-      contextKeywords.some(k =>
-        recentHistory.includes(k)
-      );
-
-    const followUpWords = [
+    const followUpPatterns = [
+      "price",
+      "rate",
       "score",
-      "current score",
       "result",
       "winner",
       "how much",
-      "price",
-      "rate",
       "now",
-      "right now",
       "latest",
+      "update",
 
       "किती",
       "किती आहे",
       "आत्ता",
       "सध्या",
-      "आत्ताचा",
-      "आत्ताची",
-      "आत्ताचे",
       "निकाल",
       "भाव",
-      "दर"
+      "दर",
+      "अपडेट",
+      "काय झालं",
+      "काय झालंय"
     ];
 
-    const looksLikeFollowUp =
-      followUpWords.some(k => q.includes(k));
+    const isShortQuestion =
+      q.split(/\s+/).filter(Boolean).length <= 12;
+
+    const historyHasTopic =
+      contextTopics.some(topic =>
+        recentHistory.includes(topic)
+      );
+
+    const isFollowUp =
+      followUpPatterns.some(pattern =>
+        q.includes(pattern)
+      );
 
     if (
-      currentQuestionIsShort &&
-      historyHasCurrentTopic &&
-      looksLikeFollowUp
+      isShortQuestion &&
+      historyHasTopic &&
+      isFollowUp
     ) {
-      console.log("🧠 CONTEXT WEB SEARCH ENABLED");
+      console.log("🌐 SEARCH REASON: CONTEXT FOLLOW-UP");
       return true;
     }
   }
 
-  // ============================================================
+
+  // ==================================================
   // DEFAULT
-  // ============================================================
+  // ==================================================
+
+  console.log("⚪ SEARCH NOT REQUIRED");
 
   return false;
 }
@@ -2639,15 +2774,17 @@ console.log(
 await memory.save();
 
 // ================= AI INPUT =================
-let wikiText = "";
-let newsText = "";
+let webResults = [];
 
 if (shouldSearchWeb(userMessage, history)) {
-  [wikiText, newsText] = await Promise.all([
-    searchWikipedia(userMessage),
-    getNews(userMessage),
-  ]);
+  webResults = await searchWeb(userMessage, history);
 }
+
+console.log(
+  "🌐 WEB SEARCH RESULTS:",
+  webResults.length
+);
+
 
 const historyText = history
   .filter(
@@ -4192,25 +4329,94 @@ console.log("🔎 SMART SEARCH QUERY:", smartQuery);
     "============================="
   );
 
- 
+ // ==================================================
+// FILTER & RANK WEB RESULTS
+// ==================================================
+
+function filterWebResults(results = []) {
+
+  if (!Array.isArray(results)) {
+    return [];
+  }
+
+  return results
+    .filter(item =>
+      item &&
+      typeof item.title === "string" &&
+      typeof item.content === "string" &&
+      item.content.trim().length > 0
+    )
+    .map(item => {
+
+      const text =
+        `${item.title} ${item.content}`.toLowerCase();
+
+      let score = 0;
+
+      // Current information signals
+      if (
+        text.includes("current") ||
+        text.includes("currently") ||
+        text.includes("present") ||
+        text.includes("2026") ||
+        text.includes("2025")
+      ) {
+        score += 5;
+      }
+
+      // Official / reliable source signals
+      if (
+        text.includes("government") ||
+        text.includes("gov.in") ||
+        text.includes("official")
+      ) {
+        score += 5;
+      }
+
+      // Historical signals
+      if (
+        text.includes("2019") ||
+        text.includes("2020") ||
+        text.includes("2021") ||
+        text.includes("2022") ||
+        text.includes("2023") ||
+        text.includes("2024")
+      ) {
+        score -= 1;
+      }
+
+      return {
+        ...item,
+        _relevanceScore: score
+      };
+
+    })
+    .sort(
+      (a, b) =>
+        b._relevanceScore -
+        a._relevanceScore
+    );
+}
 // ==================================================
 // 3. SEARCH CONTEXT
 // ==================================================
+
 let searchContext = "";
 
-if (webResults.length > 0) {
+if (Array.isArray(rankedWebResults) && rankedWebResults.length > 0) {
+
   searchContext =
-    "Latest verified web search results:\n\n" +
-    webResults
+    "WEB SEARCH EVIDENCE:\n\n" +
+
+    rankedWebResults
       .map(
         (item, i) =>
-          `${i + 1}. ${item.title}\n` +
-          `${item.content}\n` +
-          `Source: ${item.url}`
+          `${i + 1}. TITLE: ${item.title.trim()}\n` +
+          `CONTENT: ${item.content.trim()}\n` +
+          `SOURCE: ${item.url || "Unknown"}`
       )
       .join("\n\n");
 }
-
 console.log("========== SEARCH CONTEXT ==========");
 console.log(searchContext);
 console.log("====================================");
