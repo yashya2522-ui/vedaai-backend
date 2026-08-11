@@ -841,14 +841,28 @@ async function searchWeb(query, history = []) {
     const results =
       response.data.results || [];
 
+      const cleanedResults = results
+  .filter(r => r && r.title && r.url && r.content)
+  .map(r => ({
+    title: r.title,
+    url: r.url,
+    content: r.content
+  }));
+
+console.log(
+  "🧹 CLEANED WEB RESULTS:",
+  cleanedResults.length
+);
+
+
     // --------------------------------------------------
     // SAVE CACHE
     // --------------------------------------------------
 
-    webCache.set(key, {
-      results,
-      time: Date.now(),
-    });
+   webCache.set(key, {
+  results: cleanedResults,
+  time: Date.now(),
+});
 
     console.log(
       `🌐 TAVILY TIME: ${
@@ -861,7 +875,7 @@ async function searchWeb(query, history = []) {
       results.length
     );
 
-    return results;
+    return cleanedResults;
 
   } catch (err) {
 
