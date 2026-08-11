@@ -635,7 +635,7 @@ if (
 // ================= WEB CACHE =================
 const webCache = new Map();
 
-const CACHE_TIME = 10 * 60 * 1000; // 10 minutes
+const CACHE_TIME = 0;
 
 
 // ================= BUILD SMART SEARCH QUERY =================
