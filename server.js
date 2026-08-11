@@ -4147,6 +4147,45 @@ IMPORTANT WEB SEARCH RULES:
 - Answer naturally according to the user's language.
 - Use conversation history to understand follow-up questions.
 
+IMPORTANT CURRENT INFORMATION RULES:
+
+When the user asks for current, latest, today's, present, or
+time-sensitive information:
+
+1. If web search results are available, NEVER rely on your
+   internal knowledge alone.
+
+2. Treat the newest reliable web result as the primary source
+   of truth.
+
+3. Prefer official government websites, official company
+   websites, and other authoritative sources over Wikipedia,
+   blogs, old articles, or unofficial websites.
+
+4. Always check whether the information in the search results
+   is current or outdated.
+
+5. If an older source conflicts with a newer reliable source,
+   use the newer reliable source.
+
+6. Never describe an old fact as "current", "present", or
+   "today's" information.
+
+7. For current government positions, such as Chief Minister,
+   Prime Minister, President, Minister, MLA, MP, etc., use the
+   latest reliable information from the web search results.
+
+8. For current prices, products, news, sports scores, weather,
+   elections, government schemes, and software versions, use
+   the latest available web information.
+
+9. If the available search results do not contain enough reliable
+   information to determine the current answer, clearly say that
+   the information could not be verified instead of guessing.
+
+10. When reliable web results clearly establish the answer,
+    answer directly and confidently.
+
 IMPORTANT SOURCE RULES:
 
 When web search results are available:
