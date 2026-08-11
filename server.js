@@ -5118,42 +5118,84 @@ res.end();
 
 } catch (err) {
 
-console.log("========== GEMINI ERROR ==========");
-console.log(err);
+  console.log("========== GEMINI ERROR ==========");
+  console.log(err);
 
-console.log("❌ FINAL ERROR:", err);
-console.log("❌ ERROR MESSAGE:", err.message);
-console.log("❌ ERROR STATUS:", err.status);
-console.log("❌ ERROR STACK:", err.stack);
+  console.log("❌ FINAL ERROR:", err);
+  console.log("❌ ERROR MESSAGE:", err.message);
+  console.log("❌ ERROR STATUS:", err.status);
+  console.log("❌ ERROR STACK:", err.stack);
 
-if (
-err.status === 429 ||
-err.message.includes("429") ||
-err.message.includes("RESOURCE_EXHAUSTED")
-) {
 
-return res.end(
-  "AI is temporarily busy. Please try again in a few seconds."
-);
+  // ================= 429 / QUOTA ERROR =================
 
-}
+  if (
+    err.status === 429 ||
+    err.message?.includes("429") ||
+    err.message?.includes("RESOURCE_EXHAUSTED")
+  ) {
 
-if (
-err.status === 503 ||
-err.message.includes("503") ||
-err.message.includes("UNAVAILABLE")
-) {
+    console.log("⚠️ GEMINI QUOTA EXCEEDED");
 
-return res.end(
-  "AI is temporarily unavailable. Please try again later."
-);
+    res.write(
+      "<<<VEDAAI_RESPONSE_START>>>\n"
+    );
 
-}
+    res.write(
+      "AI is temporarily busy. Please try again in a few seconds."
+    );
 
-return res.end(
-"Something went wrong. Please try again later."
-);
+    res.write(
+      "\n<<<VEDAAI_RESPONSE_END>>>\n"
+    );
 
+    return res.end();
+  }
+
+
+  // ================= 503 ERROR =================
+
+  if (
+    err.status === 503 ||
+    err.message?.includes("503") ||
+    err.message?.includes("UNAVAILABLE")
+  ) {
+
+    console.log("⚠️ GEMINI TEMPORARILY UNAVAILABLE");
+
+    res.write(
+      "<<<VEDAAI_RESPONSE_START>>>\n"
+    );
+
+    res.write(
+      "AI is temporarily unavailable. Please try again later."
+    );
+
+    res.write(
+      "\n<<<VEDAAI_RESPONSE_END>>>\n"
+    );
+
+    return res.end();
+  }
+
+
+  // ================= OTHER ERROR =================
+
+  console.log("⚠️ UNKNOWN GEMINI ERROR");
+
+  res.write(
+    "<<<VEDAAI_RESPONSE_START>>>\n"
+  );
+
+  res.write(
+    "Something went wrong. Please try again later."
+  );
+
+  res.write(
+    "\n<<<VEDAAI_RESPONSE_END>>>\n"
+  );
+
+  return res.end();
 }
 
 });
