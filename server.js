@@ -174,6 +174,54 @@ function shouldSearchWeb(query, history = []) {
   }
 
   // ============================================================
+// ROMAN MARATHI CURRENT / UPDATE QUESTIONS
+// ============================================================
+
+const romanCurrentPatterns = [
+  /\batta\b/,
+  /\battachi\b/,
+  /\battachya\b/,
+  /\battachा\b/,
+  /\baata\b/,
+  /\baatachi\b/,
+  /\baatacha\b/,
+  /\baaj\b/,
+  /\baajchi\b/,
+  /\baajcha\b/,
+  /\baajche\b/,
+  /\bkal\b/,
+  /\bkalchi\b/,
+  /\bkalcha\b/,
+  /\bkalche\b/,
+  /\bparva\b/,
+  /\bsadhya\b/,
+  /\bsadhyachi\b/,
+  /\bsadhyacha\b/,
+  /\bnavin\b/,
+  /\blatest\b/,
+  /\bupdate\b/,
+  /\bupdates\b/,
+  /\bcurrent update\b/,
+  /\bkay update\b/,
+  /\bkay zala\b/,
+  /\bkay zalay\b/,
+  /\bkay chalalay\b/,
+  /\bkay chalale\b/,
+  /\bkay batmi\b/,
+  /\bnavi mahiti\b/,
+  /\bnavi news\b/
+];
+
+if (
+  romanCurrentPatterns.some(pattern =>
+    pattern.test(q)
+  )
+) {
+  console.log("🟢 ROMAN MARATHI CURRENT SEARCH ENABLED");
+  return true;
+}
+
+  // ============================================================
   // 3. SPORTS / LIVE SCORE
   // ============================================================
 
