@@ -647,95 +647,109 @@ function buildSearchQuery(query, history = []) {
 
   const currentQuestion = query.trim();
 
-  // --------------------------------------------------
-  // Current question is already complete
-  // --------------------------------------------------
+  // ============================================================
+  // 1. GET PREVIOUS USER MESSAGES ONLY
+  // ============================================================
 
-  const words = currentQuestion
-    .split(/\s+/)
-    .filter(Boolean);
+  const previousUserMessages = Array.isArray(history)
+    ? history
+        .filter(msg =>
+          msg &&
+          msg.role === "user" &&
+          typeof msg.text === "string" &&
+          msg.text.trim() &&
+          msg.thinking !== true
+        )
+        .map(msg => msg.text.trim())
+    : [];
 
-  const isVeryShortQuestion = words.length <= 6;
+  // ============================================================
+  // 2. LAST USER QUESTION
+  // ============================================================
 
-  // --------------------------------------------------
-  // Follow-up question detection
-  // --------------------------------------------------
+  const lastUserQuestion =
+    previousUserMessages.length > 0
+      ? previousUserMessages[previousUserMessages.length - 1]
+      : "";
 
-  const followUpPatterns = [
-    /\bwhat about\b/i,
-    /\bhow about\b/i,
-    /\bwhat happened\b/i,
-    /\bany update\b/i,
-    /\bany updates\b/i,
-    /\blatest\b/i,
+  // ============================================================
+  // 3. DETECT SHORT FOLLOW-UP
+  // ============================================================
+
+  const wordCount =
+    currentQuestion
+      .split(/\s+/)
+      .filter(Boolean)
+      .length;
+
+  const isShortQuestion =
+    wordCount <= 12;
+
+  // ============================================================
+  // 4. CURRENT / FOLLOW-UP INTENT
+  // ============================================================
+
+  const currentPatterns = [
+
+    // English
     /\bcurrent\b/i,
+    /\blatest\b/i,
     /\bupdate\b/i,
+    /\bupdates\b/i,
     /\bnow\b/i,
     /\btoday\b/i,
+    /\bright now\b/i,
+    /\brecent\b/i,
 
+    // Roman Marathi
     /\batta\b/i,
     /\battachi\b/i,
     /\battachya\b/i,
-    /\bsadhya\b/i,
     /\baaj\b/i,
     /\baajchi\b/i,
+    /\bkal\b/i,
+    /\bkalchi\b/i,
+    /\bparva\b/i,
+    /\bsadhya\b/i,
+    /\bsadhyachi\b/i,
     /\bnavin\b/i,
     /\bkay zala\b/i,
     /\bkay zalay\b/i,
     /\bkay batmi\b/i,
 
+    // Marathi
     /आत्ता/,
     /सध्या/,
     /आज/,
-    /नवीन/,
     /ताजी/,
     /ताजे/,
+    /नवीन/,
     /अपडेट/,
     /काय झालं/,
     /काय झालंय/,
     /काय बातमी/
   ];
 
-  const looksLikeFollowUp =
-    followUpPatterns.some(pattern =>
+  const isCurrentQuestion =
+    currentPatterns.some(pattern =>
       pattern.test(currentQuestion)
     );
 
-  // --------------------------------------------------
-  // Get previous conversation context
-  // --------------------------------------------------
-
-  let previousContext = "";
-
-  if (Array.isArray(history) && history.length > 0) {
-
-    previousContext = history
-      .slice(-8)
-      .filter(msg =>
-        msg &&
-        typeof msg.text === "string" &&
-        msg.text.trim() &&
-        msg.thinking !== true
-      )
-      .map(msg => msg.text.trim())
-      .join("\n");
-  }
-
-  // --------------------------------------------------
-  // Follow-up question
-  // --------------------------------------------------
+  // ============================================================
+  // 5. FOLLOW-UP QUESTION
+  // ============================================================
 
   if (
-    isVeryShortQuestion &&
-    looksLikeFollowUp &&
-    previousContext
+    isShortQuestion &&
+    isCurrentQuestion &&
+    lastUserQuestion
   ) {
 
     const smartQuery =
-      `${previousContext}\n${currentQuestion}`;
+      `${lastUserQuestion} ${currentQuestion}`;
 
     console.log(
-      "🧠 FOLLOW-UP SEARCH QUERY:"
+      "🧠 CONTEXT-AWARE SEARCH QUERY:"
     );
 
     console.log(
@@ -745,9 +759,9 @@ function buildSearchQuery(query, history = []) {
     return smartQuery.substring(0, 500);
   }
 
-  // --------------------------------------------------
-  // Normal question
-  // --------------------------------------------------
+  // ============================================================
+  // 6. NORMAL COMPLETE QUESTION
+  // ============================================================
 
   console.log(
     "🧠 DIRECT SEARCH QUERY:"
@@ -759,7 +773,6 @@ function buildSearchQuery(query, history = []) {
 
   return currentQuestion.substring(0, 500);
 }
-
 
 // ================= WEB SEARCH =================
 async function searchWeb(query, history = []) {
