@@ -4120,6 +4120,10 @@ if (webResults.length > 0) {
       .join("\n\n");
 }
 
+console.log("========== SEARCH CONTEXT ==========");
+console.log(searchContext);
+console.log("====================================");
+
 
   // ==================================================
   // 4. GEMINI PROMPT
