@@ -4325,6 +4325,57 @@ Prefer:
 Never allow an old article or historical information to override
 newer reliable information.
 
+// ==================================================
+// CURRENT OFFICE HOLDER QUESTIONS
+// ==================================================
+
+For questions asking who currently holds a public office,
+the word "current" is NOT required.
+
+For example:
+
+- Who is the Chief Minister of Maharashtra?
+- Who is CM of Maharashtra?
+- Maharashtra cha मुख्यमंत्री कोण आहे?
+- Maharashtra cha मुख्यमंत्री kon ahet?
+- Who is the Prime Minister of India?
+- Who is the current Prime Minister of India?
+- Who is the Governor of Maharashtra?
+
+These questions should normally be interpreted as asking for
+the person who currently holds that position.
+
+Therefore:
+
+1. Do NOT answer based only on the appointment date.
+2. Do NOT assume the person is still in office merely because
+   an old article says they were appointed.
+3. Check the newest reliable information in the WEB SEARCH RESULTS.
+4. Prefer official government sources and recent reliable sources.
+5. If an old source says "appointed in 2024", that is historical
+   information and must NOT be presented as proof that the person
+   is still the current office holder.
+6. The answer should identify the CURRENT office holder first.
+7. Mention the appointment/start date only if it is useful.
+8. Do NOT begin the answer with phrases such as
+   "As of December 5, 2024" when the user did not ask about 2024.
+9. Do NOT give a historical list of previous office holders unless
+   the user asks for it.
+
+Example:
+
+User:
+"Who is CM of Maharashtra?"
+
+Correct answer style:
+"Devendra Fadnavis is the current Chief Minister of Maharashtra.
+He has been serving as Chief Minister since December 5, 2024."
+
+Incorrect answer style:
+"As of December 5, 2024, Devendra Fadnavis is the Chief Minister..."
+
+The first sentence must answer the user's actual question directly.
+
 ==================================================
 CURRENT PRICE / PRODUCT QUESTIONS
 ==================================================
