@@ -4423,6 +4423,19 @@ console.log("🔎 SMART SEARCH QUERY:", smartQuery);
 // ==================================================
 // SMART WEB RESULT RELEVANCE
 // ==================================================
+function normalizeSearchText(text = "") {
+  if (!text || typeof text !== "string") {
+    return "";
+  }
+
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function getSearchRelevanceScore(item, query = "") {
   if (!item || !query) {
