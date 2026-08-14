@@ -4917,13 +4917,21 @@ rankedWebResults.forEach(
   (item, index) => {
 
     console.log(
-      `${index + 1}.`,
-      item.title,
-      "| SCORE:",
-      item._relevanceScore,
-      "| URL:",
-      item.url
-    );
+  `${index + 1}.`,
+  item.title,
+  "| RELEVANCE:",
+  item._relevanceScore,
+  "| FRESHNESS:",
+  item._freshnessScore,
+  "| AGE DAYS:",
+  item._ageDays,
+  "| FINAL:",
+  item._finalScore,
+  "| DATE:",
+  item.publishedDate,
+  "| URL:",
+  item.url
+);
 
   }
 );
