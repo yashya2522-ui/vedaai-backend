@@ -4350,19 +4350,54 @@ function getSearchRelevanceScore(item, query = "") {
     return 0;
   }
 
-  const title =
-    String(item.title || "").toLowerCase();
+ const title =
+  normalizeSearchText(item.title || "");
 
-  const content =
-    String(item.content || "").toLowerCase();
+const content =
+  normalizeSearchText(item.content || "");
 
-  const url =
-    String(item.url || "").toLowerCase();
+const url =
+  normalizeSearchText(item.url || "");
 
-  const q =
-    String(query).toLowerCase().trim();
+const q =
+  normalizeSearchText(query);
 
   let score = 0;
+
+  // ==================================================
+// EXACT ENTITY MATCH
+// ==================================================
+
+const titleWords =
+  title.split(/\s+/);
+
+const matchedQueryWords =
+  queryWords.filter(word =>
+    titleWords.includes(word)
+  );
+
+
+// Strong match when important query words
+// appear as complete words in the title.
+
+if (
+  queryWords.length > 0 &&
+  matchedQueryWords.length === queryWords.length
+) {
+  score += 40;
+}
+
+
+// Penalize results that miss important entity words.
+
+const missingWords =
+  queryWords.filter(word =>
+    !titleWords.includes(word)
+  );
+
+if (missingWords.length > 0) {
+  score -= missingWords.length * 12;
+}
 
   // ==================================================
   // QUERY WORDS
@@ -4423,6 +4458,36 @@ function getSearchRelevanceScore(item, query = "") {
     }
   }
 
+  // ==================================================
+// EXACT ENTITY EXTRACTION
+// ==================================================
+
+function normalizeSearchText(text = "") {
+  return String(text)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s.-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getImportantQueryWords(query = "") {
+
+  const stopWords = new Set([
+    "what", "who", "is", "the", "a", "an",
+    "of", "in", "on", "for", "to", "and",
+    "price", "cost", "rate", "kiti", "kay",
+    "chi", "cha", "che", "ahe", "sang",
+    "kon", "latest", "current", "today",
+    "price", "india", "online"
+  ]);
+
+  return normalizeSearchText(query)
+    .split(/\s+/)
+    .filter(word =>
+      word.length >= 2 &&
+      !stopWords.has(word)
+    );
+}
   // ==================================================
   // EXACT ENTITY / PRODUCT MATCH
   // ==================================================
