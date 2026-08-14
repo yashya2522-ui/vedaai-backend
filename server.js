@@ -4636,40 +4636,6 @@ function filterWebResults(
 }
 
 
-// ==================================================
-// RANK RESULTS
-// ==================================================
-
-const rankedWebResults =
-  filterWebResults(
-    webResults,
-    smartQuery
-  );
-
-console.log(
-  "========== RANKED WEB RESULTS =========="
-);
-
-rankedWebResults.forEach(
-  (item, index) => {
-
-    console.log(
-      `${index + 1}.`,
-      item.title,
-      "| SCORE:",
-      item._relevanceScore,
-      "| URL:",
-      item.url
-    );
-
-  }
-);
-
-console.log(
-  "========================================="
-);
-
-
 
 // ==================================================
 // SOURCES — USE RANKED RESULTS ONLY
