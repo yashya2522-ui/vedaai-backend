@@ -4798,6 +4798,7 @@ function filterWebResults(
         item.published_date ||
         item.publishedAt ||
         item.date ||
+        extractDateFromUrl(item.url) ||
         null;
 
       let freshnessScore = 0;
