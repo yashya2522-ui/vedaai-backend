@@ -4573,30 +4573,51 @@ function getSearchRelevanceScore(item, query) {
     q.includes("किंमत") ||
     q.includes("किती");
 
-  if (isPriceQuestion) {
-
-    if (
-      content.includes("price") ||
-      content.includes("₹") ||
-      content.includes("rs.") ||
-      content.includes("rs ")
-    ) {
-      score += 10;
-    }
-  }
-
-  // --------------------------------------------------
-  // CURRENT INFORMATION
-  // --------------------------------------------------
+if (isPriceQuestion) {
 
   if (
-    content.includes("2026") ||
-    content.includes("updated") ||
-    content.includes("latest") ||
-    content.includes("current")
+    content.includes("price") ||
+    content.includes("₹") ||
+    content.includes("rs.") ||
+    content.includes("rs ")
   ) {
-    score += 5;
+    score += 10;
   }
+
+  // Strong preference for current-price evidence
+  if (
+    content.includes("current price") ||
+    content.includes("latest price") ||
+    content.includes("selling price") ||
+    content.includes("now available")
+  ) {
+    score += 15;
+  }
+
+  // Launch price is historical information
+  if (
+    content.includes("launch price") ||
+    content.includes("launched at") ||
+    content.includes("starting price at launch") ||
+    content.includes("original price")
+  ) {
+    score -= 8;
+  }
+}
+  // --------------------------------------------------
+// CURRENT INFORMATION
+// --------------------------------------------------
+
+if (
+  title.includes("2026") ||
+  content.includes("2026") ||
+  content.includes("updated") ||
+  content.includes("latest") ||
+  content.includes("current") ||
+  content.includes("price updated")
+) {
+  score += 8;
+}
 
   // --------------------------------------------------
   // SOURCE QUALITY
@@ -4659,16 +4680,17 @@ let searchContext = "";
 if (Array.isArray(rankedWebResults) && rankedWebResults.length > 0) {
 
   searchContext =
-    "WEB SEARCH EVIDENCE:\n\n" +
+  "WEB SEARCH EVIDENCE:\n\n" +
 
-    rankedWebResults
-      .map(
-        (item, i) =>
-          `${i + 1}. TITLE: ${item.title.trim()}\n` +
-          `CONTENT: ${item.content.trim()}\n` +
-          `SOURCE: ${item.url || "Unknown"}`
-      )
-      .join("\n\n");
+  rankedWebResults
+    .map(
+      (item, i) =>
+        `${i + 1}. TITLE: ${item.title.trim()}\n` +
+        `CONTENT: ${item.content.trim()}\n` +
+        `SOURCE: ${item.url || "Unknown"}\n` +
+        `IMPORTANT: Treat the publication/update date and source authority as important when deciding whether this information is current.`
+    )
+    .join("\n\n");
 }
 console.log("========== SEARCH CONTEXT ==========");
 console.log(searchContext);
@@ -4850,44 +4872,116 @@ Incorrect answer style:
 The first sentence must answer the user's actual question directly.
 
 ==================================================
-CURRENT PRICE / PRODUCT QUESTIONS
+PRICE / PRODUCT QUESTIONS — CURRENT PRICE BY DEFAULT
 ==================================================
 
-For questions about current product prices:
+IMPORTANT:
 
-- Use current web search results.
-- Prefer official manufacturer/store information and reliable
-  current retailers.
-- Clearly distinguish variants.
-- Do not invent prices.
-- Do not claim a product is unavailable merely because one search
-  result does not contain its price.
-- If prices vary by variant or retailer, explain that briefly.
-- Do not use old launch prices as the current price.
+If the user asks the price of a product without specifying a date,
+assume they want the CURRENT / PRESENT price.
 
-==================================================
-NEWS / CURRENT UPDATE QUESTIONS
-==================================================
+For example:
 
-For questions such as:
+User:
+"Vivo V70 chi price kiti ahe?"
 
-"मनोज जरांगे पाटीलची current काय update आहे?"
-"latest news काय आहे?"
-"आज काय झालं?"
-"what is the latest update?"
+Interpretation:
+The user wants the current price of Vivo V70 today,
+NOT the original launch price.
 
-Answer primarily from the newest relevant information.
+Therefore, for EVERY product price question:
 
-The answer should normally contain:
+1. Search the web if web search is available.
 
-- the latest important development
-- the date/time context when available
-- other very recent important developments only if relevant
+2. Determine the CURRENT price from the newest reliable
+   information available.
 
-Do NOT include unrelated events from previous years.
+3. Prefer sources in this order:
 
-Do NOT turn a current update question into a biography,
-historical summary, or timeline.
+   1. Official manufacturer website/store
+   2. Official retailer/store
+   3. Recent reliable technology websites
+   4. Other reputable sources
+   5. Old articles / social media only as supporting evidence
+
+4. ALWAYS compare dates of sources.
+
+5. A launch price is NOT automatically the current price.
+
+6. If an older source says:
+
+   "Launched at ₹45,999"
+
+   and a newer reliable source says:
+
+   "Current price ₹59,999"
+
+   then the answer MUST use ₹59,999 as the current price.
+
+7. If both launch price and current price are available,
+   you MAY mention both, but clearly label them:
+
+   Current price: ₹59,999
+   Launch price: ₹45,999
+
+8. NEVER answer a normal price question using only an old
+   launch-price article.
+
+9. If multiple variants exist, list the current prices
+   variant-wise.
+
+10. If different retailers have different CURRENT prices,
+    explain that briefly instead of pretending there is one
+    universal price.
+
+11. If the current price cannot be reliably established,
+    say that the current price could not be reliably verified.
+    DO NOT guess.
+
+12. The CURRENT PRICE must appear before historical/launch price.
+
+Example:
+
+User:
+"Vivo V70 chi price kiti ahe?"
+
+Correct answer style:
+
+"Vivo V70 ची सध्याची किंमत ₹59,999 पासून आहे.
+ही सध्याची price आहे. फोन launch झाला तेव्हा starting
+price ₹45,999 होती."
+
+Incorrect:
+
+"Vivo V70 ची किंमत ₹45,999 आहे."
+
+because ₹45,999 may be an old launch price.
+
+IMPORTANT:
+The word "current", "latest", "today" or "now" does NOT need
+to appear in the user's question.
+
+A simple question such as:
+
+"iPhone 17 price kiti?"
+"Samsung S26 kiti?"
+"Vivo V70 chi price kiti ahe?"
+"Gold cha bhav kiti?"
+"laptop kiti la ahe?"
+
+should normally be interpreted as asking for the CURRENT
+available price unless the user explicitly asks for historical,
+launch, or old pricing.
+
+If the user explicitly asks:
+
+"launch price kiti hoti?"
+"original price?"
+"launch zala tevha kiti hota?"
+"2025 madhye price kiti hoti?"
+
+then answer the historical price instead.
+
 
 ==================================================
 CONFLICTING SEARCH RESULTS
