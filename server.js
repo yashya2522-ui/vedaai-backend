@@ -4759,11 +4759,15 @@ function filterWebResults(
     normalizeSearchText(query);
 
   const wantsFresh =
-    currentWords.some(word =>
-      normalizedQuery.includes(word)
-    );
+  currentWords.some(word =>
+    normalizedQuery.includes(word)
+  );
 
-  return results
+console.log("🧠 SMART QUERY:", query);
+console.log("🧹 NORMALIZED QUERY:", normalizedQuery);
+console.log("🆕 WANTS FRESH:", wantsFresh);
+
+return results
 
     // ==================================================
     // VALID RESULTS ONLY
