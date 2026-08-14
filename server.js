@@ -5378,6 +5378,23 @@ res.end();
   console.log("❌ ERROR STATUS:", err.status);
   console.log("❌ ERROR STACK:", err.stack);
 
+  console.log("========== FULL ERROR DETAILS ==========");
+  console.log("NAME:", err?.name);
+  console.log("MESSAGE:", err?.message);
+  console.log("STATUS:", err?.status);
+  console.log("CODE:", err?.code);
+  console.log("CAUSE:", err?.cause);
+  console.log("RESPONSE:", err?.response?.data);
+  console.log(
+    "ERROR OBJECT:",
+    JSON.stringify(
+      err,
+      Object.getOwnPropertyNames(err),
+      2
+    )
+  );
+  console.log("========================================");
+
 
   // ================= 429 / QUOTA ERROR =================
 
