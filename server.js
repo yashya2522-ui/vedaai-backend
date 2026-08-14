@@ -4345,99 +4345,63 @@ console.log("🔎 SMART SEARCH QUERY:", smartQuery);
 // ==================================================
 
 function getSearchRelevanceScore(item, query = "") {
-
   if (!item || !query) {
     return 0;
   }
 
- const title =
-  normalizeSearchText(item.title || "");
-
-const content =
-  normalizeSearchText(item.content || "");
-
-const url =
-  normalizeSearchText(item.url || "");
-
-const q =
-  normalizeSearchText(query);
+  const title = normalizeSearchText(item.title || "");
+  const content = normalizeSearchText(item.content || "");
+  const url = normalizeSearchText(item.url || "");
+  const q = normalizeSearchText(query);
 
   let score = 0;
-
-  // ==================================================
-// EXACT ENTITY MATCH
-// ==================================================
-
-const titleWords =
-  title.split(/\s+/);
-
-const matchedQueryWords =
-  queryWords.filter(word =>
-    titleWords.includes(word)
-  );
-
-
-// Strong match when important query words
-// appear as complete words in the title.
-
-if (
-  queryWords.length > 0 &&
-  matchedQueryWords.length === queryWords.length
-) {
-  score += 40;
-}
-
-
-// Penalize results that miss important entity words.
-
-const missingWords =
-  queryWords.filter(word =>
-    !titleWords.includes(word)
-  );
-
-if (missingWords.length > 0) {
-  score -= missingWords.length * 12;
-}
 
   // ==================================================
   // QUERY WORDS
   // ==================================================
 
   const stopWords = new Set([
-    "what",
-    "who",
-    "is",
-    "the",
-    "a",
-    "an",
-    "of",
-    "in",
-    "on",
-    "for",
-    "to",
-    "and",
-    "price",
-    "kiti",
-    "kay",
-    "chi",
-    "cha",
-    "che",
-    "ahe",
-    "sang",
-    "kon",
-    "which",
-    "latest",
-    "current",
-    "today"
+    "what", "who", "is", "the", "a", "an",
+    "of", "in", "on", "for", "to", "and",
+    "price", "cost", "rate",
+    "kiti", "kay", "chi", "cha", "che",
+    "ahe", "sang", "kon",
+    "which", "latest", "current", "today",
+    "india", "online"
   ]);
 
   const queryWords = q
     .split(/\s+/)
     .map(word => word.trim())
     .filter(word =>
-      word.length >= 3 &&
+      word.length >= 2 &&
       !stopWords.has(word)
     );
+
+  // ==================================================
+  // ENTITY / PRODUCT MATCH
+  // ==================================================
+
+  const titleWords = title.split(/\s+/);
+
+  const matchedQueryWords = queryWords.filter(word =>
+    titleWords.includes(word)
+  );
+
+  if (
+    queryWords.length > 0 &&
+    matchedQueryWords.length === queryWords.length
+  ) {
+    score += 40;
+  }
+
+  const missingWords = queryWords.filter(word =>
+    !titleWords.includes(word)
+  );
+
+  if (missingWords.length > 0) {
+    score -= missingWords.length * 12;
+  }
 
   // ==================================================
   // QUERY MATCH
@@ -4459,48 +4423,17 @@ if (missingWords.length > 0) {
   }
 
   // ==================================================
-// EXACT ENTITY EXTRACTION
-// ==================================================
-
-function normalizeSearchText(text = "") {
-  return String(text)
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s.-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getImportantQueryWords(query = "") {
-
-  const stopWords = new Set([
-    "what", "who", "is", "the", "a", "an",
-    "of", "in", "on", "for", "to", "and",
-    "price", "cost", "rate", "kiti", "kay",
-    "chi", "cha", "che", "ahe", "sang",
-    "kon", "latest", "current", "today",
-    "price", "india", "online"
-  ]);
-
-  return normalizeSearchText(query)
-    .split(/\s+/)
-    .filter(word =>
-      word.length >= 2 &&
-      !stopWords.has(word)
-    );
-}
-  // ==================================================
   // EXACT ENTITY / PRODUCT MATCH
   // ==================================================
 
-  const importantWords =
-    queryWords.filter(
-      word => word.length >= 3
-    );
+  const importantWords = queryWords.filter(
+    word => word.length >= 3
+  );
 
   if (
     importantWords.length > 0 &&
-    importantWords.every(
-      word => title.includes(word)
+    importantWords.every(word =>
+      title.includes(word)
     )
   ) {
     score += 30;
@@ -4523,11 +4456,94 @@ function getImportantQueryWords(query = "") {
   }
 
   // ==================================================
-  // OFFICIAL / RELIABLE SOURCE
+  // PRICE QUESTION
+  // ==================================================
+
+  const isPriceQuestion =
+    q.includes("price") ||
+    q.includes("cost") ||
+    q.includes("rate") ||
+    q.includes("kiti") ||
+    q.includes("किंमत") ||
+    q.includes("किती");
+
+  if (isPriceQuestion) {
+
+    // Price-related content
+    if (
+      content.includes("price") ||
+      content.includes("₹") ||
+      content.includes("rs.") ||
+      content.includes("rs ") ||
+      content.includes("inr")
+    ) {
+      score += 10;
+    }
+
+    // Current selling price
+    if (
+      content.includes("current price") ||
+      content.includes("latest price") ||
+      content.includes("selling price") ||
+      content.includes("available at")
+    ) {
+      score += 15;
+    }
+
+    // Old / launch price should be weaker
+    if (
+      content.includes("launch price") ||
+      content.includes("launched at") ||
+      content.includes("original price")
+    ) {
+      score -= 8;
+    }
+
+    // ==================================================
+    // OFFICIAL MANUFACTURER / STORE
+    // ==================================================
+
+    if (
+      url.includes("vivo.com") ||
+      url.includes("shop.vivo.com") ||
+      url.includes("samsung.com") ||
+      url.includes("apple.com") ||
+      url.includes("mi.com") ||
+      url.includes("motorola.in") ||
+      url.includes("oneplus.in") ||
+      url.includes("realme.com")
+    ) {
+      score += 35;
+    }
+
+    // ==================================================
+    // MAJOR RETAILERS
+    // ==================================================
+
+    if (
+      url.includes("amazon.in") ||
+      url.includes("flipkart.com") ||
+      url.includes("croma.com") ||
+      url.includes("reliancedigital.in")
+    ) {
+      score += 20;
+    }
+
+    // Social/video should NOT dominate price answers
+    if (
+      url.includes("youtube.com") ||
+      url.includes("facebook.com") ||
+      url.includes("instagram.com")
+    ) {
+      score -= 25;
+    }
+  }
+
+  // ==================================================
+  // OFFICIAL / RELIABLE SOURCES
   // ==================================================
 
   const reliableDomains = [
-
     "samsung.com",
     "vivo.com",
     "apple.com",
@@ -4560,7 +4576,7 @@ function getImportantQueryWords(query = "") {
   }
 
   // ==================================================
-  // SOCIAL / WEAK SOURCE PENALTY
+  // WEAK SOURCE PENALTY
   // ==================================================
 
   const weakDomains = [
@@ -4578,88 +4594,8 @@ function getImportantQueryWords(query = "") {
     }
   }
 
-  // ==================================================
-  // PRICE QUESTION
-  // ==================================================
-
-  const isPriceQuestion =
-    q.includes("price") ||
-    q.includes("cost") ||
-    q.includes("rate") ||
-    q.includes("kiti") ||
-    q.includes("किंमत") ||
-    q.includes("किती");
-
-  if (isPriceQuestion) {
-    
-
-    if (
-      content.includes("price") ||
-      content.includes("₹") ||
-      content.includes("rs.") ||
-      content.includes("rs ")
-    ) {
-      score += 10;
-    }
-
-    if (
-      content.includes("current price") ||
-      content.includes("latest price") ||
-      content.includes("selling price") ||
-      content.includes("available at")
-    ) {
-      score += 15;
-    }
-
-    if (
-      content.includes("launch price") ||
-      content.includes("launched at") ||
-      content.includes("original price")
-    ) {
-      score -= 8;
-    }
-
-        // ==================================================
-    // OFFICIAL SOURCE PRIORITY
-    // ==================================================
-
-    if (
-      url.includes("vivo.com") ||
-      url.includes("shop.vivo.com") ||
-      url.includes("samsung.com") ||
-      url.includes("apple.com") ||
-      url.includes("mi.com") ||
-      url.includes("motorola.in") ||
-      url.includes("oneplus.in") ||
-      url.includes("realme.com")
-    ) {
-      score += 35;
-    }
-
-    // Major retailers
-    if (
-      url.includes("amazon.in") ||
-      url.includes("flipkart.com") ||
-      url.includes("croma.com") ||
-      url.includes("reliancedigital.in")
-    ) {
-      score += 20;
-    }
-
-    // Social/video sources should not dominate price questions
-    if (
-      url.includes("youtube.com") ||
-      url.includes("facebook.com") ||
-      url.includes("instagram.com")
-    ) {
-      score -= 25;
-    }
-  }
-
   return score;
 }
-
-
 // ==================================================
 // FILTER & RANK WEB RESULTS
 // ==================================================
