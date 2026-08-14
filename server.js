@@ -757,14 +757,73 @@ function shouldSearchWeb(query, history = []) {
     }
   }
 
+// ==================================================
+// DEFAULT SMART SEARCH
+// ==================================================
 
-  // ==================================================
-  // DEFAULT
-  // ==================================================
+console.log("🧠 DEFAULT SMART SEARCH CHECK");
 
-  console.log("⚪ SEARCH NOT REQUIRED");
+// If no specific rule matched above,
+// allow web search for factual / informational questions.
 
-  return false;
+const factualPatterns = [
+  "what",
+  "who",
+  "where",
+  "when",
+  "which",
+  "how much",
+  "how many",
+  "why",
+  "information",
+  "details",
+  "price",
+  "cost",
+  "rate",
+  "available",
+  "available now",
+  "is it true",
+  "true or false",
+
+  "काय",
+  "कोण",
+  "कुठे",
+  "कधी",
+  "किती",
+  "किती आहे",
+  "कितीला",
+  "कसा",
+  "कशी",
+  "कसे",
+  "का",
+  "माहिती",
+  "तपशील",
+  "किंमत",
+  "भाव",
+  "दर",
+  "उपलब्ध",
+  "खरं आहे का",
+  "खरे आहे का"
+];
+
+const looksFactual =
+  factualPatterns.some(pattern =>
+    q.includes(pattern)
+  );
+
+if (looksFactual) {
+  console.log(
+    "🌐 SEARCH REASON: GENERAL FACTUAL QUESTION"
+  );
+
+  return true;
+}
+
+console.log(
+  "⚪ SEARCH NOT REQUIRED: GENERAL CHAT"
+);
+
+return false;
 }
 
 // ================= WEB CACHE =================
