@@ -1898,12 +1898,25 @@ async function searchWeb(query, history = []) {
       : [];
 
     console.log("📚 TAVILY RESULTS:", results.length);
-
+   console.log(
+  "📅 TAVILY DATES:",
+  results.map(item => ({
+    title: item.title,
+    publishedDate: item.publishedDate,
+    published_date: item.published_date,
+    date: item.date
+  }))
+);
     return results.map(item => ({
-      title: item.title || "",
-      content: item.content || "",
-      url: item.url || ""
-    }));
+  title: item.title || "",
+  content: item.content || "",
+  url: item.url || "",
+  publishedDate:
+    item.publishedDate ||
+    item.published_date ||
+    item.date ||
+    null
+}));
 
   } catch (error) {
 
@@ -4369,7 +4382,40 @@ function getSearchRelevanceScore(item, query = "") {
   const q = normalizeSearchText(query);
 
   let score = 0;
+    // ==================================================
+  // FRESHNESS / CURRENT UPDATE BOOST
+  // ==================================================
 
+  const currentIntent =
+    /\b(latest|current|today|now|recent|update|updates|right now)\b/i.test(query) ||
+    /\b(atta|attachi|attachya|aaj|aajchi|sadhya|sadhyachi|navin|kay zala|kay zalay|kay batmi)\b/i.test(query);
+
+  if (currentIntent && item.publishedDate) {
+
+    const publishedTime = new Date(item.publishedDate).getTime();
+    const now = Date.now();
+
+    if (!Number.isNaN(publishedTime)) {
+
+      const ageDays =
+        (now - publishedTime) / (1000 * 60 * 60 * 24);
+
+      if (ageDays <= 1) {
+        score += 80;
+      } else if (ageDays <= 3) {
+        score += 60;
+      } else if (ageDays <= 7) {
+        score += 40;
+      } else if (ageDays <= 30) {
+        score += 15;
+      } else if (ageDays <= 90) {
+        score -= 20;
+      } else {
+        score -= 50;
+      }
+
+    }
+  }
   // ==================================================
   // QUERY WORDS
   // ==================================================
