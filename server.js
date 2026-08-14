@@ -1864,6 +1864,45 @@ const authMiddleware = (req,res,next)=>{
 };
 
 // ================= SMART WEB SEARCH =================
+function extractDateFromUrl(url = "") {
+  if (!url || typeof url !== "string") {
+    return null;
+  }
+
+  const match = url.match(
+    /\/(20\d{2})\/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/(\d{1,2})\//i
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+
+  const months = {
+    jan: "01",
+    feb: "02",
+    mar: "03",
+    apr: "04",
+    may: "05",
+    jun: "06",
+    jul: "07",
+    aug: "08",
+    sep: "09",
+    oct: "10",
+    nov: "11",
+    dec: "12"
+  };
+
+  const monthNumber = months[month.toLowerCase()];
+
+  if (!monthNumber) {
+    return null;
+  }
+
+  return `${year}-${monthNumber}-${String(day).padStart(2, "0")}`;
+}
+
 async function searchWeb(query, history = []) {
   try {
     if (!query || typeof query !== "string") {
@@ -1894,29 +1933,43 @@ async function searchWeb(query, history = []) {
     );
 
     const results = Array.isArray(response.data?.results)
-      ? response.data.results
-      : [];
+  ? response.data.results
+  : [];
 
-    console.log("📚 TAVILY RESULTS:", results.length);
-   console.log(
-  "📅 TAVILY DATES:",
+console.log("📚 TAVILY RESULTS:", results.length);
+
+console.log(
+  "📅 FINAL TAVILY DATES:",
   results.map(item => ({
     title: item.title,
-    publishedDate: item.publishedDate,
-    published_date: item.published_date,
-    date: item.date
+    url: item.url,
+    tavilyDate:
+      item.publishedDate ||
+      item.published_date ||
+      item.date ||
+      null,
+    extractedDate: extractDateFromUrl(item.url || "")
   }))
 );
-    return results.map(item => ({
-  title: item.title || "",
-  content: item.content || "",
-  url: item.url || "",
-  publishedDate:
+
+return results.map(item => {
+
+  const url = item.url || "";
+
+  const publishedDate =
     item.publishedDate ||
     item.published_date ||
     item.date ||
-    null
-}));
+    extractDateFromUrl(url);
+
+  return {
+    title: item.title || "",
+    content: item.content || "",
+    url,
+    publishedDate
+  };
+
+});
 
   } catch (error) {
 
@@ -4669,6 +4722,34 @@ function filterWebResults(
     return [];
   }
 
+  const now = Date.now();
+
+  const currentWords = [
+    "current",
+    "latest",
+    "today",
+    "recent",
+    "now",
+    "update",
+    "updates",
+    "atta",
+    "aaj",
+    "aajchi",
+    "sadhya",
+    "navin",
+    "kay zala",
+    "kay zalay",
+    "kay batmi"
+  ];
+
+  const normalizedQuery =
+    normalizeSearchText(query);
+
+  const wantsFresh =
+    currentWords.some(word =>
+      normalizedQuery.includes(word)
+    );
+
   return results
 
     // ==================================================
@@ -4684,33 +4765,118 @@ function filterWebResults(
     )
 
     // ==================================================
-    // CALCULATE SCORE
+    // CALCULATE RELEVANCE + FRESHNESS
     // ==================================================
 
     .map(item => {
 
-      const score =
+      const relevanceScore =
         getSearchRelevanceScore(
           item,
           query
         );
 
+      // ----------------------------------------------
+      // DATE
+      // ----------------------------------------------
+
+      const rawDate =
+        item.publishedDate ||
+        item.published_date ||
+        item.publishedAt ||
+        item.date ||
+        null;
+
+      let freshnessScore = 0;
+      let ageDays = 9999;
+
+      if (rawDate) {
+
+        const publishedTime =
+          new Date(rawDate).getTime();
+
+        if (!Number.isNaN(publishedTime)) {
+
+          ageDays =
+            Math.max(
+              0,
+              (now - publishedTime) /
+              (1000 * 60 * 60 * 24)
+            );
+
+          // Latest news gets stronger score
+          if (ageDays <= 1) {
+            freshnessScore = 50;
+          } else if (ageDays <= 3) {
+            freshnessScore = 40;
+          } else if (ageDays <= 7) {
+            freshnessScore = 30;
+          } else if (ageDays <= 14) {
+            freshnessScore = 20;
+          } else if (ageDays <= 30) {
+            freshnessScore = 10;
+          } else if (ageDays <= 60) {
+            freshnessScore = 3;
+          } else {
+            freshnessScore = -20;
+          }
+        }
+      }
+
+      // ==================================================
+      // FINAL SCORE
+      // ==================================================
+
+      let finalScore =
+        relevanceScore;
+
+      if (wantsFresh) {
+        finalScore += freshnessScore;
+      }
+
       return {
         ...item,
-        _relevanceScore: score
+        _relevanceScore: relevanceScore,
+        _freshnessScore: freshnessScore,
+        _ageDays: ageDays,
+        _finalScore: finalScore
       };
 
     })
 
     // ==================================================
-    // HIGHEST RELEVANCE FIRST
+    // CURRENT NEWS → FRESHNESS + RELEVANCE
     // ==================================================
 
-    .sort(
-      (a, b) =>
-        b._relevanceScore -
-        a._relevanceScore
-    )
+    .sort((a, b) => {
+
+      if (wantsFresh) {
+
+        // Final score first
+        if (
+          b._finalScore !==
+          a._finalScore
+        ) {
+          return (
+            b._finalScore -
+            a._finalScore
+          );
+        }
+
+        // If score same → newer first
+        return (
+          a._ageDays -
+          b._ageDays
+        );
+      }
+
+      // Normal query → relevance only
+      return (
+        b._finalScore -
+        a._finalScore
+      );
+
+    })
 
     // ==================================================
     // KEEP UP TO 8 RESULTS
