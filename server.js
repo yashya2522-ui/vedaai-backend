@@ -1863,6 +1863,58 @@ const authMiddleware = (req,res,next)=>{
 
 };
 
+// ================= SMART WEB SEARCH =================
+async function searchWeb(query, history = []) {
+  try {
+    if (!query || typeof query !== "string") {
+      return [];
+    }
+
+    const searchQuery = query.trim();
+
+    console.log("🌐 SEARCH WEB:", searchQuery);
+
+    const response = await axios.post(
+      "https://api.tavily.com/search",
+      {
+        api_key: process.env.TAVILY_API_KEY,
+        query: searchQuery,
+        search_depth: "advanced",
+        topic: "news",
+        max_results: 8,
+        include_answer: false,
+        include_raw_content: false
+      },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        },
+        timeout: 15000
+      }
+    );
+
+    const results = Array.isArray(response.data?.results)
+      ? response.data.results
+      : [];
+
+    console.log("📚 TAVILY RESULTS:", results.length);
+
+    return results.map(item => ({
+      title: item.title || "",
+      content: item.content || "",
+      url: item.url || ""
+    }));
+
+  } catch (error) {
+
+    console.error(
+      "❌ SEARCH WEB ERROR:",
+      error.response?.data || error.message
+    );
+
+    return [];
+  }
+}
  
 
 // ================= WIKIPEDIA =================

@@ -2149,130 +2149,109 @@ Widget chatBubble(
             ),
 
           // ==================================================
-          // SOURCES
-          // ==================================================
+// SOURCES — SOURCE LOGOS
+// ==================================================
 
-          if (!isUser &&
-              sources.isNotEmpty)
+if (!isUser && sources.isNotEmpty)
+  Padding(
+    padding: const EdgeInsets.only(
+      left: 36,
+      top: 6,
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: sources.map((source) {
+        final title =
+            source["title"]?.toString() ?? "";
 
-            Padding(
-              padding:
-                  const EdgeInsets.only(
-                left: 36,
-                top: 8,
-              ),
+        final domain =
+            source["domain"]?.toString() ?? "";
 
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
+        final url =
+            source["url"]?.toString() ?? "";
 
-                children:
-                    sources.map((source) {
+        // Source website favicon/logo
+        final logoUrl = domain.isNotEmpty
+            ? "https://www.google.com/s2/favicons?domain=$domain&sz=64"
+            : "";
 
-                  final title =
-                      source["title"]
-                              ?.toString() ??
-                          "Web Source";
+        return Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: GestureDetector(
+            onTap: url.isEmpty
+                ? null
+                : () async {
+                    final uri = Uri.tryParse(url);
 
-                  final domain =
-                      source["domain"]
-                              ?.toString() ??
-                          "";
+                    if (uri == null) return;
 
-                  final url =
-                      source["url"]
-                              ?.toString() ??
-                          "";
+                    try {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    } catch (e) {
+                      print("SOURCE URL ERROR: $e");
+                    }
+                  },
 
-                  final logoUrl =
-                      domain.isNotEmpty
-                          ? "https://www.google.com/s2/favicons?domain=$domain&sz=64"
-                          : "";
+            child: Tooltip(
+              message: title.isNotEmpty
+                  ? title
+                  : domain,
 
-                  return GestureDetector(
-                   onTap: url.isEmpty
-    ? null
-    : () async {
-        final uri = Uri.tryParse(url);
+              child: Container(
+                width: 32,
+                height: 32,
 
-        if (uri == null) return;
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
 
-        try {
-          await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-        } catch (e) {
-          print("SOURCE URL ERROR: $e");
-        }
-      },
+                  color: isDarkMode
+                      ? const Color(0xff1E293B)
+                      : const Color(0xffF1F5F9),
 
-                    child: Container(
-                      width: 32,
-                      height: 32,
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white12
+                        : Colors.black12,
+                  ),
+                ),
 
-                      decoration:
-                          BoxDecoration(
-                        shape:
-                            BoxShape.circle,
+                padding: const EdgeInsets.all(5),
 
-                        color: isDarkMode
-                            ? const Color(
-                                0xff1E293B)
-                            : const Color(
-                                0xffF1F5F9),
+                child: logoUrl.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          logoUrl,
+                          fit: BoxFit.contain,
 
-                        border:
-                            Border.all(
-                          color: isDarkMode
-                              ? Colors.white12
-                              : Colors.black12,
+                          errorBuilder:
+                              (context, error, stackTrace) {
+                            return Icon(
+                              Icons.language,
+                              size: 18,
+                              color: isDarkMode
+                                  ? Colors.white54
+                                  : Colors.black45,
+                            );
+                          },
                         ),
+                      )
+                    : Icon(
+                        Icons.language,
+                        size: 18,
+                        color: isDarkMode
+                            ? Colors.white54
+                            : Colors.black45,
                       ),
-
-                      padding:
-                          const EdgeInsets.all(
-                        5,
-                      ),
-
-                      child:
-                          logoUrl.isNotEmpty
-                              ? ClipOval(
-                                  child:
-                                      Image.network(
-                                    logoUrl,
-                                    fit: BoxFit
-                                        .contain,
-
-                                    errorBuilder:
-                                        (
-                                      context,
-                                      error,
-                                      stackTrace,
-                                    ) {
-                                      return Icon(
-                                        Icons
-                                            .language,
-                                        size: 18,
-                                        color: isDarkMode
-                                            ? Colors.white54
-                                            : Colors.black45,
-                                      );
-                                    },
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.language,
-                                  size: 18,
-                                  color: isDarkMode
-                                      ? Colors.white54
-                                      : Colors.black45,
-                                ),
-                    ),
-                  );
-                }).toList(),
               ),
             ),
+          ),
+        );
+      }).toList(),
+    ),
+  ),
 
           // ==================================================
           // PINNED
