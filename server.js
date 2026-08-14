@@ -4318,7 +4318,7 @@ async function callGeminiStream(
     console.log("🌐 WEB SEARCH ENABLED");
 
     // 🧠 Context-aware search query
-   smartQuery = buildSearchQuery(
+   const smartQuery = buildSearchQuery(
   userMessage,
   history
 );
@@ -5237,9 +5237,10 @@ information.
 
       // Sources पुढे response मध्ये वापरण्यासाठी
       // function object वर temporarily store
-      stream.vedaSources = sources;
-
-      return stream;
+      return {
+  stream,
+  sources,
+};
 
     } catch (err) {
       console.log(
@@ -5324,7 +5325,8 @@ const stream = await callGeminiStream(
 console.log("🟢 AFTER callGeminiStream");
 
   // ================= SOURCES FOR FRONTEND =================
-const sources = stream.vedaSources || [];
+const stream = result.stream;
+const sources = result.sources || [];
 
 console.log("📚 SOURCES TO SEND:", sources);
 
