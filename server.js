@@ -4340,8 +4340,7 @@ console.log("🔎 SMART SEARCH QUERY:", smartQuery);
   } else {
     console.log("🌐 WEB SEARCH SKIPPED");
   }
-
- // ==================================================
+// ==================================================
 // SMART WEB RESULT RELEVANCE
 // ==================================================
 
@@ -4464,22 +4463,14 @@ function getSearchRelevanceScore(item, query = "") {
 
   const reliableDomains = [
 
-    // Samsung
     "samsung.com",
-
-    // Vivo
     "vivo.com",
-
-    // Apple
     "apple.com",
 
-    // Government
     "gov.in",
     "maharashtra.gov.in",
     "india.gov.in",
 
-    // Major news
-    "abplive.com",
     "abplive.com",
     "ndtv.com",
     "ndtvprofit.com",
@@ -4488,7 +4479,6 @@ function getSearchRelevanceScore(item, query = "") {
     "timesofindia.indiatimes.com",
     "thehindu.com",
 
-    // Technology
     "gadgets360.com",
     "91mobiles.com",
     "gsmarena.com",
@@ -4583,9 +4573,9 @@ function filterWebResults(
 
   return results
 
-    // ----------------------------------------------
+    // ==================================================
     // VALID RESULTS ONLY
-    // ----------------------------------------------
+    // ==================================================
 
     .filter(item =>
       item &&
@@ -4595,9 +4585,9 @@ function filterWebResults(
       item.url
     )
 
-    // ----------------------------------------------
-    // SCORE
-    // ----------------------------------------------
+    // ==================================================
+    // CALCULATE SCORE
+    // ==================================================
 
     .map(item => {
 
@@ -4614,9 +4604,9 @@ function filterWebResults(
 
     })
 
-    // ----------------------------------------------
+    // ==================================================
     // HIGHEST RELEVANCE FIRST
-    // ----------------------------------------------
+    // ==================================================
 
     .sort(
       (a, b) =>
@@ -4624,21 +4614,50 @@ function filterWebResults(
         a._relevanceScore
     )
 
-    // ----------------------------------------------
-    // IMPORTANT:
-    // DO NOT REMOVE RESULTS JUST BECAUSE
-    // SCORE IS LOW.
-    //
-    // This was causing only 3 sources sometimes.
-    // ----------------------------------------------
+    // ==================================================
+    // KEEP UP TO 8 RESULTS
+    // ==================================================
 
     .slice(0, 8);
 }
 
 
+// ==================================================
+// RANK RESULTS
+// ==================================================
+
+const rankedWebResults =
+  filterWebResults(
+    webResults,
+    smartQuery
+  );
+
+console.log(
+  "========== RANKED WEB RESULTS =========="
+);
+
+rankedWebResults.forEach(
+  (item, index) => {
+
+    console.log(
+      `${index + 1}.`,
+      item.title,
+      "| SCORE:",
+      item._relevanceScore,
+      "| URL:",
+      item.url
+    );
+
+  }
+);
+
+console.log(
+  "========================================="
+);
+
 
 // ==================================================
-// SOURCES — USE RANKED RESULTS ONLY
+// SOURCES — USE RANKED RESULTS
 // ==================================================
 
 let sources = [];
@@ -4649,7 +4668,11 @@ if (
 ) {
 
   sources = rankedWebResults
-    .filter(item => item && item.url)
+    .filter(
+      item =>
+        item &&
+        item.url
+    )
     .slice(0, 5)
     .map(item => {
 
@@ -4657,14 +4680,14 @@ if (
 
       try {
 
-        domain = new URL(item.url)
-          .hostname
-          .replace(/^www\./, "");
+        domain =
+          new URL(item.url)
+            .hostname
+            .replace(/^www\./, "");
 
       } catch (e) {
 
         domain = "";
-
       }
 
       return {
@@ -4673,9 +4696,11 @@ if (
           domain ||
           "Web Source",
 
-        url: item.url,
+        url:
+          item.url,
 
-        domain: domain
+        domain:
+          domain
       };
 
     });
@@ -4696,210 +4721,7 @@ console.log(
 console.log(
   "============================="
 );
-// ==================================================
-// SMART WEB RESULT RELEVANCE
-// ==================================================
 
-function getSearchRelevanceScore(item, query) {
-
-  if (!item || !query) {
-    return 0;
-  }
-
-  const title =
-    String(item.title || "").toLowerCase();
-
-  const content =
-    String(item.content || "").toLowerCase();
-
-  const url =
-    String(item.url || "").toLowerCase();
-
-  const q =
-    query.toLowerCase().trim();
-
-  let score = 0;
-
-  // --------------------------------------------------
-  // QUERY WORDS
-  // --------------------------------------------------
-
-  const stopWords = new Set([
-    "what",
-    "who",
-    "is",
-    "the",
-    "a",
-    "an",
-    "of",
-    "in",
-    "on",
-    "for",
-    "to",
-    "and",
-    "price",
-    "kiti",
-    "kay",
-    "chi",
-    "cha",
-    "che",
-    "ahe",
-    "kiti",
-    "sang"
-  ]);
-
-  const queryWords = q
-    .split(/\s+/)
-    .filter(word =>
-      word.length >= 3 &&
-      !stopWords.has(word)
-    );
-
-  // --------------------------------------------------
-  // MATCH QUERY WORDS
-  // --------------------------------------------------
-
-  for (const word of queryWords) {
-
-    if (title.includes(word)) {
-      score += 10;
-    }
-
-    if (content.includes(word)) {
-      score += 3;
-    }
-
-    if (url.includes(word)) {
-      score += 5;
-    }
-  }
-
-  // --------------------------------------------------
-  // EXACT PRODUCT / ENTITY MATCH
-  // --------------------------------------------------
-
-  const importantWords = queryWords.filter(
-    word => word.length >= 3
-  );
-
-  if (
-    importantWords.length > 0 &&
-    importantWords.every(word =>
-      title.includes(word)
-    )
-  ) {
-    score += 25;
-  }
-
-  // --------------------------------------------------
-  // PRICE QUESTION
-  // --------------------------------------------------
-
-  const isPriceQuestion =
-    q.includes("price") ||
-    q.includes("kiti") ||
-    q.includes("cost") ||
-    q.includes("rate") ||
-    q.includes("किंमत") ||
-    q.includes("किती");
-
-if (isPriceQuestion) {
-
-  if (
-    content.includes("price") ||
-    content.includes("₹") ||
-    content.includes("rs.") ||
-    content.includes("rs ")
-  ) {
-    score += 10;
-  }
-
-  // Strong preference for current-price evidence
-  if (
-    content.includes("current price") ||
-    content.includes("latest price") ||
-    content.includes("selling price") ||
-    content.includes("now available")
-  ) {
-    score += 15;
-  }
-
-  // Launch price is historical information
-  if (
-    content.includes("launch price") ||
-    content.includes("launched at") ||
-    content.includes("starting price at launch") ||
-    content.includes("original price")
-  ) {
-    score -= 8;
-  }
-}
-  // --------------------------------------------------
-// CURRENT INFORMATION
-// --------------------------------------------------
-
-if (
-  title.includes("2026") ||
-  content.includes("2026") ||
-  content.includes("updated") ||
-  content.includes("latest") ||
-  content.includes("current") ||
-  content.includes("price updated")
-) {
-  score += 8;
-}
-
-  // --------------------------------------------------
-  // SOURCE QUALITY
-  // --------------------------------------------------
-
-  const reliableDomains = [
-    "vivo.com",
-    "vivo.com/in",
-    "91mobiles.com",
-    "gsmarena.com",
-    "smartprix.com",
-    "digit.in",
-    "hindustantimes.com",
-    "indianexpress.com",
-    "timesofindia.indiatimes.com"
-  ];
-
-  for (const domain of reliableDomains) {
-
-    if (url.includes(domain)) {
-      score += 8;
-      break;
-    }
-  }
-
-  // --------------------------------------------------
-  // SOCIAL MEDIA PENALTY
-  // --------------------------------------------------
-
-  const weakDomains = [
-    "facebook.com",
-    "instagram.com",
-    "pinterest.com",
-    "reddit.com"
-  ];
-
-  for (const domain of weakDomains) {
-
-    if (url.includes(domain)) {
-      score -= 15;
-      break;
-    }
-  }
-
-  return score;
-}
-
-const rankedWebResults =
-  filterWebResults(
-    webResults,
-    smartQuery
-  );
 
 // ==================================================
 // 3. SEARCH CONTEXT
@@ -4907,24 +4729,34 @@ const rankedWebResults =
 
 let searchContext = "";
 
-if (Array.isArray(rankedWebResults) && rankedWebResults.length > 0) {
+if (
+  Array.isArray(rankedWebResults) &&
+  rankedWebResults.length > 0
+) {
 
   searchContext =
-  "WEB SEARCH EVIDENCE:\n\n" +
+    "WEB SEARCH EVIDENCE:\n\n" +
 
-  rankedWebResults
-    .map(
-      (item, i) =>
-        `${i + 1}. TITLE: ${item.title.trim()}\n` +
-        `CONTENT: ${item.content.trim()}\n` +
-        `SOURCE: ${item.url || "Unknown"}\n` +
-        `IMPORTANT: Treat the publication/update date and source authority as important when deciding whether this information is current.`
-    )
-    .join("\n\n");
+    rankedWebResults
+      .map(
+        (item, i) =>
+          `${i + 1}. TITLE: ${item.title.trim()}\n` +
+          `CONTENT: ${item.content.trim()}\n` +
+          `SOURCE: ${item.url || "Unknown"}\n` +
+          `IMPORTANT: Treat the publication/update date and source authority as important when deciding whether this information is current.`
+      )
+      .join("\n\n");
 }
-console.log("========== SEARCH CONTEXT ==========");
+
+console.log(
+  "========== SEARCH CONTEXT =========="
+);
+
 console.log(searchContext);
-console.log("====================================");
+
+console.log(
+  "===================================="
+);
 
 
 // ==================================================
