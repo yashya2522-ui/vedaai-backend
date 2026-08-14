@@ -2834,7 +2834,7 @@ await memory.save();
 
 // ================= AI INPUT =================
 let webResults = [];
-
+let smartQuery = "";
 if (shouldSearchWeb(userMessage, history)) {
   webResults = await searchWeb(userMessage, history);
 }
@@ -4318,7 +4318,7 @@ async function callGeminiStream(
     console.log("🌐 WEB SEARCH ENABLED");
 
     // 🧠 Context-aware search query
-   const smartQuery = buildSearchQuery(
+   smartQuery = buildSearchQuery(
   userMessage,
   history
 );
@@ -4394,7 +4394,10 @@ console.log("🔎 SMART SEARCH QUERY:", smartQuery);
 // FILTER & RANK WEB RESULTS
 // ==================================================
 
-function filterWebResults(results = []) {
+function filterWebResults(
+  results = [],
+  query = ""
+) {
 
   if (!Array.isArray(results)) {
     return [];
@@ -4412,7 +4415,11 @@ function filterWebResults(results = []) {
       const text =
         `${item.title} ${item.content}`.toLowerCase();
 
-      let score = 0;
+      let score =
+  getSearchRelevanceScore(
+    item,
+    query
+  );
 
       // Current information signals
       if (
@@ -4459,7 +4466,193 @@ function filterWebResults(results = []) {
     );
 }
 
-const rankedWebResults = filterWebResults(webResults);
+// ==================================================
+// SMART WEB RESULT RELEVANCE
+// ==================================================
+
+function getSearchRelevanceScore(item, query) {
+
+  if (!item || !query) {
+    return 0;
+  }
+
+  const title =
+    String(item.title || "").toLowerCase();
+
+  const content =
+    String(item.content || "").toLowerCase();
+
+  const url =
+    String(item.url || "").toLowerCase();
+
+  const q =
+    query.toLowerCase().trim();
+
+  let score =
+  getSearchRelevanceScore(
+    item,
+    query
+  );
+
+  // --------------------------------------------------
+  // QUERY WORDS
+  // --------------------------------------------------
+
+  const stopWords = new Set([
+    "what",
+    "who",
+    "is",
+    "the",
+    "a",
+    "an",
+    "of",
+    "in",
+    "on",
+    "for",
+    "to",
+    "and",
+    "price",
+    "kiti",
+    "kay",
+    "chi",
+    "cha",
+    "che",
+    "ahe",
+    "kiti",
+    "sang"
+  ]);
+
+  const queryWords = q
+    .split(/\s+/)
+    .filter(word =>
+      word.length >= 3 &&
+      !stopWords.has(word)
+    );
+
+  // --------------------------------------------------
+  // MATCH QUERY WORDS
+  // --------------------------------------------------
+
+  for (const word of queryWords) {
+
+    if (title.includes(word)) {
+      score += 10;
+    }
+
+    if (content.includes(word)) {
+      score += 3;
+    }
+
+    if (url.includes(word)) {
+      score += 5;
+    }
+  }
+
+  // --------------------------------------------------
+  // EXACT PRODUCT / ENTITY MATCH
+  // --------------------------------------------------
+
+  const importantWords = queryWords.filter(
+    word => word.length >= 3
+  );
+
+  if (
+    importantWords.length > 0 &&
+    importantWords.every(word =>
+      title.includes(word)
+    )
+  ) {
+    score += 25;
+  }
+
+  // --------------------------------------------------
+  // PRICE QUESTION
+  // --------------------------------------------------
+
+  const isPriceQuestion =
+    q.includes("price") ||
+    q.includes("kiti") ||
+    q.includes("cost") ||
+    q.includes("rate") ||
+    q.includes("किंमत") ||
+    q.includes("किती");
+
+  if (isPriceQuestion) {
+
+    if (
+      content.includes("price") ||
+      content.includes("₹") ||
+      content.includes("rs.") ||
+      content.includes("rs ")
+    ) {
+      score += 10;
+    }
+  }
+
+  // --------------------------------------------------
+  // CURRENT INFORMATION
+  // --------------------------------------------------
+
+  if (
+    content.includes("2026") ||
+    content.includes("updated") ||
+    content.includes("latest") ||
+    content.includes("current")
+  ) {
+    score += 5;
+  }
+
+  // --------------------------------------------------
+  // SOURCE QUALITY
+  // --------------------------------------------------
+
+  const reliableDomains = [
+    "vivo.com",
+    "vivo.com/in",
+    "91mobiles.com",
+    "gsmarena.com",
+    "smartprix.com",
+    "digit.in",
+    "hindustantimes.com",
+    "indianexpress.com",
+    "timesofindia.indiatimes.com"
+  ];
+
+  for (const domain of reliableDomains) {
+
+    if (url.includes(domain)) {
+      score += 8;
+      break;
+    }
+  }
+
+  // --------------------------------------------------
+  // SOCIAL MEDIA PENALTY
+  // --------------------------------------------------
+
+  const weakDomains = [
+    "facebook.com",
+    "instagram.com",
+    "pinterest.com",
+    "reddit.com"
+  ];
+
+  for (const domain of weakDomains) {
+
+    if (url.includes(domain)) {
+      score -= 15;
+      break;
+    }
+  }
+
+  return score;
+}
+
+const rankedWebResults =
+  filterWebResults(
+    webResults,
+    smartQuery
+  );
 
 // ==================================================
 // 3. SEARCH CONTEXT
