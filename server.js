@@ -4488,11 +4488,7 @@ function getSearchRelevanceScore(item, query) {
   const q =
     query.toLowerCase().trim();
 
-  let score =
-  getSearchRelevanceScore(
-    item,
-    query
-  );
+  let score = 0;
 
   // --------------------------------------------------
   // QUERY WORDS
