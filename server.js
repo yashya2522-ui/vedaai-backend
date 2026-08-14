@@ -5316,18 +5316,16 @@ console.log(
 
 console.log("🟠 BEFORE callGeminiStream");
 
-const stream = await callGeminiStream(
+const result = await callGeminiStream(
   userMessage,
   finalPrompt,
   history
 );
 
-console.log("🟢 AFTER callGeminiStream");
-
-  // ================= SOURCES FOR FRONTEND =================
 const stream = result.stream;
 const sources = result.sources || [];
 
+console.log("🟢 AFTER callGeminiStream");
 console.log("📚 SOURCES TO SEND:", sources);
 
 
