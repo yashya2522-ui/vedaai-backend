@@ -832,7 +832,8 @@ const webCache = new Map();
 const CACHE_TIME = 0;
 
 
-// ================= BUILD SMART SEARCH QUERY =================
+// ================= SMART SEARCH QUERY =================
+
 function buildSearchQuery(query, history = []) {
 
   if (!query || typeof query !== "string") {
@@ -842,7 +843,7 @@ function buildSearchQuery(query, history = []) {
   const currentQuestion = query.trim();
 
   // ============================================================
-  // 1. GET PREVIOUS USER MESSAGES ONLY
+  // PREVIOUS USER MESSAGES
   // ============================================================
 
   const previousUserMessages = Array.isArray(history)
@@ -858,29 +859,28 @@ function buildSearchQuery(query, history = []) {
     : [];
 
   // ============================================================
-  // 2. LAST USER QUESTION
+  // NORMALIZE
   // ============================================================
+
+  const normalizedCurrent =
+    currentQuestion
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
 
   const lastUserQuestion =
     previousUserMessages.length > 0
       ? previousUserMessages[previousUserMessages.length - 1]
       : "";
 
-  // ============================================================
-  // 3. DETECT SHORT FOLLOW-UP
-  // ============================================================
-
-  const wordCount =
-    currentQuestion
-      .split(/\s+/)
-      .filter(Boolean)
-      .length;
-
-  const isShortQuestion =
-    wordCount <= 12;
+  const normalizedLast =
+    lastUserQuestion
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
 
   // ============================================================
-  // 4. CURRENT / FOLLOW-UP INTENT
+  // CURRENT / LATEST INTENT
   // ============================================================
 
   const currentPatterns = [
@@ -901,8 +901,10 @@ function buildSearchQuery(query, history = []) {
     /\battachya\b/i,
     /\baaj\b/i,
     /\baajchi\b/i,
+    /\baajcha\b/i,
     /\bkal\b/i,
     /\bkalchi\b/i,
+    /\bkalcha\b/i,
     /\bparva\b/i,
     /\bsadhya\b/i,
     /\bsadhyachi\b/i,
@@ -910,195 +912,155 @@ function buildSearchQuery(query, history = []) {
     /\bkay zala\b/i,
     /\bkay zalay\b/i,
     /\bkay batmi\b/i,
+    /\bkay news\b/i,
 
-    // Marathi
-    /आत्ता/,
-    /सध्या/,
-    /आज/,
-    /ताजी/,
-    /ताजे/,
-    /नवीन/,
-    /अपडेट/,
-    /काय झालं/,
-    /काय झालंय/,
-    /काय बातमी/
+    // Marathi Unicode
+    /आत्ता/u,
+    /सध्या/u,
+    /आज/u,
+    /आजची/u,
+    /आजचा/u,
+    /काल/u,
+    /कालची/u,
+    /नवीन/u,
+    /अपडेट/u,
+    /अपडेट्स/u,
+    /काय झालं/u,
+    /काय झालंय/u,
+    /काय झालाय/u,
+    /काय बातमी/u,
+    /सध्याची/u
   ];
 
-  const isCurrentQuestion =
+  const hasExplicitCurrentIntent =
     currentPatterns.some(pattern =>
-      pattern.test(currentQuestion)
+      pattern.test(normalizedCurrent)
     );
 
   // ============================================================
-  // 5. FOLLOW-UP QUESTION
+  // ENTITY + UPDATE INTENT
+  //
+  // IMPORTANT:
+  // User does NOT have to type "today/latest".
+  //
+  // Example:
+  // "Manoj Jarange Patil chi update kay ahe?"
+  //
+  // "update" itself means current information.
   // ============================================================
 
-  if (
-    isShortQuestion &&
-    isCurrentQuestion &&
-    lastUserQuestion
+  const updateWords = [
+    "update",
+    "updates",
+    "latest",
+    "current",
+    "recent",
+    "news",
+    "batmi",
+    "बातमी",
+    "अपडेट",
+    "अपडेट्स",
+    "नवीन",
+    "सध्याची",
+    "सध्याचे"
+  ];
+
+  const hasUpdateIntent =
+    updateWords.some(word =>
+      normalizedCurrent.includes(word)
+    );
+
+  // ============================================================
+  // FOLLOW-UP INTENT
+  // ============================================================
+
+  const followUpPatterns = [
+    /\bwhat about\b/i,
+    /\bthen\b/i,
+    /\band now\b/i,
+    /\bmore\b/i,
+    /\banything new\b/i,
+    /\bwhat happened\b/i,
+
+    /मग काय/u,
+    /आता काय/u,
+    /पुढे काय/u,
+    /आणखी काय/u,
+    /नवीन काय/u,
+    /काय झालं/u,
+    /काय झालंय/u
+  ];
+
+  const isFollowUp =
+    followUpPatterns.some(pattern =>
+      pattern.test(normalizedCurrent)
+    );
+
+  // ============================================================
+  // SHORT QUESTION
+  // ============================================================
+
+  const wordCount =
+    normalizedCurrent
+      .split(/\s+/)
+      .filter(Boolean)
+      .length;
+
+  const isShortQuestion = wordCount <= 12;
+
+  // ============================================================
+  // BUILD QUERY
+  // ============================================================
+
+  let searchQuery = currentQuestion;
+
+  // ============================================================
+  // CURRENT / UPDATE QUESTION
+  // ============================================================
+
+  if (hasExplicitCurrentIntent || hasUpdateIntent) {
+
+    searchQuery =
+      `${currentQuestion} latest current update today 2026`;
+
+  }
+
+  // ============================================================
+  // FOLLOW-UP QUESTION
+  // ============================================================
+
+  else if (
+    isFollowUp &&
+    normalizedLast
   ) {
 
-    const smartQuery =
+    searchQuery =
+      `${lastUserQuestion} ${currentQuestion} latest current update 2026`;
+
+  }
+
+  // ============================================================
+  // SHORT FOLLOW-UP
+  // ============================================================
+
+  else if (
+    isShortQuestion &&
+    normalizedLast &&
+    !hasUpdateIntent
+  ) {
+
+    searchQuery =
       `${lastUserQuestion} ${currentQuestion}`;
 
-    console.log(
-      "🧠 CONTEXT-AWARE SEARCH QUERY:"
-    );
-
-    console.log(
-      smartQuery.substring(0, 500)
-    );
-
-    return smartQuery.substring(0, 500);
   }
 
   // ============================================================
-  // 6. NORMAL COMPLETE QUESTION
+  // CLEAN QUERY
   // ============================================================
 
-  console.log(
-    "🧠 DIRECT SEARCH QUERY:"
-  );
-
-  console.log(
-    currentQuestion
-  );
-
-  return currentQuestion.substring(0, 500);
-}
-
-// ================= WEB SEARCH =================
-async function searchWeb(query, history = []) {
-
-  try {
-
-    const searchStart = Date.now();
-
-    // Build context-aware search query
-    const searchQuery =
-      buildSearchQuery(query, history);
-
-    if (!searchQuery) {
-      return [];
-    }
-
-    const key =
-      searchQuery.trim().toLowerCase();
-
-    // --------------------------------------------------
-    // CACHE CHECK
-    // --------------------------------------------------
-
-    const cached = webCache.get(key);
-
-    if (
-      cached &&
-      Date.now() - cached.time < CACHE_TIME
-    ) {
-
-      console.log("✅ WEB CACHE HIT");
-
-      console.log(
-        `TAVILY TIME: ${
-          Date.now() - searchStart
-        } ms (CACHE)`
-      );
-
-      return cached.results;
-    }
-
-    console.log("🌐 WEB CACHE MISS");
-
-    console.log(
-      "🔎 TAVILY SEARCH QUERY:",
-      searchQuery
-    );
-
-    // --------------------------------------------------
-    // TAVILY SEARCH
-    // --------------------------------------------------
-
-    const response = await axios.post(
-      "https://api.tavily.com/search",
-      {
-        api_key: process.env.TAVILY_API_KEY,
-
-        query: searchQuery,
-
-        search_depth: "advanced",
-
-        max_results: 5,
-      }
-    );
-
-    const results =
-      response.data.results || [];
-
-      const cleanedResults = results
-  .filter(r => r && r.title && r.url && r.content)
-  .map(r => ({
-    title: r.title,
-    url: r.url,
-    content: r.content
-  }));
-
-console.log(
-  "🧹 CLEANED WEB RESULTS:",
-  cleanedResults.length
-);
-
-
-    // --------------------------------------------------
-    // SAVE CACHE
-    // --------------------------------------------------
-
-   webCache.set(key, {
-  results: cleanedResults,
-  time: Date.now(),
-});
-
-    console.log(
-      `🌐 TAVILY TIME: ${
-        Date.now() - searchStart
-      } ms`
-    );
-
-    console.log(
-      "📚 WEB RESULTS:",
-      results.length
-    );
-
-    return cleanedResults;
-
-  } catch (err) {
-
-    console.log(
-      "❌ TAVILY ERROR:",
-      err.response?.data ||
-      err.message
-    );
-
-    return [];
-  }
-}
-
-function isGreeting(message) {
-
-  const text = message.toLowerCase().trim();
-
-  const greetings = [
-    "hi",
-    "hello",
-    "hey",
-    "hii",
-    "namaste",
-    "नमस्कार",
-    "हॅलो"
-  ];
-
-  return greetings.some(greet => text.startsWith(greet));
-
+  return searchQuery
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
