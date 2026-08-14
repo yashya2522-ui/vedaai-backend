@@ -4591,6 +4591,7 @@ function getImportantQueryWords(query = "") {
     q.includes("किती");
 
   if (isPriceQuestion) {
+    
 
     if (
       content.includes("price") ||
@@ -4617,51 +4618,48 @@ function getImportantQueryWords(query = "") {
     ) {
       score -= 8;
     }
+
+        // ==================================================
+    // OFFICIAL SOURCE PRIORITY
+    // ==================================================
+
+    if (
+      url.includes("vivo.com") ||
+      url.includes("shop.vivo.com") ||
+      url.includes("samsung.com") ||
+      url.includes("apple.com") ||
+      url.includes("mi.com") ||
+      url.includes("motorola.in") ||
+      url.includes("oneplus.in") ||
+      url.includes("realme.com")
+    ) {
+      score += 35;
+    }
+
+    // Major retailers
+    if (
+      url.includes("amazon.in") ||
+      url.includes("flipkart.com") ||
+      url.includes("croma.com") ||
+      url.includes("reliancedigital.in")
+    ) {
+      score += 20;
+    }
+
+    // Social/video sources should not dominate price questions
+    if (
+      url.includes("youtube.com") ||
+      url.includes("facebook.com") ||
+      url.includes("instagram.com")
+    ) {
+      score -= 25;
+    }
   }
 
   return score;
 }
 
-// ==================================================
-// PRICE QUESTION — OFFICIAL SOURCE PRIORITY
-// ==================================================
 
-if (isPriceQuestion) {
-
-  // Official manufacturer / official store
-  if (
-    url.includes("vivo.com") ||
-    url.includes("shop.vivo.com") ||
-    url.includes("samsung.com") ||
-    url.includes("apple.com") ||
-    url.includes("mi.com") ||
-    url.includes("motorola.in") ||
-    url.includes("oneplus.in") ||
-    url.includes("realme.com")
-  ) {
-    score += 35;
-  }
-
-  // Major retailers
-  if (
-    url.includes("amazon.in") ||
-    url.includes("flipkart.com") ||
-    url.includes("croma.com") ||
-    url.includes("reliancedigital.in")
-  ) {
-    score += 20;
-  }
-
-  // Video/social sources should not dominate
-  // current-price questions.
-  if (
-    url.includes("youtube.com") ||
-    url.includes("facebook.com") ||
-    url.includes("instagram.com")
-  ) {
-    score -= 25;
-  }
-}
 // ==================================================
 // FILTER & RANK WEB RESULTS
 // ==================================================
