@@ -4493,7 +4493,7 @@ function getSearchRelevanceScore(item, query = "") {
     "kiti", "kay", "chi", "cha", "che",
     "ahe", "sang", "kon",
     "which", "latest", "current", "today",
-    "india", "online"
+     "india", "online"
   ]);
 
   const queryWords = q
@@ -4526,8 +4526,8 @@ function getSearchRelevanceScore(item, query = "") {
   );
 
   if (missingWords.length > 0) {
-    score -= missingWords.length * 12;
-  }
+  score -= missingWords.length * 4;
+}
 
   // ==================================================
   // QUERY MATCH
