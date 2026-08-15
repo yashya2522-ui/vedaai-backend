@@ -2915,8 +2915,24 @@ await memory.save();
 // ================= AI INPUT =================
 let webResults = [];
 let smartQuery = "";
+
 if (shouldSearchWeb(userMessage, history)) {
-  webResults = await searchWeb(userMessage, history);
+
+  // 🧠 Build the same smart query used for web search
+  smartQuery = buildSearchQuery(
+    userMessage,
+    history
+  );
+
+  console.log(
+    "🔎 SMART QUERY FOR RANKING:",
+    smartQuery
+  );
+
+  webResults = await searchWeb(
+    smartQuery,
+    history
+  );
 }
 
 console.log(
@@ -4854,11 +4870,12 @@ return results
 
       return {
         ...item,
+        _publishedDate: rawDate,
         _relevanceScore: relevanceScore,
         _freshnessScore: freshnessScore,
         _ageDays: ageDays,
         _finalScore: finalScore
-      };
+        };
 
     })
 
@@ -5031,6 +5048,7 @@ if (
       .map(
         (item, i) =>
           `${i + 1}. TITLE: ${item.title.trim()}\n` +
+          `PUBLISHED/UPDATED: ${item.publishedDate || "Date unavailable"}\n` +
           `CONTENT: ${item.content.trim()}\n` +
           `SOURCE: ${item.url || "Unknown"}\n` +
           `IMPORTANT: Treat the publication/update date and source authority as important when deciding whether this information is current.`
@@ -6174,3 +6192,4 @@ console.log("BEFORE LISTEN");
 app.listen(PORT, () => {
   console.log(`🔥 VedaAI running on port ${PORT}`);
 });
+
