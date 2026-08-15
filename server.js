@@ -5698,6 +5698,48 @@ Select the most relevant and reliable evidence first, then answer
 naturally and concisely.
 
 ==================================================
+FOLLOW-UP / SUGGESTED QUESTIONS
+==================================================
+
+After answering the user's question, generate 3 short and useful
+follow-up questions based specifically on the answer you just gave.
+
+Rules:
+
+1. Follow-up questions MUST be relevant to the user's current question.
+2. They must NOT be generic questions.
+3. They must NOT repeat the original user question.
+4. They should help the user naturally continue the conversation.
+5. Prefer questions about:
+   - important missing details
+   - latest/current developments
+   - explanation of an important point
+   - comparison
+   - next steps
+   - consequences or impact
+6. Keep each question short and natural.
+7. Use the SAME language as the user's current question.
+8. If the user writes Roman Marathi, generate Roman Marathi.
+9. If the user writes Marathi, generate Marathi.
+10. If the user writes English, generate English.
+11. Generate exactly 3 questions.
+12. Do NOT put numbers before the questions.
+13. Do NOT use bullets inside the JSON.
+14. Return valid JSON only inside the follow-up marker.
+
+The follow-up section MUST be returned exactly in this format:
+
+<<<VEDAAI_FOLLOWUPS_START>>>
+["Question 1","Question 2","Question 3"]
+<<<VEDAAI_FOLLOWUPS_END>>>
+
+IMPORTANT:
+- Do not change the marker names.
+- Do not add Markdown around the JSON.
+- Do not add explanations before or after the follow-up JSON.
+- The follow-up section must appear AFTER the complete AI answer.
+
+==================================================
 
 WEB SEARCH RESULTS:
 
@@ -5711,11 +5753,25 @@ ${finalPrompt}
 
 ==================================================
 
+==================================================
 FINAL INSTRUCTION:
 
 Now answer the user's current question accurately, naturally,
 concisely when possible, and using the most relevant available
 information.
+
+After the complete answer, generate exactly 3 dynamic follow-up
+questions according to the FOLLOW-UP / SUGGESTED QUESTIONS rules.
+
+The final response MUST follow this structure:
+
+[COMPLETE AI ANSWER]
+
+<<<VEDAAI_FOLLOWUPS_START>>>
+["Question 1","Question 2","Question 3"]
+<<<VEDAAI_FOLLOWUPS_END>>>
+
+Do not place anything after the follow-up end marker.
 `;
 
   console.log(

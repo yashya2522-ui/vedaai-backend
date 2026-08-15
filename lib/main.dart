@@ -934,6 +934,10 @@ Future<void> streamAIResponse(
   http.Client? client;
 
   try {
+    // ==================================================
+    // GET TOKEN
+    // ==================================================
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
 
@@ -941,7 +945,9 @@ Future<void> streamAIResponse(
       if (!mounted) return;
 
       setState(() {
-        allChats[currentChatIndex]["messages"][index]["thinking"] = false;
+        allChats[currentChatIndex]["messages"][index]["thinking"] =
+            false;
+
         allChats[currentChatIndex]["messages"][index]["text"] =
             "Please login again.";
 
@@ -952,6 +958,10 @@ Future<void> streamAIResponse(
 
       return;
     }
+
+    // ==================================================
+    // HTTP CLIENT
+    // ==================================================
 
     client = http.Client();
 
@@ -976,6 +986,10 @@ Future<void> streamAIResponse(
     print("===== CURRENT CHAT =====");
     print(allChats[currentChatIndex]);
     print("========================");
+
+    // ==================================================
+    // SEND REQUEST
+    // ==================================================
 
     final response = await client.send(request);
 
@@ -1018,17 +1032,33 @@ Future<void> streamAIResponse(
     String streamBuffer = "";
     String aiText = "";
 
+    // SOURCES
     bool receivingSources = false;
-    bool receivingResponse = false;
-
     String sourceBuffer = "";
 
     List<Map<String, dynamic>> receivedSources = [];
 
+    // FOLLOW UPS
+    bool receivingFollowUps = false;
+    String followUpBuffer = "";
+
+    List<String> receivedFollowUps = [];
+
+    // RESPONSE
+    bool receivingResponse = false;
+
+    // ==================================================
+    // STREAM MARKERS
+    // ==================================================
+
     const sourcesStart = "<<<VEDAAI_SOURCES_START>>>";
     const sourcesEnd = "<<<VEDAAI_SOURCES_END>>>";
+
     const responseStart = "<<<VEDAAI_RESPONSE_START>>>";
     const responseEnd = "<<<VEDAAI_RESPONSE_END>>>";
+
+    const followUpsStart = "<<<VEDAAI_FOLLOWUPS_START>>>";
+    const followUpsEnd = "<<<VEDAAI_FOLLOWUPS_END>>>";
 
     // ==================================================
     // READ STREAM
@@ -1047,7 +1077,7 @@ Future<void> streamAIResponse(
       streamBuffer += chunk;
 
       // ==================================================
-      // SOURCE START
+      // SOURCES START
       // ==================================================
 
       if (!receivingSources &&
@@ -1098,7 +1128,7 @@ Future<void> streamAIResponse(
 
               setState(() {
                 allChats[currentChatIndex]
-                        ["messages"][index]["sources"] =
+                    ["messages"][index]["sources"] =
                     receivedSources;
 
                 messages =
@@ -1121,10 +1151,90 @@ Future<void> streamAIResponse(
       }
 
       // ==================================================
+      // FOLLOW-UP START
+      // ==================================================
+
+      if (!receivingSources &&
+          !receivingFollowUps &&
+          streamBuffer.contains(followUpsStart)) {
+        receivingFollowUps = true;
+
+        final startIndex =
+            streamBuffer.indexOf(followUpsStart);
+
+        streamBuffer = streamBuffer.substring(
+          startIndex + followUpsStart.length,
+        );
+
+        print("💡 FOLLOW-UPS START");
+      }
+
+      // ==================================================
+      // READ FOLLOW-UPS
+      // ==================================================
+
+      if (receivingFollowUps) {
+        if (streamBuffer.contains(followUpsEnd)) {
+          final endIndex =
+              streamBuffer.indexOf(followUpsEnd);
+
+          followUpBuffer +=
+              streamBuffer.substring(0, endIndex);
+
+          streamBuffer = streamBuffer.substring(
+            endIndex + followUpsEnd.length,
+          );
+
+          try {
+            final decodedFollowUps =
+                jsonDecode(followUpBuffer.trim());
+
+            if (decodedFollowUps is List) {
+              receivedFollowUps =
+                  decodedFollowUps
+                      .map(
+                        (item) => item.toString(),
+                      )
+                      .where(
+                        (item) => item.trim().isNotEmpty,
+                      )
+                      .toList();
+
+              print("💡 RECEIVED FOLLOW-UPS:");
+              print(receivedFollowUps);
+
+              setState(() {
+                allChats[currentChatIndex]
+                        ["messages"][index]["followUps"] =
+                    receivedFollowUps;
+
+                messages =
+                    List<Map<String, dynamic>>.from(
+                  allChats[currentChatIndex]["messages"],
+                );
+              });
+            }
+          } catch (e) {
+            print("❌ FOLLOW-UP JSON ERROR: $e");
+            print(
+              "FOLLOW-UP BUFFER: $followUpBuffer",
+            );
+          }
+
+          followUpBuffer = "";
+          receivingFollowUps = false;
+        } else {
+          followUpBuffer += streamBuffer;
+          streamBuffer = "";
+        }
+      }
+
+      // ==================================================
       // RESPONSE START
       // ==================================================
 
       if (!receivingSources &&
+          !receivingFollowUps &&
           !receivingResponse &&
           streamBuffer.contains(responseStart)) {
         receivingResponse = true;
@@ -1156,7 +1266,7 @@ Future<void> streamAIResponse(
 
       if (receivingResponse) {
         // ----------------------------------------------
-        // RESPONSE END FOUND
+        // RESPONSE END
         // ----------------------------------------------
 
         if (streamBuffer.contains(responseEnd)) {
@@ -1226,7 +1336,7 @@ Future<void> streamAIResponse(
     }
 
     // ==================================================
-    // FINAL BUFFER
+    // FINAL RESPONSE BUFFER
     // ==================================================
 
     if (streamBuffer.isNotEmpty &&
@@ -1260,9 +1370,18 @@ Future<void> streamAIResponse(
     print("STREAM FINISHED");
     print("AI TEXT:");
     print(aiText);
+
     print("SOURCES:");
     print(receivedSources);
+
+    print("FOLLOW-UPS:");
+    print(receivedFollowUps);
+
     print("=================================");
+
+    // ==================================================
+    // FINAL MESSAGE SAVE
+    // ==================================================
 
     if (mounted) {
       setState(() {
@@ -1273,6 +1392,14 @@ Future<void> streamAIResponse(
         allChats[currentChatIndex]
                 ["messages"][index]["thinking"] =
             false;
+
+        allChats[currentChatIndex]
+                ["messages"][index]["sources"] =
+            receivedSources;
+
+        allChats[currentChatIndex]
+                ["messages"][index]["followUps"] =
+            receivedFollowUps;
 
         messages =
             List<Map<String, dynamic>>.from(
@@ -1293,6 +1420,10 @@ Future<void> streamAIResponse(
 
     client.close();
   } catch (e) {
+    // ==================================================
+    // ERROR
+    // ==================================================
+
     print("❌ STREAM ERROR: $e");
 
     client?.close();
@@ -1486,45 +1617,30 @@ if (chat["paused"] == true) {
 
   }
 
-
   setState(() {
-
-    // USER MESSAGE
-    allChats[currentChatIndex]["messages"].add({
-
-      "role": "user",
-
-      "text": userText,
-
-      "pinned": false,
-
-    });
-
-
-    messages = List<Map<String, dynamic>>.from(
-
-      allChats[currentChatIndex]["messages"],
-
-    );
-
-
-    controller.clear();
-
-    isLoading = true;
-
+  // USER MESSAGE
+  allChats[currentChatIndex]["messages"].add({
+    "role": "user",
+    "text": userText,
+    "pinned": false,
   });
 
+  messages = List<Map<String, dynamic>>.from(
+    allChats[currentChatIndex]["messages"],
+  );
 
-  await saveChat();
+  controller.clear();
+  isLoading = true;
+});
+
+await saveChat();
 
 final historyForAI = List<Map<String, dynamic>>.from(
   allChats[currentChatIndex]["messages"],
 );
-  try {
 
-
-   
-
+try {
+  
 
     String aiImage = "";
 
@@ -1533,21 +1649,14 @@ final historyForAI = List<Map<String, dynamic>>.from(
 
 
       // EMPTY AI MESSAGE
-      allChats[currentChatIndex]["messages"].add({
-
+     allChats[currentChatIndex]["messages"].add({
   "role": "ai",
-
   "text": "",
-
   "thinking": true,
-
   "image": aiImage,
-
   "pinned": false,
-
+  "followUps": [],
 });
-
-
 
       messages =
 
@@ -1747,7 +1856,7 @@ Future<void> stopListening() async {
   });
 } 
 
-Widget chatBubble(
+ Widget chatBubble(
   Map<String, dynamic> msg,
   int index,
 ) {
@@ -1756,6 +1865,15 @@ Widget chatBubble(
   final List<Map<String, dynamic>> sources =
       List<Map<String, dynamic>>.from(
     msg["sources"] ?? [],
+  );
+
+  // ==================================================
+  // FOLLOW-UPS
+  // ==================================================
+
+  final List<String> followUps =
+      List<String>.from(
+    msg["followUps"] ?? [],
   );
 
   return GestureDetector(
@@ -2252,7 +2370,106 @@ if (!isUser && sources.isNotEmpty)
       }).toList(),
     ),
   ),
+              // ==================================================
+// FOLLOW-UP QUESTIONS
+// ==================================================
 
+if (!isUser &&
+    msg["thinking"] != true &&
+    followUps.isNotEmpty)
+  Padding(
+    padding: const EdgeInsets.only(
+      left: 36,
+      right: 8,
+      top: 10,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Continue with",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDarkMode
+                ? Colors.white54
+                : Colors.black45,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        ...followUps.map(
+          (question) => Padding(
+            padding: const EdgeInsets.only(
+              bottom: 7,
+            ),
+            child: InkWell(
+              borderRadius:
+                  BorderRadius.circular(12),
+
+              onTap: () {
+                controller.text = question;
+
+                sendMessage();
+              },
+
+              child: Container(
+                width: double.infinity,
+
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 11,
+                ),
+
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xff1E293B)
+                      : const Color(0xffF8FAFC),
+
+                  borderRadius:
+                      BorderRadius.circular(12),
+
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white12
+                        : Colors.black12,
+                  ),
+                ),
+
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 17,
+                      color: isDarkMode
+                          ? Colors.white60
+                          : Colors.black45,
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: Text(
+                        question,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.4,
+                          color: isDarkMode
+                              ? Colors.white
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
           // ==================================================
           // PINNED
           // ==================================================
