@@ -1259,6 +1259,7 @@ Future<void> streamAIResponse(
           );
         });
       }
+        
 
       // ==================================================
       // RESPONSE TEXT
@@ -1378,6 +1379,55 @@ Future<void> streamAIResponse(
     print(receivedFollowUps);
 
     print("=================================");
+
+
+     // ==================================================
+// FINAL FOLLOW-UP CLEANUP
+// ==================================================
+
+const followUpStartMarker =
+    "<<<VEDAAI_FOLLOWUPS_START>>>";
+
+const followUpEndMarker =
+    "<<<VEDAAI_FOLLOWUPS_END>>>";
+
+// जर Follow-up marker चुकून aiText मध्ये आला असेल
+final followUpStartIndex =
+    aiText.indexOf(followUpStartMarker);
+
+if (followUpStartIndex != -1) {
+
+  final followUpEndIndex =
+      aiText.indexOf(
+    followUpEndMarker,
+    followUpStartIndex +
+        followUpStartMarker.length,
+  );
+
+  if (followUpEndIndex != -1) {
+
+    // Follow-up पूर्ण section काढून टाका
+    aiText =
+        aiText.substring(0, followUpStartIndex) +
+        aiText.substring(
+          followUpEndIndex +
+              followUpEndMarker.length,
+        );
+
+  } else {
+
+    // START मिळाला पण END अजून नाही
+    // त्यामुळे त्यानंतरचा भाग answer मध्ये ठेवू नका
+    aiText =
+        aiText.substring(
+      0,
+      followUpStartIndex,
+    );
+  }
+}
+
+// शेवटी extra spaces काढा
+aiText = aiText.trim();
 
     // ==================================================
     // FINAL MESSAGE SAVE
