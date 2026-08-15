@@ -4898,11 +4898,11 @@ return results
       item.url
     )
 
-    // ==================================================
-    // CALCULATE RELEVANCE + FRESHNESS
-    // ==================================================
+        .map(item => {
 
-    .map(item => {
+      // ==================================================
+      // RELEVANCE
+      // ==================================================
 
       const relevanceScore =
         getSearchRelevanceScore(
@@ -4910,129 +4910,81 @@ return results
           query
         );
 
-  
 
-    // ----------------------------------------------
-// DATE + FRESHNESS
-// ----------------------------------------------
+      // ==================================================
+      // DATE + FRESHNESS
+      // ==================================================
 
-const validPublishedDate = getValidPublishedDate(item);
+      const validPublishedDate =
+        getValidPublishedDate(item);
 
-let rawDate = null;
-let freshnessScore = 0;
-let ageDays = 9999;
-
-if (validPublishedDate) {
-
-  rawDate = validPublishedDate.toISOString();
-
-  const publishedTime =
-    validPublishedDate.getTime();
-
-  ageDays =
-    Math.max(
-      0,
-      (now - publishedTime) /
-      (1000 * 60 * 60 * 24)
-    );
-
-  // 🔥 Latest news
-  if (ageDays <= 1) {
-    freshnessScore = 50;
-
-  // 🟢 Last 3 days
-  } else if (ageDays <= 3) {
-    freshnessScore = 40;
-
-  // 🟡 Last 7 days
-  } else if (ageDays <= 7) {
-    freshnessScore = 30;
-
-  // 🟠 Last 14 days
-  } else if (ageDays <= 14) {
-    freshnessScore = 20;
-
-  // 🔵 Last 30 days
-  } else if (ageDays <= 30) {
-    freshnessScore = 10;
-
-  // ⚪ Last 60 days
-  } else if (ageDays <= 60) {
-    freshnessScore = 3;
-
-  // 🔴 Older news
-  } else {
-    freshnessScore = -20;
-  }
-
-} else {
-
-  // Date unavailable
-  freshnessScore = -10;
-
-  console.log(
-    "⚠️ NO VALID PUBLISHED DATE:",
-    item.title
-  );
-}
+      let rawDate = null;
+      let freshnessScore = 0;
+      let ageDays = 9999;
 
 
-// ==================================================
-// DEBUG
-// ==================================================
+      if (validPublishedDate) {
 
-console.log("📊 RANKING DATE:", {
-  title: item.title,
-  publishedDate: rawDate,
-  ageDays: Number(ageDays.toFixed(2)),
-  relevanceScore,
-  freshnessScore,
-  finalScore
-});
-
-
-return {
-  ...item,
-
-  _publishedDate: rawDate,
-  _relevanceScore: relevanceScore,
-  _freshnessScore: freshnessScore,
-  _ageDays: ageDays,
-  _finalScore: finalScore
-};
-
-      if (rawDate) {
+        rawDate =
+          validPublishedDate.toISOString();
 
         const publishedTime =
-          new Date(rawDate).getTime();
+          validPublishedDate.getTime();
 
-        if (!Number.isNaN(publishedTime)) {
-
-          ageDays =
-            Math.max(
-              0,
-              (now - publishedTime) /
+        ageDays =
+          Math.max(
+            0,
+            (now - publishedTime) /
               (1000 * 60 * 60 * 24)
-            );
+          );
 
-          // Latest news gets stronger score
-          if (ageDays <= 1) {
-            freshnessScore = 50;
-          } else if (ageDays <= 3) {
-            freshnessScore = 40;
-          } else if (ageDays <= 7) {
-            freshnessScore = 30;
-          } else if (ageDays <= 14) {
-            freshnessScore = 20;
-          } else if (ageDays <= 30) {
-            freshnessScore = 10;
-          } else if (ageDays <= 60) {
-            freshnessScore = 3;
-          } else {
-            freshnessScore = -20;
-          }
+
+        // 🔥 Latest — 1 day
+        if (ageDays <= 1) {
+
+          freshnessScore = 50;
+
+        // 🟢 Last 3 days
+        } else if (ageDays <= 3) {
+
+          freshnessScore = 40;
+
+        // 🟡 Last 7 days
+        } else if (ageDays <= 7) {
+
+          freshnessScore = 30;
+
+        // 🟠 Last 14 days
+        } else if (ageDays <= 14) {
+
+          freshnessScore = 20;
+
+        // 🔵 Last 30 days
+        } else if (ageDays <= 30) {
+
+          freshnessScore = 10;
+
+        // ⚪ Last 60 days
+        } else if (ageDays <= 60) {
+
+          freshnessScore = 3;
+
+        // 🔴 Older
+        } else {
+
+          freshnessScore = -20;
         }
+
+      } else {
+
+        freshnessScore = -10;
+
+        console.log(
+          "⚠️ NO VALID PUBLISHED DATE:",
+          item.title
+        );
       }
+
 
       // ==================================================
       // FINAL SCORE
@@ -5042,19 +4994,59 @@ return {
         relevanceScore;
 
       if (wantsFresh) {
-        finalScore += freshnessScore;
+
+        finalScore +=
+          freshnessScore;
       }
 
+
+      // ==================================================
+      // DEBUG
+      // ==================================================
+
+      console.log(
+        "📊 RANKING:",
+        {
+          title: item.title,
+          publishedDate: rawDate,
+          ageDays:
+            Number(ageDays.toFixed(2)),
+          relevanceScore,
+          freshnessScore,
+          finalScore
+        }
+      );
+
+
+      // ==================================================
+      // RETURN
+      // ==================================================
+
       return {
+
         ...item,
-        _publishedDate: rawDate,
-        _relevanceScore: relevanceScore,
-        _freshnessScore: freshnessScore,
-        _ageDays: ageDays,
-        _finalScore: finalScore
-        };
+
+        publishedDate:
+          rawDate,
+
+        _publishedDate:
+          rawDate,
+
+        _relevanceScore:
+          relevanceScore,
+
+        _freshnessScore:
+          freshnessScore,
+
+        _ageDays:
+          ageDays,
+
+        _finalScore:
+          finalScore
+      };
 
     })
+
 
     // ==================================================
     // CURRENT NEWS → FRESHNESS + RELEVANCE
