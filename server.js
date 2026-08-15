@@ -4978,18 +4978,6 @@ if (validPublishedDate) {
 
 
 // ==================================================
-// FINAL SCORE
-// ==================================================
-
-let finalScore =
-  relevanceScore;
-
-if (wantsFresh) {
-  finalScore += freshnessScore;
-}
-
-
-// ==================================================
 // DEBUG
 // ==================================================
 
@@ -5012,9 +5000,6 @@ return {
   _ageDays: ageDays,
   _finalScore: finalScore
 };
-
-      let freshnessScore = 0;
-      let ageDays = 9999;
 
       if (rawDate) {
 
