@@ -4839,14 +4839,23 @@ if (currentIntent) {
 
   return score;
 }
-// ==================================================
-// FILTER & RANK WEB RESULTS
-// ==================================================
 
-function filterWebResults(
-  results = [],
-  query = ""
-) {
+function cleanUrl(url) {
+
+  if (!url || typeof url !== "string") {
+    return "";
+  }
+
+  const markdownMatch =
+    url.match(/\((https?:\/\/[^)]+)\)/);
+
+  if (markdownMatch) {
+    return markdownMatch[1];
+  }
+
+  return url.trim();
+}
+function filterWebResults(results = [], query = "") {
 
   if (!Array.isArray(results)) {
     return [];
@@ -4876,18 +4885,19 @@ function filterWebResults(
     normalizeSearchText(query);
 
   const wantsFresh =
-  currentWords.some(word =>
-    normalizedQuery.includes(word)
-  );
+    currentWords.some(word =>
+      normalizedQuery.includes(word)
+    );
 
-console.log("🧠 SMART QUERY:", query);
-console.log("🧹 NORMALIZED QUERY:", normalizedQuery);
-console.log("🆕 WANTS FRESH:", wantsFresh);
+  console.log("🧠 SMART QUERY:", query);
+  console.log("🧹 NORMALIZED QUERY:", normalizedQuery);
+  console.log("🆕 WANTS FRESH:", wantsFresh);
 
-return results
+
+  return results
 
     // ==================================================
-    // VALID RESULTS ONLY
+    // VALID RESULTS
     // ==================================================
 
     .filter(item =>
@@ -4898,34 +4908,41 @@ return results
       item.url
     )
 
-        .map(item => {
 
-      // ==================================================
+    // ==================================================
+    // SCORE RESULTS
+    // ==================================================
+
+    .map(item => {
+
+      // ------------------------------
       // RELEVANCE
-      // ==================================================
+      // ------------------------------
 
       const relevanceScore =
-        getSearchRelevanceScore(
-          item,
-          query
-        );
+        Number(
+          getSearchRelevanceScore(
+            item,
+            query
+          )
+        ) || 0;
 
 
-      // ==================================================
-      // DATE + FRESHNESS
-      // ==================================================
+      // ------------------------------
+      // DATE
+      // ------------------------------
 
       const validPublishedDate =
         getValidPublishedDate(item);
 
-      let rawDate = null;
-      let freshnessScore = 0;
+      let publishedDate = null;
       let ageDays = 9999;
+      let freshnessScore = 0;
 
 
       if (validPublishedDate) {
 
-        rawDate =
+        publishedDate =
           validPublishedDate.toISOString();
 
         const publishedTime =
@@ -4935,41 +4952,38 @@ return results
           Math.max(
             0,
             (now - publishedTime) /
-              (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24)
           );
 
 
-        // 🔥 Latest — 1 day
+        // ------------------------------
+        // FRESHNESS
+        // ------------------------------
+
         if (ageDays <= 1) {
 
           freshnessScore = 50;
 
-        // 🟢 Last 3 days
         } else if (ageDays <= 3) {
 
           freshnessScore = 40;
 
-        // 🟡 Last 7 days
         } else if (ageDays <= 7) {
 
           freshnessScore = 30;
 
-        // 🟠 Last 14 days
         } else if (ageDays <= 14) {
 
           freshnessScore = 20;
 
-        // 🔵 Last 30 days
         } else if (ageDays <= 30) {
 
           freshnessScore = 10;
 
-        // ⚪ Last 60 days
         } else if (ageDays <= 60) {
 
           freshnessScore = 3;
 
-        // 🔴 Older
         } else {
 
           freshnessScore = -20;
@@ -4980,37 +4994,37 @@ return results
         freshnessScore = -10;
 
         console.log(
-          "⚠️ NO VALID PUBLISHED DATE:",
+          "⚠️ NO VALID DATE:",
           item.title
         );
       }
 
 
-      // ==================================================
+      // ------------------------------
       // FINAL SCORE
-      // ==================================================
+      // ------------------------------
 
-      let finalScore =
-        relevanceScore;
+      const finalScore =
+        wantsFresh
+          ? (
+              relevanceScore * 0.7 +
+              freshnessScore * 3
+            )
+          : relevanceScore;
 
-      if (wantsFresh) {
 
-        finalScore +=
-          freshnessScore;
-      }
-
-
-      // ==================================================
+      // ------------------------------
       // DEBUG
-      // ==================================================
+      // ------------------------------
 
       console.log(
         "📊 RANKING:",
         {
           title: item.title,
-          publishedDate: rawDate,
-          ageDays:
-            Number(ageDays.toFixed(2)),
+          publishedDate,
+          ageDays: Number(
+            ageDays.toFixed(2)
+          ),
           relevanceScore,
           freshnessScore,
           finalScore
@@ -5018,19 +5032,15 @@ return results
       );
 
 
-      // ==================================================
+      // ------------------------------
       // RETURN
-      // ==================================================
+      // ------------------------------
 
       return {
 
         ...item,
 
-        publishedDate:
-          rawDate,
-
-        _publishedDate:
-          rawDate,
+        publishedDate,
 
         _relevanceScore:
           relevanceScore,
@@ -5049,46 +5059,50 @@ return results
 
 
     // ==================================================
-    // CURRENT NEWS → FRESHNESS + RELEVANCE
+    // SORT
     // ==================================================
 
     .sort((a, b) => {
 
       if (wantsFresh) {
 
-        // Final score first
         if (
           b._finalScore !==
           a._finalScore
         ) {
+
           return (
             b._finalScore -
             a._finalScore
           );
         }
 
-        // If score same → newer first
+
+        // Same score → newer first
+
         return (
           a._ageDays -
           b._ageDays
         );
       }
 
-      // Normal query → relevance only
+
+      // Normal query
+
       return (
-        b._finalScore -
-        a._finalScore
+        b._relevanceScore -
+        a._relevanceScore
       );
 
     })
 
+
     // ==================================================
-    // KEEP UP TO 8 RESULTS
+    // TOP 8
     // ==================================================
 
     .slice(0, 8);
 }
-
 
 // ==================================================
 // RANK RESULTS
@@ -5135,7 +5149,6 @@ console.log(
 // ==================================================
 // SOURCES — USE RANKED RESULTS
 // ==================================================
-
 let sources = [];
 
 if (
@@ -5143,43 +5156,50 @@ if (
   rankedWebResults.length > 0
 ) {
 
-  sources = rankedWebResults
-    .filter(
-      item =>
+  sources =
+    rankedWebResults
+      .filter(item =>
         item &&
         item.url
-    )
-    .slice(0, 5)
-    .map(item => {
+      )
+      .slice(0, 5)
+      .map(item => {
 
-      let domain = "";
+        const cleanSourceUrl =
+          cleanUrl(item.url);
 
-      try {
+        let domain = "";
 
-        domain =
-          new URL(item.url)
-            .hostname
-            .replace(/^www\./, "");
+        try {
 
-      } catch (e) {
+          domain =
+            new URL(cleanSourceUrl)
+              .hostname
+              .replace(/^www\./, "");
 
-        domain = "";
-      }
+        } catch (error) {
 
-      return {
-        title:
-          item.title ||
-          domain ||
-          "Web Source",
+          console.log(
+            "⚠️ INVALID SOURCE URL:",
+            item.url
+          );
+        }
 
-        url:
-          item.url,
+        return {
 
-        domain:
-          domain
-      };
+          title:
+            item.title ||
+            domain ||
+            "Web Source",
 
-    });
+          url:
+            cleanSourceUrl,
+
+          domain:
+            domain
+        };
+
+      });
 }
 
 console.log(
