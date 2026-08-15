@@ -1909,67 +1909,118 @@ async function searchWeb(query, history = []) {
       return [];
     }
 
-    const searchQuery = query.trim();
+   const searchQuery =
+  `${query.trim()} latest current update today ${new Date().toLocaleDateString(
+    "en-CA",
+    { timeZone: "Asia/Kolkata" }
+  )} India`;
 
     console.log("🌐 SEARCH WEB:", searchQuery);
 
     const response = await axios.post(
-      "https://api.tavily.com/search",
-      {
-        api_key: process.env.TAVILY_API_KEY,
-        query: searchQuery,
-        search_depth: "advanced",
-        topic: "news",
-        max_results: 8,
-        include_answer: false,
-        include_raw_content: false
-      },
-      {
-        headers: {
-          "Content-Type": "application/json"
-        },
-        timeout: 15000
-      }
-    );
+  "https://api.tavily.com/search",
+  {
+    api_key: process.env.TAVILY_API_KEY,
+    query: searchQuery,
 
-    const results = Array.isArray(response.data?.results)
-  ? response.data.results
-  : [];
+    search_depth: "advanced",
+    topic: "news",
 
-console.log("📚 TAVILY RESULTS:", results.length);
+    max_results: 10,
 
-console.log(
-  "📅 FINAL TAVILY DATES:",
-  results.map(item => ({
-    title: item.title,
-    url: item.url,
-    tavilyDate:
-      item.publishedDate ||
-      item.published_date ||
-      item.date ||
-      null,
-    extractedDate: extractDateFromUrl(item.url || "")
-  }))
+    include_answer: false,
+    include_raw_content: false,
+
+    days: 14
+  },
+  {
+    headers: {
+      "Content-Type": "application/json"
+    },
+    timeout: 15000
+  }
 );
 
-return results.map(item => {
+    let results = Array.isArray(response.data?.results)
+      ? response.data.results
+      : [];
 
-  const url = item.url || "";
+    console.log("📚 TAVILY RESULTS:", results.length);
 
-  const publishedDate =
-    item.publishedDate ||
-    item.published_date ||
-    item.date ||
-    extractDateFromUrl(url);
+    // ==========================================
+    // 📰 NEWS DATE NORMALIZATION
+    // ==========================================
 
-  return {
-    title: item.title || "",
-    content: item.content || "",
-    url,
-    publishedDate
-  };
+    results = results.map(item => {
+      const url = item.url || "";
 
-});
+      const publishedDate =
+        item.publishedDate ||
+        item.published_date ||
+        item.date ||
+        extractDateFromUrl(url) ||
+        null;
+
+      return {
+        title: item.title || "",
+        content: item.content || "",
+        url,
+        publishedDate
+      };
+    });
+
+    // ==========================================
+    // 📅 REMOVE VERY OLD NEWS
+    // ==========================================
+
+    const now = new Date();
+
+    const recentResults = results.filter(item => {
+      if (!item.publishedDate) {
+        return true;
+      }
+
+      const published = new Date(item.publishedDate);
+
+      if (isNaN(published.getTime())) {
+        return true;
+      }
+
+      const ageDays =
+        (now.getTime() - published.getTime()) /
+        (1000 * 60 * 60 * 24);
+
+      // NEWS query साठी 30 दिवसांपेक्षा जुनी
+      // बातमी मुख्य results मधून काढा
+      return ageDays <= 30;
+    });
+
+    // ==========================================
+    // 🆕 LATEST FIRST
+    // ==========================================
+
+    recentResults.sort((a, b) => {
+      const dateA = new Date(a.publishedDate || 0).getTime();
+      const dateB = new Date(b.publishedDate || 0).getTime();
+
+      return dateB - dateA;
+    });
+
+    console.log(
+      "📅 SORTED NEWS RESULTS:",
+      recentResults.map(item => ({
+        title: item.title,
+        publishedDate: item.publishedDate,
+        url: item.url
+      }))
+    );
+
+    console.log(
+      "🟢 LATEST NEWS:",
+      recentResults[0]?.title || "No recent result"
+    );
+
+    return recentResults;
 
   } catch (error) {
 
@@ -4453,6 +4504,28 @@ function normalizeSearchText(text = "") {
     .trim();
 }
 
+function getValidPublishedDate(item) {
+  const possibleDates = [
+    item.publishedDate,
+    item.published_date,
+    item.publishedAt,
+    item.date,
+    item.pubDate,
+    extractDateFromUrl(item.url || "")
+  ];
+
+  for (const value of possibleDates) {
+    if (!value) continue;
+
+    const timestamp = new Date(value).getTime();
+
+    if (!Number.isNaN(timestamp)) {
+      return new Date(timestamp);
+    }
+  }
+
+  return null;
+}
 function getSearchRelevanceScore(item, query = "") {
   if (!item || !query) {
     return 0;
@@ -4464,40 +4537,68 @@ function getSearchRelevanceScore(item, query = "") {
   const q = normalizeSearchText(query);
 
   let score = 0;
-    // ==================================================
-  // FRESHNESS / CURRENT UPDATE BOOST
-  // ==================================================
+   // ==================================================
+// FRESHNESS / CURRENT UPDATE BOOST
+// ==================================================
 
-  const currentIntent =
-    /\b(latest|current|today|now|recent|update|updates|right now)\b/i.test(query) ||
-    /\b(atta|attachi|attachya|aaj|aajchi|sadhya|sadhyachi|navin|kay zala|kay zalay|kay batmi)\b/i.test(query);
+const currentIntent =
+  /\b(latest|current|today|now|recent|update|updates|right now)\b/i.test(query) ||
+  /\b(atta|attachi|attachya|aaj|aajchi|sadhya|sadhyachi|navin|kay zala|kay zalay|kay batmi)\b/i.test(query);
 
-  if (currentIntent && item.publishedDate) {
+if (currentIntent) {
 
-    const publishedTime = new Date(item.publishedDate).getTime();
+  const publishedDate = getValidPublishedDate(item);
+
+  if (publishedDate) {
+
+    const publishedTime = publishedDate.getTime();
     const now = Date.now();
 
-    if (!Number.isNaN(publishedTime)) {
+    const ageDays =
+      Math.max(
+        0,
+        (now - publishedTime) /
+          (1000 * 60 * 60 * 24)
+      );
 
-      const ageDays =
-        (now - publishedTime) / (1000 * 60 * 60 * 24);
+    // 🔥 Very fresh
+    if (ageDays <= 1) {
+      score += 80;
 
-      if (ageDays <= 1) {
-        score += 80;
-      } else if (ageDays <= 3) {
-        score += 60;
-      } else if (ageDays <= 7) {
-        score += 40;
-      } else if (ageDays <= 30) {
-        score += 15;
-      } else if (ageDays <= 90) {
-        score -= 20;
-      } else {
-        score -= 50;
-      }
+    // 🟢 Last 3 days
+    } else if (ageDays <= 3) {
+      score += 60;
 
+    // 🟡 Last 7 days
+    } else if (ageDays <= 7) {
+      score += 40;
+
+    // 🟠 Last 14 days
+    } else if (ageDays <= 14) {
+      score += 20;
+
+    // 🔵 Last 30 days
+    } else if (ageDays <= 30) {
+      score += 5;
+
+    // 🔴 Older than 30 days
+    } else {
+      score -= 50;
     }
-  }
+
+    console.log("📰 FRESHNESS:", {
+      title: item.title,
+      publishedDate: publishedDate.toISOString(),
+      ageDays: Number(ageDays.toFixed(2)),
+      freshnessScore: score
+    });
+
+  } else {
+  score -= 10;
+
+  console.log("⚠️ NO VALID DATE:", item.title);
+}
+}
   // ==================================================
   // QUERY WORDS
   // ==================================================
@@ -4809,17 +4910,108 @@ return results
           query
         );
 
-      // ----------------------------------------------
-      // DATE
-      // ----------------------------------------------
+  
 
-      const rawDate =
-        item.publishedDate ||
-        item.published_date ||
-        item.publishedAt ||
-        item.date ||
-        extractDateFromUrl(item.url) ||
-        null;
+    // ----------------------------------------------
+// DATE + FRESHNESS
+// ----------------------------------------------
+
+const validPublishedDate = getValidPublishedDate(item);
+
+let rawDate = null;
+let freshnessScore = 0;
+let ageDays = 9999;
+
+if (validPublishedDate) {
+
+  rawDate = validPublishedDate.toISOString();
+
+  const publishedTime =
+    validPublishedDate.getTime();
+
+  ageDays =
+    Math.max(
+      0,
+      (now - publishedTime) /
+      (1000 * 60 * 60 * 24)
+    );
+
+  // 🔥 Latest news
+  if (ageDays <= 1) {
+    freshnessScore = 50;
+
+  // 🟢 Last 3 days
+  } else if (ageDays <= 3) {
+    freshnessScore = 40;
+
+  // 🟡 Last 7 days
+  } else if (ageDays <= 7) {
+    freshnessScore = 30;
+
+  // 🟠 Last 14 days
+  } else if (ageDays <= 14) {
+    freshnessScore = 20;
+
+  // 🔵 Last 30 days
+  } else if (ageDays <= 30) {
+    freshnessScore = 10;
+
+  // ⚪ Last 60 days
+  } else if (ageDays <= 60) {
+    freshnessScore = 3;
+
+  // 🔴 Older news
+  } else {
+    freshnessScore = -20;
+  }
+
+} else {
+
+  // Date unavailable
+  freshnessScore = -10;
+
+  console.log(
+    "⚠️ NO VALID PUBLISHED DATE:",
+    item.title
+  );
+}
+
+
+// ==================================================
+// FINAL SCORE
+// ==================================================
+
+let finalScore =
+  relevanceScore;
+
+if (wantsFresh) {
+  finalScore += freshnessScore;
+}
+
+
+// ==================================================
+// DEBUG
+// ==================================================
+
+console.log("📊 RANKING DATE:", {
+  title: item.title,
+  publishedDate: rawDate,
+  ageDays: Number(ageDays.toFixed(2)),
+  relevanceScore,
+  freshnessScore,
+  finalScore
+});
+
+
+return {
+  ...item,
+
+  _publishedDate: rawDate,
+  _relevanceScore: relevanceScore,
+  _freshnessScore: freshnessScore,
+  _ageDays: ageDays,
+  _finalScore: finalScore
+};
 
       let freshnessScore = 0;
       let ageDays = 9999;
@@ -5045,15 +5237,32 @@ if (
     "WEB SEARCH EVIDENCE:\n\n" +
 
     rankedWebResults
+      .slice(0, 8)
       .map(
         (item, i) =>
-          `${i + 1}. TITLE: ${item.title.trim()}\n` +
-          `PUBLISHED/UPDATED: ${item.publishedDate || "Date unavailable"}\n` +
-          `CONTENT: ${item.content.trim()}\n` +
-          `SOURCE: ${item.url || "Unknown"}\n` +
+          `${i + 1}. TITLE: ${
+            item.title?.trim() || "Unknown"
+          }\n` +
+
+          `PUBLISHED/UPDATED: ${
+            item.publishedDate ||
+            "Date unavailable"
+          }\n` +
+
+          `CONTENT: ${
+            item.content?.trim() ||
+            "No content available"
+          }\n` +
+
+          `SOURCE: ${
+            item.url ||
+            "Unknown"
+          }\n` +
+
           `IMPORTANT: Treat the publication/update date and source authority as important when deciding whether this information is current.`
       )
       .join("\n\n");
+
 }
 
 console.log(
