@@ -1917,14 +1917,17 @@ Future<void> stopListening() async {
     msg["sources"] ?? [],
   );
 
-  // ==================================================
-  // FOLLOW-UPS
-  // ==================================================
-
   final List<String> followUps =
-      List<String>.from(
-    msg["followUps"] ?? [],
-  );
+      (msg["followUps"] is List)
+          ? (msg["followUps"] as List)
+              .map((e) => e.toString())
+              .where((e) => e.trim().isNotEmpty)
+              .take(3)
+              .toList()
+          : [];
+
+  final String followUpHeading =
+      msg["followUpHeading"]?.toString() ?? "";
 
   return GestureDetector(
     onLongPress: () {
@@ -2420,8 +2423,8 @@ if (!isUser && sources.isNotEmpty)
       }).toList(),
     ),
   ),
-              // ==================================================
-// FOLLOW-UP QUESTIONS
+         // ==================================================
+// DYNAMIC FOLLOW-UP QUESTIONS
 // ==================================================
 
 if (!isUser &&
@@ -2430,89 +2433,43 @@ if (!isUser &&
   Padding(
     padding: const EdgeInsets.only(
       left: 36,
-      right: 8,
-      top: 10,
+      right: 12,
+      top: 14,
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Continue with",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isDarkMode
-                ? Colors.white54
-                : Colors.black45,
-          ),
-        ),
 
-        const SizedBox(height: 8),
-
-        ...followUps.map(
-          (question) => Padding(
+        if (followUpHeading.isNotEmpty)
+          Padding(
             padding: const EdgeInsets.only(
               bottom: 7,
             ),
-            child: InkWell(
-              borderRadius:
-                  BorderRadius.circular(12),
+            child: Text(
+              followUpHeading,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode
+                    ? Colors.white60
+                    : Colors.black54,
+              ),
+            ),
+          ),
 
-              onTap: () {
-                controller.text = question;
-
-                sendMessage();
-              },
-
-              child: Container(
-                width: double.infinity,
-
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 11,
-                ),
-
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? const Color(0xff1E293B)
-                      : const Color(0xffF8FAFC),
-
-                  borderRadius:
-                      BorderRadius.circular(12),
-
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white12
-                        : Colors.black12,
-                  ),
-                ),
-
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 17,
-                      color: isDarkMode
-                          ? Colors.white60
-                          : Colors.black45,
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: Text(
-                        question,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.4,
-                          color: isDarkMode
-                              ? Colors.white
-                              : Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+        ...followUps.take(3).map(
+          (question) => Padding(
+            padding: const EdgeInsets.only(
+              bottom: 5,
+            ),
+            child: Text(
+              question,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: isDarkMode
+                    ? Colors.white70
+                    : Colors.black54,
               ),
             ),
           ),
