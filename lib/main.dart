@@ -1571,45 +1571,54 @@ aiText = aiText.trim();
       });
     }
 
-    // ==================================================
-    // SAVE CHAT
-    // ==================================================
+   // ==================================================
+// SAVE CHAT
+// ==================================================
 
-    await saveChat();
+try {
+  await saveChat();
 
-    print("===== ALL CHATS =====");
-    print(allChats[currentChatIndex]["messages"]);
-    print("=====================");
+  print("✅ CHAT SAVED SUCCESSFULLY");
 
-    client.close();
+} catch (e) {
+
+  print("⚠️ SAVE CHAT ERROR: $e");
+
+  // IMPORTANT:
+  // Chat save fail झाला तरी AI answer
+  // "Something went wrong" मध्ये बदलू नये.
+}
+
+print("===== ALL CHATS =====");
+print(allChats[currentChatIndex]["messages"]);
+print("=====================");
+
+client.close();
   } catch (e) {
-    // ==================================================
-    // ERROR
-    // ==================================================
 
-    print("❌ STREAM ERROR: $e");
+  print("❌ STREAM ERROR: $e");
 
-    client?.close();
+  client?.close();
 
-    if (!mounted) return;
+  if (!mounted) return;
 
-    setState(() {
-      allChats[currentChatIndex]
-              ["messages"][index]["thinking"] =
-          false;
+  setState(() {
+    allChats[currentChatIndex]
+            ["messages"][index]["thinking"] =
+        false;
 
-      allChats[currentChatIndex]
-              ["messages"][index]["text"] =
-          "Something went wrong. Please try again.";
+    allChats[currentChatIndex]
+            ["messages"][index]["text"] =
+        "Something went wrong. Please try again.";
 
-      messages =
-          List<Map<String, dynamic>>.from(
-        allChats[currentChatIndex]["messages"],
-      );
-    });
+    messages =
+        List<Map<String, dynamic>>.from(
+      allChats[currentChatIndex]["messages"],
+    );
+  });
 
-    await saveChat();
-  }
+  print("❌ STREAM FUNCTION FAILED");
+}
 }
 
 Future<void> streamText(
