@@ -1556,9 +1556,11 @@ aiText = aiText.trim();
                 ["messages"][index]["sources"] =
             receivedSources;
         
-        allChats[currentChatIndex]
-    ["messages"][index]["product"] =
-    receivedProduct;
+       if (receivedProduct != null) {
+  allChats[currentChatIndex]
+      ["messages"][index]["product"] =
+      receivedProduct;
+}
 
         allChats[currentChatIndex]
                 ["messages"][index]["followUps"] =
