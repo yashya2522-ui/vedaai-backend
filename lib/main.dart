@@ -1594,9 +1594,13 @@ print(allChats[currentChatIndex]["messages"]);
 print("=====================");
 
 client.close();
-  } catch (e) {
+  } catch (e, stackTrace) {
 
-  print("❌ STREAM ERROR: $e");
+  print("❌❌❌ STREAM ERROR ❌❌❌");
+  print("ERROR: $e");
+  print("STACK TRACE:");
+  print(stackTrace);
+  print("❌❌❌ END STREAM ERROR ❌❌❌");
 
   client?.close();
 
@@ -1604,11 +1608,10 @@ client.close();
 
   setState(() {
     allChats[currentChatIndex]
-            ["messages"][index]["thinking"] =
-        false;
+        ["messages"][index]["thinking"] = false;
 
     allChats[currentChatIndex]
-            ["messages"][index]["text"] =
+        ["messages"][index]["text"] =
         "Something went wrong. Please try again.";
 
     messages =
@@ -1616,8 +1619,6 @@ client.close();
       allChats[currentChatIndex]["messages"],
     );
   });
-
-  print("❌ STREAM FUNCTION FAILED");
 }
 }
 
