@@ -6768,132 +6768,28 @@ console.log("📚 SOURCES TO SEND:", sources);
 
 
 // ==================================================
-// AI RESPONSE
+// READ COMPLETE GEMINI RESPONSE
 // ==================================================
 
 let aiText = "";
 
-console.log(
-  "========== GEMINI DEBUG =========="
-);
-
-console.log(
-  "API KEY EXISTS:",
-  !!API_KEY
-);
-
-console.log(
-  "API KEY LENGTH:",
-  API_KEY
-    ? API_KEY.length
-    : 0
-);
-
-console.log(
-  "API KEY PREFIX:",
-  API_KEY
-    ? API_KEY.substring(0, 6)
-    : "NONE"
-);
-
-console.log(
-  "================================="
-);
-
-
-// ==================================================
-// STREAM RESPONSE HEADERS
-// ==================================================
-
-res.setHeader(
-  "Content-Type",
-  "text/event-stream"
-);
-
-res.setHeader(
-  "Cache-Control",
-  "no-cache"
-);
-
-res.setHeader(
-  "Connection",
-  "keep-alive"
-);
-
-res.setHeader(
-  "Transfer-Encoding",
-  "chunked"
-);
-
-
-// ==================================================
-// STREAM BUFFER
-// ==================================================
-
-let buffer = "";
-
-// ================= SEND SOURCES =================
-// Sources are sent separately before the AI response.
-
-if (sources.length > 0) {
-  res.write(
-    "<<<VEDAAI_SOURCES_START>>>\n"
-  );
-
-  res.write(
-    JSON.stringify(sources)
-  );
-
-  res.write(
-    "\n<<<VEDAAI_SOURCES_END>>>\n"
-  );
-}
-
-// Tell frontend that AI response is starting
-res.write(
-  "<<<VEDAAI_RESPONSE_START>>>\n"
-);
-
-// ================= READ GEMINI STREAM =================
+console.log("========== READING GEMINI STREAM ==========");
 
 for await (const chunk of stream) {
 
-  const text =
-    chunk.text || "";
+  const text = chunk.text || "";
 
   if (!text) {
     continue;
   }
 
   aiText += text;
-
-  buffer += text;
-
-  // Send AI text in chunks
-  // without changing its Markdown formatting.
-
-  if (buffer.length >= 40) {
-
-    res.write(buffer);
-
-    buffer = "";
-  }
 }
 
-// Send remaining AI text
+console.log("========== RAW GEMINI RESPONSE ==========");
+console.log(aiText);
+console.log("==========================================");
 
-if (buffer.length > 0) {
-
-  res.write(buffer);
-
-  buffer = "";
-}
-
-// Tell frontend that AI response is complete
-
-res.write(
-  "\n<<<VEDAAI_RESPONSE_END>>>\n"
-);
 
 // ==================================================
 // PARSE VEDA AI RESPONSE
@@ -6922,14 +6818,52 @@ console.log(
 );
 
 console.log(
-  "============================================="
+  "=============================================");
+
+
+// ==================================================
+// RESPONSE HEADERS
+// ==================================================
+
+res.setHeader(
+  "Content-Type",
+  "text/plain; charset=utf-8"
 );
+
+res.setHeader(
+  "Cache-Control",
+  "no-cache"
+);
+
+res.setHeader(
+  "Connection",
+  "keep-alive"
+);
+
+
+// ==================================================
+// SEND CLEAN AI ANSWER
+// ==================================================
+
+res.write(
+  "<<<VEDAAI_RESPONSE_START>>>\n"
+);
+
+res.write(
+  parsedResponse.answer || "No response"
+);
+
+res.write(
+  "\n<<<VEDAAI_RESPONSE_END>>>\n"
+);
+
 
 // ==================================================
 // SEND PRODUCT
 // ==================================================
 
 if (parsedResponse.product) {
+
   res.write(
     "<<<VEDAAI_PRODUCT_START>>>\n"
   );
@@ -6943,14 +6877,16 @@ if (parsedResponse.product) {
   );
 }
 
+
 // ==================================================
-// SEND FOLLOWUPS
+// SEND FOLLOW UPS
 // ==================================================
 
 if (
   Array.isArray(parsedResponse.followups) &&
   parsedResponse.followups.length > 0
 ) {
+
   res.write(
     "<<<VEDAAI_FOLLOWUPS_START>>>\n"
   );
@@ -6964,51 +6900,68 @@ if (
   );
 }
 
-// ================= SAVE CHAT =================
+
+// ==================================================
+// SAVE CHAT
+// ==================================================
 
 if (
-  aiText &&
-  !aiText.includes("AI is temporarily unavailable")
+  parsedResponse.answer &&
+  !parsedResponse.answer.includes(
+    "AI is temporarily unavailable"
+  )
 ) {
 
   currentChat.messages.push({
     role: "assistant",
-    text: aiText
+    text: parsedResponse.answer
   });
 
-  // Count AI reply
   currentChat.messageCount =
-      (currentChat.messageCount || 0) + 1;
+    (currentChat.messageCount || 0) + 1;
 
   console.log(
     "Current Chat Messages:",
     currentChat.messageCount
   );
 
-  // Pause this chat after 50 messages
-  if ((currentChat.messageCount || 0) >= 50) {
+
+  // Pause after 50 messages
+
+  if (
+    (currentChat.messageCount || 0) >= 50
+  ) {
 
     currentChat.paused = true;
 
     const reset = new Date();
-    reset.setHours(reset.getHours() + 4);
+
+    reset.setHours(
+      reset.getHours() + 4
+    );
 
     currentChat.resetTime = reset;
 
     console.log("CHAT PAUSED");
-    console.log("RESET:", reset);
-
+    console.log(
+      "RESET:",
+      reset
+    );
   }
 
   await memory.save();
-
 }
 
 
-// ================= RESPONSE =================
+// ==================================================
+// FINISH RESPONSE
+// ==================================================
 
 const endTime = Date.now();
-console.log(`⚡ Response Time: ${endTime - startTime} ms`);
+
+console.log(
+  `⚡ Response Time: ${endTime - startTime} ms`
+);
 
 res.end();
 

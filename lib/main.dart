@@ -1025,49 +1025,6 @@ Future<void> streamAIResponse(
       return;
     }
 
-    // ==================================================
-    // STREAM STATE
-    // ==================================================
-
-    String streamBuffer = "";
-    String aiText = "";
-
-    // SOURCES
-    bool receivingSources = false;
-    String sourceBuffer = "";
-
-    List<Map<String, dynamic>> receivedSources = [];
-
-    // FOLLOW UPS
-    bool receivingFollowUps = false;
-    String followUpBuffer = "";
-
-    List<String> receivedFollowUps = [];
-    // PRODUCT
-bool receivingProduct = false;
-String productBuffer = "";
-
-Map<String, dynamic>? receivedProduct;
-
-    // RESPONSE
-    bool receivingResponse = false;
-
-    // ==================================================
-    // STREAM MARKERS
-    // ==================================================
-
-    const sourcesStart = "<<<VEDAAI_SOURCES_START>>>";
-    const sourcesEnd = "<<<VEDAAI_SOURCES_END>>>";
-
-    const responseStart = "<<<VEDAAI_RESPONSE_START>>>";
-    const responseEnd = "<<<VEDAAI_RESPONSE_END>>>";
-
-    const followUpsStart = "<<<VEDAAI_FOLLOWUPS_START>>>";
-    const followUpsEnd = "<<<VEDAAI_FOLLOWUPS_END>>>";
-
-    const productStart = "<<<VEDAAI_PRODUCT_START>>>";
-const productEnd = "<<<VEDAAI_PRODUCT_END>>>";
-
    // ==================================================
 // ROBUST STREAM PARSER
 // ==================================================
