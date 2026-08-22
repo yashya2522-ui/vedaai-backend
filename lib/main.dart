@@ -1069,399 +1069,86 @@ Map<String, dynamic>? receivedProduct;
 const productEnd = "<<<VEDAAI_PRODUCT_END>>>";
 
     // ==================================================
-    // READ STREAM
-    // ==================================================
-
-    await for (
-      final chunk in response.stream.transform(utf8.decoder)
-    ) {
-      if (!mounted) {
-        client.close();
-        return;
-      }
-
-      print("CHUNK: $chunk");
-
-      streamBuffer += chunk;
-      
-      // ==================================================
-// PRODUCT START
+// READ STREAM
 // ==================================================
 
-if (!receivingSources &&
-    !receivingFollowUps &&
-    !receivingProduct &&
-    streamBuffer.contains(productStart)) {
-
-  receivingProduct = true;
-
-  final startIndex =
-      streamBuffer.indexOf(productStart);
-
-  // Product marker आधीचा text सुरक्षित ठेव
-  if (startIndex > 0 && receivingResponse) {
-    final beforeProduct =
-        streamBuffer.substring(0, startIndex);
-
-    aiText += beforeProduct;
+await for (
+  final chunk in response.stream.transform(utf8.decoder)
+) {
+  if (!mounted) {
+    client.close();
+    return;
   }
 
-  streamBuffer = streamBuffer.substring(
-    startIndex + productStart.length,
-  );
+  print("CHUNK: $chunk");
 
-  receivingResponse = false;
+  streamBuffer += chunk;
 
-  print("🛍️ PRODUCT START");
-}
+  // ==================================================
+  // RESPONSE START
+  // ==================================================
 
+  if (!receivingResponse &&
+      !receivingSources &&
+      !receivingFollowUps &&
+      !receivingProduct &&
+      streamBuffer.contains(responseStart)) {
 
-// ==================================================
-// READ PRODUCT
-// ==================================================
-
-if (receivingProduct) {
-
-  if (streamBuffer.contains(productEnd)) {
-
-    final endIndex =
-        streamBuffer.indexOf(productEnd);
-
-    productBuffer +=
-        streamBuffer.substring(0, endIndex);
+    final startIndex =
+        streamBuffer.indexOf(responseStart);
 
     streamBuffer = streamBuffer.substring(
-      endIndex + productEnd.length,
+      startIndex + responseStart.length,
     );
 
-    try {
+    receivingResponse = true;
 
-      final decodedProduct =
-          jsonDecode(productBuffer.trim());
+    print("🤖 RESPONSE START");
 
-      if (decodedProduct is Map) {
+    setState(() {
+      allChats[currentChatIndex]
+          ["messages"][index]["thinking"] = false;
 
-        receivedProduct =
-            Map<String, dynamic>.from(
-          decodedProduct,
-        );
+      messages =
+          List<Map<String, dynamic>>.from(
+        allChats[currentChatIndex]["messages"],
+      );
+    });
+  }
 
-        print("🛍️ PRODUCT RECEIVED:");
-        print(receivedProduct);
+  // ==================================================
+  // RESPONSE TEXT
+  // ==================================================
 
-        setState(() {
+  if (receivingResponse) {
 
-          allChats[currentChatIndex]
-                  ["messages"][index]["product"] =
-              receivedProduct;
+    if (streamBuffer.contains(responseEnd)) {
 
-          messages =
-              List<Map<String, dynamic>>.from(
-            allChats[currentChatIndex]["messages"],
-          );
+      final endIndex =
+          streamBuffer.indexOf(responseEnd);
 
-        });
+      final responseText =
+          streamBuffer.substring(0, endIndex);
+
+      if (responseText.isNotEmpty) {
+        aiText += responseText;
       }
 
-    } catch (e) {
-
-      print("❌ PRODUCT JSON ERROR: $e");
-      print(
-        "PRODUCT BUFFER: $productBuffer",
+      streamBuffer = streamBuffer.substring(
+        endIndex + responseEnd.length,
       );
 
-    }
+      receivingResponse = false;
 
-    productBuffer = "";
-    receivingProduct = false;
-
-    print("🛍️ PRODUCT END");
-  }
-
-  else {
-
-    productBuffer += streamBuffer;
-    streamBuffer = "";
-
-  }
-}
-      // ==================================================
-      // SOURCES START
-      // ==================================================
-
-      if (!receivingSources &&
-          streamBuffer.contains(sourcesStart)) {
-        receivingSources = true;
-
-        final startIndex =
-            streamBuffer.indexOf(sourcesStart);
-
-        streamBuffer = streamBuffer.substring(
-          startIndex + sourcesStart.length,
-        );
-
-        print("📚 SOURCES START");
-      }
-
-      // ==================================================
-      // READ SOURCES
-      // ==================================================
-
-      if (receivingSources) {
-        if (streamBuffer.contains(sourcesEnd)) {
-          final endIndex =
-              streamBuffer.indexOf(sourcesEnd);
-
-          sourceBuffer +=
-              streamBuffer.substring(0, endIndex);
-
-          streamBuffer = streamBuffer.substring(
-            endIndex + sourcesEnd.length,
-          );
-
-          try {
-            final decodedSources =
-                jsonDecode(sourceBuffer.trim());
-
-            if (decodedSources is List) {
-              receivedSources =
-                  List<Map<String, dynamic>>.from(
-                decodedSources.map(
-                  (source) =>
-                      Map<String, dynamic>.from(source),
-                ),
-              );
-
-              print("📚 RECEIVED SOURCES:");
-              print(receivedSources);
-
-              setState(() {
-                allChats[currentChatIndex]
-                    ["messages"][index]["sources"] =
-                    receivedSources;
-
-                messages =
-                    List<Map<String, dynamic>>.from(
-                  allChats[currentChatIndex]["messages"],
-                );
-              });
-            }
-          } catch (e) {
-            print("❌ SOURCE JSON ERROR: $e");
-            print("SOURCE BUFFER: $sourceBuffer");
-          }
-
-          sourceBuffer = "";
-          receivingSources = false;
-        } else {
-          sourceBuffer += streamBuffer;
-          streamBuffer = "";
-        }
-      }
-
-      // ==================================================
-      // FOLLOW-UP START
-      // ==================================================
-
-      if (!receivingSources &&
-          !receivingFollowUps &&
-          streamBuffer.contains(followUpsStart)) {
-        receivingFollowUps = true;
-
-        final startIndex =
-            streamBuffer.indexOf(followUpsStart);
-
-        streamBuffer = streamBuffer.substring(
-          startIndex + followUpsStart.length,
-        );
-
-        print("💡 FOLLOW-UPS START");
-      }
-
-      // ==================================================
-      // READ FOLLOW-UPS
-      // ==================================================
-
-      if (receivingFollowUps) {
-        if (streamBuffer.contains(followUpsEnd)) {
-          final endIndex =
-              streamBuffer.indexOf(followUpsEnd);
-
-          followUpBuffer +=
-              streamBuffer.substring(0, endIndex);
-
-          streamBuffer = streamBuffer.substring(
-            endIndex + followUpsEnd.length,
-          );
-
-          try {
-            final decodedFollowUps =
-                jsonDecode(followUpBuffer.trim());
-
-            if (decodedFollowUps is List) {
-              receivedFollowUps =
-                  decodedFollowUps
-                      .map(
-                        (item) => item.toString(),
-                      )
-                      .where(
-                        (item) => item.trim().isNotEmpty,
-                      )
-                      .toList();
-
-              print("💡 RECEIVED FOLLOW-UPS:");
-              print(receivedFollowUps);
-
-              setState(() {
-                allChats[currentChatIndex]
-                        ["messages"][index]["followUps"] =
-                    receivedFollowUps;
-
-                messages =
-                    List<Map<String, dynamic>>.from(
-                  allChats[currentChatIndex]["messages"],
-                );
-              });
-            }
-          } catch (e) {
-            print("❌ FOLLOW-UP JSON ERROR: $e");
-            print(
-              "FOLLOW-UP BUFFER: $followUpBuffer",
-            );
-          }
-
-          followUpBuffer = "";
-          receivingFollowUps = false;
-        } else {
-          followUpBuffer += streamBuffer;
-          streamBuffer = "";
-        }
-      }
-
-      // ==================================================
-      // RESPONSE START
-      // ==================================================
-
-      if (!receivingSources &&
-          !receivingFollowUps &&
-          !receivingResponse &&
-          streamBuffer.contains(responseStart)) {
-        receivingResponse = true;
-
-        final startIndex =
-            streamBuffer.indexOf(responseStart);
-
-        streamBuffer = streamBuffer.substring(
-          startIndex + responseStart.length,
-        );
-
-        print("🤖 RESPONSE START");
-
-        setState(() {
-          allChats[currentChatIndex]
-                  ["messages"][index]["thinking"] =
-              false;
-
-          messages =
-              List<Map<String, dynamic>>.from(
-            allChats[currentChatIndex]["messages"],
-          );
-        });
-      }
-        
-
-      // ==================================================
-      // RESPONSE TEXT
-      // ==================================================
-
-      if (receivingResponse) {
-        // ----------------------------------------------
-        // RESPONSE END
-        // ----------------------------------------------
-
-        if (streamBuffer.contains(responseEnd)) {
-          final endIndex =
-              streamBuffer.indexOf(responseEnd);
-
-          final responseText =
-              streamBuffer.substring(0, endIndex);
-
-          streamBuffer = streamBuffer.substring(
-            endIndex + responseEnd.length,
-          );
-
-          if (responseText.isNotEmpty) {
-            aiText += responseText;
-          }
-
-          receivingResponse = false;
-
-          print("🤖 RESPONSE END");
-
-          setState(() {
-            allChats[currentChatIndex]
-                    ["messages"][index]["text"] =
-                aiText;
-
-            allChats[currentChatIndex]
-                    ["messages"][index]["thinking"] =
-                false;
-
-            messages =
-                List<Map<String, dynamic>>.from(
-              allChats[currentChatIndex]["messages"],
-            );
-          });
-
-          scrollToBottom();
-        }
-
-        // ----------------------------------------------
-        // NORMAL AI TEXT
-        // ----------------------------------------------
-
-        else if (streamBuffer.isNotEmpty) {
-          aiText += streamBuffer;
-
-          streamBuffer = "";
-
-          setState(() {
-            allChats[currentChatIndex]
-                    ["messages"][index]["text"] =
-                aiText;
-
-            allChats[currentChatIndex]
-                    ["messages"][index]["thinking"] =
-                false;
-
-            messages =
-                List<Map<String, dynamic>>.from(
-              allChats[currentChatIndex]["messages"],
-            );
-          });
-
-          scrollToBottom();
-        }
-      }
-    }
-
-    // ==================================================
-    // FINAL RESPONSE BUFFER
-    // ==================================================
-
-    if (streamBuffer.isNotEmpty &&
-        receivingResponse &&
-        mounted) {
-      aiText += streamBuffer;
+      print("🤖 RESPONSE END");
+      print("🤖 AI TEXT: $aiText");
 
       setState(() {
         allChats[currentChatIndex]
-                ["messages"][index]["text"] =
-            aiText;
+            ["messages"][index]["text"] = aiText;
 
         allChats[currentChatIndex]
-                ["messages"][index]["thinking"] =
-            false;
+            ["messages"][index]["thinking"] = false;
 
         messages =
             List<Map<String, dynamic>>.from(
@@ -1472,22 +1159,316 @@ if (receivingProduct) {
       scrollToBottom();
     }
 
-    // ==================================================
-    // STREAM FINISHED
-    // ==================================================
+    else if (streamBuffer.isNotEmpty) {
 
-    print("=================================");
-    print("STREAM FINISHED");
-    print("AI TEXT:");
-    print(aiText);
+      aiText += streamBuffer;
 
-    print("SOURCES:");
-    print(receivedSources);
+      streamBuffer = "";
 
-    print("FOLLOW-UPS:");
-    print(receivedFollowUps);
+      setState(() {
+        allChats[currentChatIndex]
+            ["messages"][index]["text"] = aiText;
 
-    print("=================================");
+        allChats[currentChatIndex]
+            ["messages"][index]["thinking"] = false;
+
+        messages =
+            List<Map<String, dynamic>>.from(
+          allChats[currentChatIndex]["messages"],
+        );
+      });
+
+      scrollToBottom();
+    }
+  }
+
+  // ==================================================
+  // SOURCES
+  // ==================================================
+
+  if (!receivingResponse &&
+      !receivingSources &&
+      streamBuffer.contains(sourcesStart)) {
+
+    final startIndex =
+        streamBuffer.indexOf(sourcesStart);
+
+    streamBuffer = streamBuffer.substring(
+      startIndex + sourcesStart.length,
+    );
+
+    receivingSources = true;
+
+    print("📚 SOURCES START");
+  }
+
+  if (receivingSources) {
+
+    if (streamBuffer.contains(sourcesEnd)) {
+
+      final endIndex =
+          streamBuffer.indexOf(sourcesEnd);
+
+      sourceBuffer +=
+          streamBuffer.substring(0, endIndex);
+
+      streamBuffer = streamBuffer.substring(
+        endIndex + sourcesEnd.length,
+      );
+
+      try {
+
+        final decodedSources =
+            jsonDecode(sourceBuffer.trim());
+
+        if (decodedSources is List) {
+
+          receivedSources =
+              List<Map<String, dynamic>>.from(
+            decodedSources.map(
+              (source) =>
+                  Map<String, dynamic>.from(source),
+            ),
+          );
+
+          print(
+            "📚 RECEIVED SOURCES: $receivedSources",
+          );
+
+          setState(() {
+            allChats[currentChatIndex]
+                ["messages"][index]["sources"] =
+                receivedSources;
+
+            messages =
+                List<Map<String, dynamic>>.from(
+              allChats[currentChatIndex]["messages"],
+            );
+          });
+        }
+
+      } catch (e) {
+
+        print("❌ SOURCE JSON ERROR: $e");
+        print("SOURCE BUFFER: $sourceBuffer");
+      }
+
+      sourceBuffer = "";
+      receivingSources = false;
+
+      print("📚 SOURCES END");
+    }
+
+    else {
+
+      sourceBuffer += streamBuffer;
+      streamBuffer = "";
+    }
+  }
+
+  // ==================================================
+  // PRODUCT
+  // ==================================================
+
+  if (!receivingResponse &&
+      !receivingSources &&
+      !receivingFollowUps &&
+      !receivingProduct &&
+      streamBuffer.contains(productStart)) {
+
+    final startIndex =
+        streamBuffer.indexOf(productStart);
+
+    streamBuffer = streamBuffer.substring(
+      startIndex + productStart.length,
+    );
+
+    receivingProduct = true;
+
+    print("🛍️ PRODUCT START");
+  }
+
+  if (receivingProduct) {
+
+    if (streamBuffer.contains(productEnd)) {
+
+      final endIndex =
+          streamBuffer.indexOf(productEnd);
+
+      productBuffer +=
+          streamBuffer.substring(0, endIndex);
+
+      streamBuffer = streamBuffer.substring(
+        endIndex + productEnd.length,
+      );
+
+      try {
+
+        final decodedProduct =
+            jsonDecode(productBuffer.trim());
+
+        if (decodedProduct is Map) {
+
+          receivedProduct =
+              Map<String, dynamic>.from(
+            decodedProduct,
+          );
+
+          print(
+            "🛍️ PRODUCT RECEIVED: $receivedProduct",
+          );
+
+          setState(() {
+
+            allChats[currentChatIndex]
+                ["messages"][index]["product"] =
+                receivedProduct;
+
+            messages =
+                List<Map<String, dynamic>>.from(
+              allChats[currentChatIndex]["messages"],
+            );
+          });
+        }
+
+      } catch (e) {
+
+        print("❌ PRODUCT JSON ERROR: $e");
+        print(
+          "PRODUCT BUFFER: $productBuffer",
+        );
+      }
+
+      productBuffer = "";
+      receivingProduct = false;
+
+      print("🛍️ PRODUCT END");
+    }
+
+    else {
+
+      productBuffer += streamBuffer;
+      streamBuffer = "";
+    }
+  }
+
+  // ==================================================
+  // FOLLOW-UPS
+  // ==================================================
+
+  if (!receivingResponse &&
+      !receivingSources &&
+      !receivingProduct &&
+      !receivingFollowUps &&
+      streamBuffer.contains(followUpsStart)) {
+
+    final startIndex =
+        streamBuffer.indexOf(followUpsStart);
+
+    streamBuffer = streamBuffer.substring(
+      startIndex + followUpsStart.length,
+    );
+
+    receivingFollowUps = true;
+
+    print("💡 FOLLOW-UPS START");
+  }
+
+  if (receivingFollowUps) {
+
+    if (streamBuffer.contains(followUpsEnd)) {
+
+      final endIndex =
+          streamBuffer.indexOf(followUpsEnd);
+
+      followUpBuffer +=
+          streamBuffer.substring(0, endIndex);
+
+      streamBuffer = streamBuffer.substring(
+        endIndex + followUpsEnd.length,
+      );
+
+      try {
+
+        final decodedFollowUps =
+            jsonDecode(followUpBuffer.trim());
+
+        if (decodedFollowUps is List) {
+
+          receivedFollowUps =
+              decodedFollowUps
+                  .map(
+                    (item) => item.toString(),
+                  )
+                  .where(
+                    (item) =>
+                        item.trim().isNotEmpty,
+                  )
+                  .toList();
+
+          print(
+            "💡 RECEIVED FOLLOW-UPS: "
+            "$receivedFollowUps",
+          );
+
+          setState(() {
+
+            allChats[currentChatIndex]
+                ["messages"][index]["followUps"] =
+                receivedFollowUps;
+
+            messages =
+                List<Map<String, dynamic>>.from(
+              allChats[currentChatIndex]["messages"],
+            );
+          });
+        }
+
+      } catch (e) {
+
+        print(
+          "❌ FOLLOW-UP JSON ERROR: $e",
+        );
+
+        print(
+          "FOLLOW-UP BUFFER: $followUpBuffer",
+        );
+      }
+
+      followUpBuffer = "";
+      receivingFollowUps = false;
+
+      print("💡 FOLLOW-UPS END");
+    }
+
+    else {
+
+      followUpBuffer += streamBuffer;
+      streamBuffer = "";
+    }
+  }
+}
+
+// ==================================================
+// STREAM FINISHED
+// ==================================================
+
+print("=================================");
+print("STREAM FINISHED");
+print("AI TEXT:");
+print(aiText);
+
+print("SOURCES:");
+print(receivedSources);
+
+print("PRODUCT:");
+print(receivedProduct);
+
+print("FOLLOW-UPS:");
+print(receivedFollowUps);
+
+print("=================================");
+    
 
 
      // ==================================================
