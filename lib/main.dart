@@ -1043,6 +1043,11 @@ Future<void> streamAIResponse(
     String followUpBuffer = "";
 
     List<String> receivedFollowUps = [];
+    // PRODUCT
+bool receivingProduct = false;
+String productBuffer = "";
+
+Map<String, dynamic>? receivedProduct;
 
     // RESPONSE
     bool receivingResponse = false;
@@ -1060,6 +1065,9 @@ Future<void> streamAIResponse(
     const followUpsStart = "<<<VEDAAI_FOLLOWUPS_START>>>";
     const followUpsEnd = "<<<VEDAAI_FOLLOWUPS_END>>>";
 
+    const productStart = "<<<VEDAAI_PRODUCT_START>>>";
+const productEnd = "<<<VEDAAI_PRODUCT_END>>>";
+
     // ==================================================
     // READ STREAM
     // ==================================================
@@ -1075,7 +1083,108 @@ Future<void> streamAIResponse(
       print("CHUNK: $chunk");
 
       streamBuffer += chunk;
+      
+      // ==================================================
+// PRODUCT START
+// ==================================================
 
+if (!receivingSources &&
+    !receivingFollowUps &&
+    !receivingProduct &&
+    streamBuffer.contains(productStart)) {
+
+  receivingProduct = true;
+
+  final startIndex =
+      streamBuffer.indexOf(productStart);
+
+  // Product marker आधीचा text सुरक्षित ठेव
+  if (startIndex > 0 && receivingResponse) {
+    final beforeProduct =
+        streamBuffer.substring(0, startIndex);
+
+    aiText += beforeProduct;
+  }
+
+  streamBuffer = streamBuffer.substring(
+    startIndex + productStart.length,
+  );
+
+  receivingResponse = false;
+
+  print("🛍️ PRODUCT START");
+}
+
+
+// ==================================================
+// READ PRODUCT
+// ==================================================
+
+if (receivingProduct) {
+
+  if (streamBuffer.contains(productEnd)) {
+
+    final endIndex =
+        streamBuffer.indexOf(productEnd);
+
+    productBuffer +=
+        streamBuffer.substring(0, endIndex);
+
+    streamBuffer = streamBuffer.substring(
+      endIndex + productEnd.length,
+    );
+
+    try {
+
+      final decodedProduct =
+          jsonDecode(productBuffer.trim());
+
+      if (decodedProduct is Map) {
+
+        receivedProduct =
+            Map<String, dynamic>.from(
+          decodedProduct,
+        );
+
+        print("🛍️ PRODUCT RECEIVED:");
+        print(receivedProduct);
+
+        setState(() {
+
+          allChats[currentChatIndex]
+                  ["messages"][index]["product"] =
+              receivedProduct;
+
+          messages =
+              List<Map<String, dynamic>>.from(
+            allChats[currentChatIndex]["messages"],
+          );
+
+        });
+      }
+
+    } catch (e) {
+
+      print("❌ PRODUCT JSON ERROR: $e");
+      print(
+        "PRODUCT BUFFER: $productBuffer",
+      );
+
+    }
+
+    productBuffer = "";
+    receivingProduct = false;
+
+    print("🛍️ PRODUCT END");
+  }
+
+  else {
+
+    productBuffer += streamBuffer;
+    streamBuffer = "";
+
+  }
+}
       // ==================================================
       // SOURCES START
       // ==================================================
@@ -1446,6 +1555,10 @@ aiText = aiText.trim();
         allChats[currentChatIndex]
                 ["messages"][index]["sources"] =
             receivedSources;
+        
+        allChats[currentChatIndex]
+    ["messages"][index]["product"] =
+    receivedProduct;
 
         allChats[currentChatIndex]
                 ["messages"][index]["followUps"] =
@@ -1928,6 +2041,9 @@ Future<void> stopListening() async {
 
   final String followUpHeading =
       msg["followUpHeading"]?.toString() ?? "";
+      
+  
+ 
 
   return GestureDetector(
     onLongPress: () {
@@ -2228,7 +2344,19 @@ Future<void> stopListening() async {
                 ),
               ),
             ),
+            
+            // ==================================================
+// PRODUCT CARD
+// ==================================================
 
+if (!isUser &&
+    msg["thinking"] != true &&
+    msg["product"] is Map)
+  productCard(
+    Map<String, dynamic>.from(
+      msg["product"],
+    ),
+  ),
           // ==================================================
           // COPY BUTTON
           // ==================================================
@@ -2516,6 +2644,186 @@ if (!isUser &&
   );
 }
 
+// ==================================================
+// PRODUCT INFORMATION CARD
+// ==================================================
+
+Widget productCard(Map<String, dynamic> product) {
+  final String name =
+      product["name"]?.toString() ?? "";
+
+  final String image =
+      product["image"]?.toString() ?? "";
+
+  final String price =
+      product["price"]?.toString() ?? "";
+
+  final String description =
+      product["description"]?.toString() ?? "";
+
+  if (name.isEmpty) {
+    return const SizedBox.shrink();
+  }
+
+  return Padding(
+    padding: const EdgeInsets.only(
+      left: 36,
+      right: 12,
+      top: 12,
+    ),
+
+    child: Container(
+      width: double.infinity,
+
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? const Color(0xff111827)
+            : Colors.white,
+
+        borderRadius:
+            BorderRadius.circular(16),
+
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white12
+              : Colors.black12,
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color:
+                Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset:
+                const Offset(0, 4),
+          ),
+        ],
+      ),
+
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+
+        children: [
+
+          // ==================================================
+          // PRODUCT IMAGE
+          // ==================================================
+
+          if (image.isNotEmpty)
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+
+              child: Image.network(
+                image,
+
+                width: double.infinity,
+                height: 210,
+
+                fit: BoxFit.contain,
+
+                errorBuilder:
+                    (context, error, stackTrace) {
+                  return SizedBox(
+                    height: 210,
+
+                    child: Center(
+                      child: Icon(
+                        Icons
+                            .image_not_supported_outlined,
+
+                        size: 50,
+
+                        color: isDarkMode
+                            ? Colors.white38
+                            : Colors.black26,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+          // ==================================================
+          // PRODUCT DETAILS
+          // ==================================================
+
+          Padding(
+            padding:
+                const EdgeInsets.all(14),
+
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
+              children: [
+
+                // PRODUCT NAME
+                Text(
+                  name,
+
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight:
+                        FontWeight.w700,
+
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
+                ),
+
+                // PRICE
+                if (price.isNotEmpty) ...[
+                  const SizedBox(height: 7),
+
+                  Text(
+                    price,
+
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight:
+                          FontWeight.bold,
+
+                      color:
+                          Color(0xff2563EB),
+                    ),
+                  ),
+                ],
+
+                // DESCRIPTION
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+
+                  Text(
+                    description,
+
+                    maxLines: 4,
+
+                    overflow:
+                        TextOverflow.ellipsis,
+
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.4,
+
+                      color: isDarkMode
+                          ? Colors.white60
+                          : Colors.black54,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
   @override
 Widget build(BuildContext context) {
   return Scaffold(

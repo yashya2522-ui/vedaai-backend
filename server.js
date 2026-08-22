@@ -6359,6 +6359,91 @@ Select the most relevant and reliable evidence first, then answer
 naturally and concisely.
 
 ==================================================
+PRODUCT INFORMATION
+==================================================
+
+If the user's current question is about a specific product,
+especially a mobile phone, laptop, TV, tablet, smartwatch,
+headphones, camera, electronics or similar product, generate
+structured product information AFTER the complete normal answer.
+
+Do NOT generate product information for general questions.
+
+For a product query, identify the exact product/model mentioned
+by the user.
+
+The product information MUST be based only on reliable information
+available in the supplied web search results.
+
+For mobile phones, collect when available:
+
+- exact product name
+- product image
+- current price
+- RAM variants
+- storage variants
+- display
+- processor
+- battery
+- camera
+- operating system
+- other important specifications
+
+IMPORTANT PRICE RULE:
+
+- Use only a reliably verified CURRENT price.
+- Never guess a price.
+- Never calculate a price.
+- Never use an old launch price as the current price.
+- If current price cannot be reliably verified, set price to null.
+- Do not use a foreign price as an Indian price.
+
+IMAGE RULE:
+
+- Only provide an image URL when a reliable product image URL
+  is available from the supplied search results.
+- Do not invent an image URL.
+- If no reliable image URL is available, set image to null.
+
+If the product is a mobile phone, use:
+
+type = "mobile"
+
+Otherwise use the appropriate product type.
+
+After the complete normal answer, return:
+
+<<<VEDAAI_PRODUCT_START>>>
+{
+  "type": "mobile",
+  "name": "Vivo V70",
+  "image": null,
+  "price": null,
+  "currency": "INR",
+  "variants": [],
+  "specifications": {
+    "display": null,
+    "processor": null,
+    "battery": null,
+    "camera": null,
+    "os": null
+  }
+}
+<<<VEDAAI_PRODUCT_END>>>
+
+Rules:
+
+1. Return valid JSON only between the product markers.
+2. Do not put Markdown around the JSON.
+3. Do not write explanations inside the product JSON.
+4. Use null when reliable information is unavailable.
+5. Do not invent missing information.
+6. Generate product JSON only when the user's question is actually
+   about a product.
+7. The product section MUST appear after the complete normal answer.
+8. Follow-up questions must come AFTER the product section.
+
+==================================================
 FOLLOW-UP / SUGGESTED QUESTIONS
 ==================================================
 
@@ -6427,6 +6512,10 @@ questions according to the FOLLOW-UP / SUGGESTED QUESTIONS rules.
 The final response MUST follow this structure:
 
 [COMPLETE AI ANSWER]
+
+<<<VEDAAI_PRODUCT_START>>>
+{PRODUCT JSON}
+<<<VEDAAI_PRODUCT_END>>>
 
 <<<VEDAAI_FOLLOWUPS_START>>>
 ["Question 1","Question 2","Question 3"]
@@ -6540,7 +6629,125 @@ console.log(
   userMessage
 );
 
+function parseVedaAIResponse(text = "") {
+  const result = {
+    answer: text.trim(),
+    product: null,
+    followups: []
+  };
 
+  if (!text || typeof text !== "string") {
+    return result;
+  }
+
+  // ==================================================
+  // PRODUCT
+  // ==================================================
+
+  const productStart =
+    "<<<VEDAAI_PRODUCT_START>>>";
+
+  const productEnd =
+    "<<<VEDAAI_PRODUCT_END>>>";
+
+  const productStartIndex =
+    text.indexOf(productStart);
+
+  const productEndIndex =
+    text.indexOf(productEnd);
+
+  if (
+    productStartIndex !== -1 &&
+    productEndIndex !== -1 &&
+    productEndIndex > productStartIndex
+  ) {
+    const productJsonText = text
+      .slice(
+        productStartIndex + productStart.length,
+        productEndIndex
+      )
+      .trim();
+
+    try {
+      result.product =
+        JSON.parse(productJsonText);
+    } catch (error) {
+      console.log(
+        "⚠️ PRODUCT JSON PARSE FAILED:",
+        error.message
+      );
+
+      result.product = null;
+    }
+  }
+
+  // ==================================================
+  // FOLLOWUPS
+  // ==================================================
+
+  const followupStart =
+    "<<<VEDAAI_FOLLOWUPS_START>>>";
+
+  const followupEnd =
+    "<<<VEDAAI_FOLLOWUPS_END>>>";
+
+  const followupStartIndex =
+    text.indexOf(followupStart);
+
+  const followupEndIndex =
+    text.indexOf(followupEnd);
+
+  if (
+    followupStartIndex !== -1 &&
+    followupEndIndex !== -1 &&
+    followupEndIndex > followupStartIndex
+  ) {
+    const followupJsonText = text
+      .slice(
+        followupStartIndex + followupStart.length,
+        followupEndIndex
+      )
+      .trim();
+
+    try {
+      const parsedFollowups =
+        JSON.parse(followupJsonText);
+
+      if (Array.isArray(parsedFollowups)) {
+        result.followups =
+          parsedFollowups
+            .filter(
+              item =>
+                typeof item === "string" &&
+                item.trim().length > 0
+            )
+            .slice(0, 3);
+      }
+    } catch (error) {
+      console.log(
+        "⚠️ FOLLOWUPS JSON PARSE FAILED:",
+        error.message
+      );
+    }
+  }
+
+  // ==================================================
+  // CLEAN ANSWER
+  // ==================================================
+
+  result.answer = text
+    .replace(
+      /<<<VEDAAI_PRODUCT_START>>>[\s\S]*?<<<VEDAAI_PRODUCT_END>>>/g,
+      ""
+    )
+    .replace(
+      /<<<VEDAAI_FOLLOWUPS_START>>>[\s\S]*?<<<VEDAAI_FOLLOWUPS_END>>>/g,
+      ""
+    )
+    .trim();
+
+  return result;
+}
 // ==================================================
 // CALL GEMINI
 // ==================================================
@@ -6688,19 +6895,73 @@ res.write(
   "\n<<<VEDAAI_RESPONSE_END>>>\n"
 );
 
+// ==================================================
+// PARSE VEDA AI RESPONSE
+// ==================================================
+
+const parsedResponse =
+  parseVedaAIResponse(aiText);
+
+console.log(
+  "========== PARSED VEDA AI RESPONSE =========="
+);
+
+console.log(
+  "ANSWER:",
+  parsedResponse.answer
+);
+
+console.log(
+  "PRODUCT:",
+  parsedResponse.product
+);
+
+console.log(
+  "FOLLOWUPS:",
+  parsedResponse.followups
+);
+
+console.log(
+  "============================================="
+);
 
 // ==================================================
-// SEND REMAINING BUFFER
+// SEND PRODUCT
+// ==================================================
+
+if (parsedResponse.product) {
+  res.write(
+    "<<<VEDAAI_PRODUCT_START>>>\n"
+  );
+
+  res.write(
+    JSON.stringify(parsedResponse.product)
+  );
+
+  res.write(
+    "\n<<<VEDAAI_PRODUCT_END>>>\n"
+  );
+}
+
+// ==================================================
+// SEND FOLLOWUPS
 // ==================================================
 
 if (
-  buffer.length > 0
+  Array.isArray(parsedResponse.followups) &&
+  parsedResponse.followups.length > 0
 ) {
-
   res.write(
-    buffer
+    "<<<VEDAAI_FOLLOWUPS_START>>>\n"
   );
 
+  res.write(
+    JSON.stringify(parsedResponse.followups)
+  );
+
+  res.write(
+    "\n<<<VEDAAI_FOLLOWUPS_END>>>\n"
+  );
 }
 
 // ================= SAVE CHAT =================
