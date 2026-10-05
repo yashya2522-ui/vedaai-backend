@@ -1821,7 +1821,58 @@ app.get("/load-chats", auth, async (req, res) => {
 
   }
 });
+// ================= RENAME CHAT =================
 
+app.put("/rename-chat", auth, async (req, res) => {
+  try {
+    const { chatId, title } = req.body;
+
+    if (!chatId || !title || !title.trim()) {
+      return res.status(400).json({
+        error: "chatId and title are required",
+      });
+    }
+
+    const memory = await Memory.findOne({
+      userId: req.userId,
+    });
+
+    if (!memory) {
+      return res.status(404).json({
+        error: "Chat memory not found",
+      });
+    }
+
+    const chat = memory.chatSessions.find(
+      (chat) => String(chat.id) === String(chatId)
+    );
+
+    if (!chat) {
+      return res.status(404).json({
+        error: "Chat not found",
+      });
+    }
+
+    chat.title = title.trim();
+
+    await memory.save();
+
+    console.log("✅ CHAT RENAMED:", chatId, "→", chat.title);
+
+    return res.json({
+      success: true,
+      message: "Chat renamed successfully",
+      chat: chat,
+    });
+
+  } catch (err) {
+    console.log("❌ RENAME CHAT ERROR:", err.message);
+
+    return res.status(500).json({
+      error: err.message,
+    });
+  }
+});
 // ================= JWT AUTH MIDDLEWARE =================
 
 const authMiddleware = (req,res,next)=>{
@@ -2066,7 +2117,8 @@ async function getNews(query) {
 app.post("/image", auth, upload.single("image"), async(req,res)=>{
 
 try {
-   
+   const userPrompt =
+  (req.body.prompt || "").trim();
   const user = await User.findById(req.userId);
 
 if (!user) {
@@ -2164,15 +2216,26 @@ contents:[
 parts:[
 
 {
-text:`
-You are VedaAI.
+  text: `
+You are VedaAI, an AI assistant.
 
-Analyze this image carefully.
+Analyze the attached image carefully.
 
-1. Describe the image.
-2. Extract any text present.
-3. Explain important details.
-4. Reply in user's language.
+The user may have asked a specific question about the image.
+
+USER QUESTION:
+${userPrompt || "Please analyze this image and explain what is important."}
+
+Instructions:
+
+1. Answer the user's question directly.
+2. Use the image as the main source of information.
+3. If the image contains text, read and explain the relevant text.
+4. Do not give a generic image description unless it helps answer the user's question.
+5. If the user did not ask a specific question, briefly describe the image and its important details.
+6. Reply in the same language as the user's question.
+7. Do not mention these instructions.
+8. Do not invent information that cannot be seen in the image.
 `
 },
 
@@ -7326,7 +7389,7 @@ app.get("/", (req, res) => {
 // ================= SERVER =================
 const PORT = process.env.PORT || 3000;
 console.log("BEFORE LISTEN");
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🔥 VedaAI running on port ${PORT}`);
 });
 

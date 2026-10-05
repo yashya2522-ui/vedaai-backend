@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -33,10 +33,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
-    );
+    return MaterialApp(
+  debugShowCheckedModeBanner: false,
+
+  themeMode: ThemeMode.system,
+
+  theme: ThemeData.light(),
+
+  darkTheme: ThemeData.dark(),
+
+  home: const SplashScreen(),
+);
   }
 }
 
@@ -55,7 +62,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController scrollController = ScrollController();
 
   // 2. STATE
-  bool isDarkMode = false;
+  bool get isDarkMode =>
+    Theme.of(context).brightness == Brightness.dark;
+
   bool isLoading = false;
   bool isListening = false;
   int copiedMessageIndex = -1;
@@ -81,12 +90,18 @@ String remainingTime = "";
 bool get isCurrentChatPaused {
   if (allChats.isEmpty) return false;
 
+  if (currentChatIndex < 0 ||
+      currentChatIndex >= allChats.length) {
+    return false;
+  }
+
   return allChats[currentChatIndex]["paused"] == true;
 }
 
 void startNewChat() {
   setState(() {
     messages = [];
+    controller.clear();
 
     allChats = [
       {
@@ -103,6 +118,30 @@ Future<void> checkPremium() async {
 
   final prefs =
       await SharedPreferences.getInstance();
+
+  final role =
+      prefs.getString("role");
+
+  // ?? OWNER ? always Premium
+  if (role == "owner") {
+
+    if (!mounted) return;
+
+    setState(() {
+      isOwner = true;
+      isPremium = true;
+      subscriptionType = "lifetime";
+    });
+
+    print(" OWNER ACCOUNT");
+    print("Premium Status: true");
+    print("Plan: lifetime");
+
+    return;
+  }
+
+  // ?? / ?? NORMAL USER
+  if (!mounted) return;
 
   setState(() {
 
@@ -259,58 +298,115 @@ Future<bool> checkFreePdfLimit() async {
 }
 
 Future<void> uploadPdf() async {
-
-  if (selectedPdf == null) {
-    return;
-  }
+  if (selectedPdf == null) return;
 
   if (!isPremium) {
-
-    bool allowed =
-        await checkFreePdfLimit();
+    bool allowed = await checkFreePdfLimit();
 
     if (!allowed) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            "Daily PDF limit completed. Upgrade to Premium 💎",
+            "Daily PDF limit completed. Upgrade to Premium ??",
           ),
         ),
       );
-
       return;
     }
-
   }
 
-  var request = http.MultipartRequest(
-    "POST",
-    Uri.parse(
-      "https://vedaai-backend-production-bf1d.up.railway.app/pdf"
-    ),
-  );
+  final pdfFile = selectedPdf!;
 
-  request.files.add(
-    await http.MultipartFile.fromPath(
-      "pdf",
-      selectedPdf!.path,
-    ),
-  );
+  setState(() {
+    allChats[currentChatIndex]["messages"].add({
+      "role": "user",
+      "text": "?? PDF",
+      "pdfFile": pdfFile.path,
+      "pinned": false,
+    });
 
-  var response = await request.send();
+    messages = List<Map<String, dynamic>>.from(
+      allChats[currentChatIndex]["messages"],
+    );
 
-  if (response.statusCode == 200) {
+    selectedPdf = null;
+    isLoading = true;
+  });
 
-    print("PDF uploaded successfully");
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
 
-  } else {
+    if (token == null) {
+      throw Exception("Please login again.");
+    }
 
-    print("PDF upload failed");
+    var request = http.MultipartRequest(
+      "POST",
+      Uri.parse("http://10.169.139.137:3000/pdf"),
+    );
 
+    request.headers["Authorization"] = "Bearer $token";
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        "file",
+        pdfFile.path,
+      ),
+    );
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    print("PDF STATUS: ${response.statusCode}");
+    print("PDF RESPONSE: $responseBody");
+
+    if (response.statusCode != 200) {
+      throw Exception(responseBody);
+    }
+
+    final data = jsonDecode(responseBody);
+
+    final reply =
+        data["reply"]?.toString() ??
+        "No response generated.";
+
+    setState(() {
+      allChats[currentChatIndex]["messages"].add({
+        "role": "ai",
+        "text": reply,
+        "pinned": false,
+      });
+
+      messages = List<Map<String, dynamic>>.from(
+        allChats[currentChatIndex]["messages"],
+      );
+
+      isLoading = false;
+    });
+
+    await saveChat();
+    scrollToBottom();
+
+  } catch (e) {
+    print("PDF UPLOAD ERROR: $e");
+
+    setState(() {
+      allChats[currentChatIndex]["messages"].add({
+        "role": "ai",
+        "text": "PDF upload failed.\n\n$e",
+        "pinned": false,
+      });
+
+      messages = List<Map<String, dynamic>>.from(
+        allChats[currentChatIndex]["messages"],
+      );
+
+      isLoading = false;
+    });
+
+    scrollToBottom();
   }
-
 } 
 
 Future<bool> checkFreeImageLimit() async {
@@ -455,57 +551,181 @@ Future<void> pickImage() async {
 
 }
 Future<void> uploadImage() async {
-
   if (selectedImage == null) {
     return;
   }
-  
-  if (!isPremium) {
 
-  bool allowed =
-      await checkFreeImageLimit();
+  final String userText = controller.text.trim();
 
-  if (!allowed) {
+  // Free user image limit
+  if (!isPremium && !isOwner) {
+    final bool allowed = await checkFreeImageLimit();
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Daily image limit completed. Upgrade to Premium 💎",
+    if (!allowed) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Daily image limit completed. Upgrade to Premium.",
+          ),
         ),
+      );
+
+      return;
+    }
+  }
+
+  // Keep selected image
+  final File imageFile = selectedImage!;
+
+  // User message text
+  final String displayText =
+      userText.isEmpty ? "Image" : userText;
+
+  // ==================================================
+  // ADD USER IMAGE + QUESTION TO CHAT
+  // ==================================================
+
+  setState(() {
+    allChats[currentChatIndex]["messages"].add({
+      "role": "user",
+      "text": displayText,
+      "image": imageFile.path,
+      "pinned": false,
+    });
+
+    messages = List<Map<String, dynamic>>.from(
+      allChats[currentChatIndex]["messages"],
+    );
+
+    // IMPORTANT:
+    // Clear both image and typed text together
+    selectedImage = null;
+    controller.clear();
+
+    isLoading = true;
+  });
+
+  await saveChat();
+  scrollToBottom();
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+
+    if (token == null) {
+      throw Exception("Please login again.");
+    }
+
+    // ==================================================
+    // IMAGE REQUEST
+    // ==================================================
+
+    final request = http.MultipartRequest(
+      "POST",
+      Uri.parse(
+        "http://10.169.139.137:3000/image",
       ),
     );
 
-    return;
-  }
+    request.headers["Authorization"] =
+        "Bearer $token";
 
+    // IMPORTANT:
+    // Send user's actual question together with image
+    request.fields["prompt"] = userText;
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        "image",
+        imageFile.path,
+      ),
+    );
+
+    print("===== IMAGE REQUEST =====");
+    print("PROMPT: $userText");
+    print("IMAGE: ${imageFile.path}");
+    print("=========================");
+
+    final response = await request.send();
+
+    final responseBody =
+        await response.stream.bytesToString();
+
+    print("IMAGE STATUS: ${response.statusCode}");
+    print("IMAGE RESPONSE: $responseBody");
+
+    if (response.statusCode != 200) {
+      throw Exception(responseBody);
+    }
+
+    final data = jsonDecode(responseBody);
+
+    if (data["success"] == false) {
+      throw Exception(
+        data["message"] ??
+            "Image request failed.",
+      );
+    }
+
+    final String reply =
+        data["reply"]?.toString().trim() ??
+            "No response generated.";
+
+    // ==================================================
+    // AI RESPONSE
+    // ==================================================
+
+    if (!mounted) return;
+
+    setState(() {
+      allChats[currentChatIndex]["messages"].add({
+        "role": "ai",
+        "text": reply.isEmpty
+            ? "No response generated."
+            : reply,
+        "pinned": false,
+        "thinking": false,
+      });
+
+      messages =
+          List<Map<String, dynamic>>.from(
+        allChats[currentChatIndex]["messages"],
+      );
+
+      isLoading = false;
+    });
+
+    await saveChat();
+    scrollToBottom();
+
+  } catch (e) {
+    print("IMAGE UPLOAD ERROR: $e");
+
+    if (!mounted) return;
+
+    setState(() {
+      allChats[currentChatIndex]["messages"].add({
+        "role": "ai",
+        "text":
+            "Image upload failed.\n\n$e",
+        "pinned": false,
+        "thinking": false,
+      });
+
+      messages =
+          List<Map<String, dynamic>>.from(
+        allChats[currentChatIndex]["messages"],
+      );
+
+      isLoading = false;
+    });
+
+    await saveChat();
+    scrollToBottom();
+  }
 }
-  var request = http.MultipartRequest(
-    "POST",
-    Uri.parse(
-      "https://vedaai-backend-production-bf1d.up.railway.app/image"
-    ),
-  );
-
-  request.files.add(
-    await http.MultipartFile.fromPath(
-      "image",
-      selectedImage!.path,
-    ),
-  );
-
-  var response = await request.send();
-
-  if (response.statusCode == 200) {
-
-    print("Image uploaded successfully");
-
-  } else {
-
-    print("Image upload failed");
-
-  }
-} 
 Future<void> exportChat() async {
   try {
     if (messages.isEmpty) {
@@ -574,7 +794,7 @@ Future<void> speak(String text) async {
   await flutterTts.setSpeechRate(0.5);
   await flutterTts.setPitch(1.0);
 
-  if (RegExp(r'[अ-ह]').hasMatch(text)) {
+  if (RegExp(r'[?-?]').hasMatch(text)) {
     await flutterTts.setLanguage("hi-IN");
   } else {
     await flutterTts.setLanguage("en-US");
@@ -592,7 +812,7 @@ Future loadChat() async {
 
     final response = await http.get(
       Uri.parse(
-        "https://vedaai-backend-production-bf1d.up.railway.app/load-chats",
+        "http://10.169.139.137:3000/load-chats",
       ),
       headers: {
         "Authorization": "Bearer $token",
@@ -639,7 +859,7 @@ Future loadChat() async {
               <Map<String, dynamic>>[];
 
           chat["favorite"] ??= false;
-
+          chat["pinned"] ??= false;
           chat["messageCount"] ??= 0;
 
           chat["paused"] ??= false;
@@ -668,33 +888,17 @@ Future loadChat() async {
         });
       }
 
-      // ==============================
-      // OPEN FRESH CHAT
-      // ==============================
+     setState(() {
+  allChats = loadedChats;
 
-      final freshChatId =
-          DateTime.now()
-              .millisecondsSinceEpoch
-              .toString();
+  currentChatIndex = 0;
 
-      loadedChats.insert(0, {
-        "id": freshChatId,
-        "title": "New Chat",
-        "messages": <Map<String, dynamic>>[],
-        "favorite": false,
-        "messageCount": 0,
-        "paused": false,
-        "resetTime": null,
-      });
+  messages = List<Map<String, dynamic>>.from(
+    allChats[0]["messages"] ?? [],
+  );
 
-      setState(() {
-        allChats = loadedChats;
-
-        currentChatIndex = 0;
-
-        messages = [];
-      });
-
+  controller.clear();
+});
       // ==============================
       // DEBUG
       // ==============================
@@ -749,7 +953,60 @@ Future saveChat() async {
   // Chat messages are now saved by the /chat API.
   // No separate /save-chats API is required.
 }
+Future<void> renameChat(int index, String newTitle) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
 
+    if (token == null) {
+      throw Exception("Please login again.");
+    }
+
+    final chatId = allChats[index]["id"];
+
+    if (chatId == null) {
+      throw Exception("Chat ID not found.");
+    }
+
+    final response = await http.put(
+      Uri.parse("http://10.169.139.137:3000/rename-chat"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({
+        "chatId": chatId,
+        "title": newTitle.trim(),
+      }),
+    );
+
+    print("RENAME STATUS: ${response.statusCode}");
+    print("RENAME RESPONSE: ${response.body}");
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        "Rename failed: ${response.body}",
+      );
+    }
+
+    setState(() {
+      allChats[index]["title"] = newTitle.trim();
+    });
+
+    print("? CHAT RENAMED SUCCESSFULLY");
+
+  } catch (e) {
+    print("? RENAME CHAT ERROR: $e");
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Rename failed: $e"),
+      ),
+    );
+  }
+}
 Future<void> newChat() async {
   setState(() {
    allChats.add({
@@ -757,14 +1014,17 @@ Future<void> newChat() async {
   "title": "New Chat",
   "messages": <Map<String, dynamic>>[],
   "favorite": false,
+  "pinned": false,
   "messageCount": 0,
   "paused": false,
   "resetTime": null,
+  "updatedAt": DateTime.now().millisecondsSinceEpoch,
 });
 
     currentChatIndex = allChats.length - 1;
 
     messages = [];
+    controller.clear();
   });
 
   await saveChat();
@@ -780,6 +1040,7 @@ Future<void> clearChat() async {
   "title": "New Chat",
   "messages": <Map<String, dynamic>>[],
   "favorite": false,
+  "pinned": false,
   "messageCount": 0,
   "paused": false,
   "resetTime": null,
@@ -788,6 +1049,7 @@ Future<void> clearChat() async {
 
     currentChatIndex = 0;
     messages = [];
+    controller.clear();
   });
 
   await saveChat();
@@ -797,15 +1059,15 @@ String getOfflineResponse(String message) {
   String msg = message.toLowerCase().trim();
 
   if (msg.contains("hello") || msg.contains("hi")) {
-    return "Hello 👋\n\nI am VedaAI running in Offline Mode.";
+    return "Hello ??\n\nI am VedaAI running in Offline Mode.";
   }
 
   if (msg.contains("how are you")) {
-    return "I'm doing well 😊\n\nHow can I help you today?";
+    return "I'm doing well ??\n\nHow can I help you today?";
   }
 
   if (msg.contains("your name")) {
-    return "My name is VedaAI 🤖";
+    return "My name is VedaAI ??";
   }
 
   if (msg.contains("what is ml") ||
@@ -824,11 +1086,11 @@ How it works:
 Simple Diagram:
 
 Data
- ↓
+ ?
 Training
- ↓
+ ?
 Model
- ↓
+ ?
 Prediction
 """;
   }
@@ -840,10 +1102,10 @@ Artificial Intelligence (AI)
 AI is the ability of computers to perform tasks that normally require human intelligence.
 
 Examples:
-• Chatbots
-• Face Recognition
-• Self Driving Cars
-• Voice Assistants
+? Chatbots
+? Face Recognition
+? Self Driving Cars
+? Voice Assistants
 """;
   }
 
@@ -867,7 +1129,7 @@ Future<String> getAIResponse(String text) async {
 }
 
     final url = Uri.parse(
-      "https://vedaai-backend-production-bf1d.up.railway.app/chat"
+      "http://10.169.139.137:3000/chat"
     );
 
     final res = await http.post(
@@ -910,7 +1172,7 @@ Future<String> getAIResponse(String text) async {
   if (data["success"] == false) {
 
     return data["message"] ??
-        "Daily limit completed. Upgrade to Premium 👑";
+        "Daily limit completed. Upgrade to Premium ??";
 
   }
 
@@ -968,7 +1230,7 @@ Future<void> streamAIResponse(
     final request = http.Request(
       "POST",
       Uri.parse(
-        "https://vedaai-backend-production-bf1d.up.railway.app/chat",
+        "http://10.169.139.137:3000/chat",
       ),
     );
 
@@ -1166,7 +1428,7 @@ await for (
                     .toList();
 
             print(
-              "📚 RECEIVED SOURCES: $receivedSources",
+              "?? RECEIVED SOURCES: $receivedSources",
             );
 
             if (mounted) {
@@ -1189,7 +1451,7 @@ await for (
         } catch (e) {
 
           print(
-            "❌ SOURCE JSON ERROR: $e",
+            "? SOURCE JSON ERROR: $e",
           );
 
           print(
@@ -1247,7 +1509,7 @@ await for (
                     .toList();
 
             print(
-              "💡 RECEIVED FOLLOW-UPS: "
+              "?? RECEIVED FOLLOW-UPS: "
               "$receivedFollowUps",
             );
 
@@ -1272,7 +1534,7 @@ await for (
         } catch (e) {
 
           print(
-            "❌ FOLLOW-UP JSON ERROR: $e",
+            "? FOLLOW-UP JSON ERROR: $e",
           );
 
           print(
@@ -1324,7 +1586,7 @@ await for (
             );
 
             print(
-              "🛍️ RECEIVED PRODUCT:"
+              "??? RECEIVED PRODUCT:"
               " $receivedProduct",
             );
 
@@ -1349,7 +1611,7 @@ await for (
         } catch (e) {
 
           print(
-            "❌ PRODUCT JSON ERROR: $e",
+            "? PRODUCT JSON ERROR: $e",
           );
 
           print(
@@ -1392,7 +1654,7 @@ await for (
 
         receivingResponse = false;
 
-        print("🤖 RESPONSE END");
+        print("?? RESPONSE END");
 
         updateAIText();
 
@@ -1514,7 +1776,7 @@ await for (
 
       receivingResponse = true;
 
-      print("🤖 RESPONSE START");
+      print("?? RESPONSE START");
 
       if (mounted) {
 
@@ -1549,7 +1811,7 @@ await for (
 
       receivingResponse = false;
 
-      print("🤖 RESPONSE END");
+      print("?? RESPONSE END");
 
       updateAIText();
 
@@ -1570,7 +1832,7 @@ await for (
 
       receivingSources = true;
 
-      print("📚 SOURCES START");
+      print("?? SOURCES START");
 
       processed = true;
       continue;
@@ -1589,7 +1851,7 @@ await for (
 
       receivingFollowUps = true;
 
-      print("💡 FOLLOW-UPS START");
+      print("?? FOLLOW-UPS START");
 
       processed = true;
       continue;
@@ -1608,7 +1870,7 @@ await for (
 
       receivingProduct = true;
 
-      print("🛍️ PRODUCT START");
+      print("??? PRODUCT START");
 
       processed = true;
       continue;
@@ -1685,7 +1947,7 @@ const followUpStartMarker =
 const followUpEndMarker =
     "<<<VEDAAI_FOLLOWUPS_END>>>";
 
-// जर Follow-up marker चुकून aiText मध्ये आला असेल
+// ?? Follow-up marker ????? aiText ????? ??? ????
 final followUpStartIndex =
     aiText.indexOf(followUpStartMarker);
 
@@ -1700,7 +1962,7 @@ if (followUpStartIndex != -1) {
 
   if (followUpEndIndex != -1) {
 
-    // Follow-up पूर्ण section काढून टाका
+    // Follow-up ????? section ????? ????
     aiText =
         aiText.substring(0, followUpStartIndex) +
         aiText.substring(
@@ -1710,8 +1972,8 @@ if (followUpStartIndex != -1) {
 
   } else {
 
-    // START मिळाला पण END अजून नाही
-    // त्यामुळे त्यानंतरचा भाग answer मध्ये ठेवू नका
+    // START ?????? ?? END ???? ????
+    // ???????? ?????????? ??? answer ????? ???? ???
     aiText =
         aiText.substring(
       0,
@@ -1720,7 +1982,7 @@ if (followUpStartIndex != -1) {
   }
 }
 
-// शेवटी extra spaces काढा
+// ????? extra spaces ????
 aiText = aiText.trim();
 
    // ==================================================
@@ -1774,15 +2036,15 @@ if (mounted) {
 try {
   await saveChat();
 
-  print("✅ CHAT SAVED SUCCESSFULLY");
+  print("? CHAT SAVED SUCCESSFULLY");
 
 } catch (e) {
 
-  print("⚠️ SAVE CHAT ERROR: $e");
+  print("?? SAVE CHAT ERROR: $e");
 
   // IMPORTANT:
-  // Chat save fail झाला तरी AI answer
-  // "Something went wrong" मध्ये बदलू नये.
+  // Chat save fail ???? ??? AI answer
+  // "Something went wrong" ????? ???? ???.
 }
 
 print("===== ALL CHATS =====");
@@ -1792,11 +2054,11 @@ print("=====================");
 client.close();
  } catch (e, stackTrace) {
 
-  print("❌❌❌ STREAM ERROR ❌❌❌");
+  print("??? STREAM ERROR ???");
   print("ERROR: $e");
   print("STACK TRACE:");
   print(stackTrace);
-  print("❌❌❌ END STREAM ERROR ❌❌❌");
+  print("??? END STREAM ERROR ???");
 
   // Close client safely
   client?.close();
@@ -1808,7 +2070,7 @@ client.close();
     final currentMessage =
         allChats[currentChatIndex]["messages"][index];
 
-    // Thinking बंद
+    // Thinking ???
     currentMessage["thinking"] =
         false;
 
@@ -1816,7 +2078,7 @@ client.close();
     currentMessage["text"] =
         "Something went wrong. Please try again.";
 
-    // Error झाल्यावर जुना data दाखवू नका
+    // Error ???????? ???? data ????? ???
     currentMessage["sources"] =
         [];
 
@@ -1894,7 +2156,7 @@ void startPauseTimer() {
       final difference =
           resetTime.difference(DateTime.now());
 
-      // ⏰ TIMER COMPLETE
+      // ? TIMER COMPLETE
       if (difference.inSeconds <= 0) {
         setState(() {
           chat["paused"] = false;
@@ -1926,8 +2188,10 @@ void startPauseTimer() {
     },
   );
 }
-
 void sendMessage() async {
+
+  // Prevent sending another message while AI is replying
+  if (isLoading) return;
 
   final chat = allChats[currentChatIndex];
 
@@ -1961,6 +2225,8 @@ if (chat["paused"] == true) {
   chat["messageCount"] = 0;
   chat["resetTime"] = null;
 
+allChats[currentChatIndex]["updatedAt"] =
+    DateTime.now().millisecondsSinceEpoch;
   await saveChat();
 }
 
@@ -1968,7 +2234,7 @@ if (chat["paused"] == true) {
 
   String userText = controller.text.trim();
 
-   if (!isPremium) {
+   if (!isPremium && !isOwner) {
 
     bool allowed =
         await checkFreeMessageLimit();
@@ -1980,7 +2246,7 @@ if (chat["paused"] == true) {
           .showSnackBar(
         const SnackBar(
           content: Text(
-            "Daily free limit completed. Upgrade to Premium 💎",
+            "Daily free limit completed. Upgrade to Premium ??",
           ),
         ),
       );
@@ -2054,7 +2320,7 @@ try {
       );
 
 
-      isLoading = false;
+      
 
     });
 
@@ -2077,8 +2343,15 @@ await streamAIResponse(
   historyForAI,
 );
 
+if (mounted) {
+  setState(() {
+    isLoading = false;
+  });
+}
 
-    scrollToBottom();
+await saveChat();
+
+scrollToBottom();
 
 
   } catch (e) {
@@ -2173,19 +2446,14 @@ void showAttachmentMenu() {
                 pickImage();
               },
             ),
-
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf),
-              title: const Text("PDF"),
-              onTap: () async {
-                Navigator.pop(context);
-                await pickPdf();
-
-                if (selectedPdf != null) {
-                  uploadPdf();
-                }
-              },
-            ),
+ListTile(
+  leading: const Icon(Icons.picture_as_pdf),
+  title: const Text("PDF"),
+  onTap: () async {
+    Navigator.pop(context);
+    await pickPdf();
+  },
+),
 
             ListTile(
               leading: const Icon(Icons.camera_alt),
@@ -2193,7 +2461,7 @@ void showAttachmentMenu() {
               onTap: () {
                 Navigator.pop(context);
 
-                // Camera feature पुढे add करू
+                // Camera feature ???? add ???
               },
             ),
 
@@ -2353,6 +2621,7 @@ Future<void> stopListening() async {
                 leading: const Icon(Icons.push_pin),
                 title: const Text("Pin / Unpin"),
                 onTap: () {
+                  controller.clear();
                   setState(() {
                     msg["pinned"] =
                         !(msg["pinned"] ?? false);
@@ -2411,162 +2680,232 @@ Future<void> stopListening() async {
           // ==================================================
 
           Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+  mainAxisSize: MainAxisSize.min,
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [
 
-              if (!isUser)
-                Container(
-                  width: 28,
-                  height: 28,
-
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-
-                    gradient:
-                        const LinearGradient(
-                      colors: [
-                        Color(0xff06B6D4),
-                        Color(0xff3B82F6),
-                      ],
-                    ),
-
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.cyan
-                            .withOpacity(0.25),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-
-                  child: const Center(
-                    child: Text(
-                      "V",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight:
-                            FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-
-              if (!isUser)
-                const SizedBox(width: 8),
-
-              Text(
-                isUser ? "You" : "VedaAI",
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      FontWeight.w600,
-                  color: isDarkMode
-                      ? Colors.white70
-                      : Colors.black54,
-                ),
-              ),
-
-              if (isUser)
-                const SizedBox(width: 6),
-
-              if (isUser)
-                const Icon(
-                  Icons.person_outline,
-                  size: 18,
-                ),
+    if (!isUser)
+      Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xff06B6D4),
+              Color(0xff3B82F6),
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.cyan.withOpacity(0.20),
+              blurRadius: 7,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Text(
+            "V",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+        ),
+      ),
+
+    if (!isUser)
+      const SizedBox(width: 9),
+
+    Text(
+      isUser ? "You" : "VedaAI",
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.2,
+        color: isDarkMode
+            ? Colors.white70
+            : Colors.black54,
+      ),
+    ),
+
+    if (isUser)
+      const SizedBox(width: 6),
+
+    if (isUser)
+      Icon(
+        Icons.person_outline,
+        size: 18,
+        color: isDarkMode
+            ? Colors.white70
+            : Colors.black54,
+      ),
+  ],
+),
 
           const SizedBox(height: 6),
 
           // ==================================================
-          // MESSAGE CONTENT
-          // ==================================================
+// MESSAGE CONTENT
+// ==================================================
 
-          if (msg["thinking"] == true)
+// ATTACHED IMAGE
+if (msg["image"] != null &&
+    msg["image"].toString().isNotEmpty)
+  Padding(
+    padding: EdgeInsets.only(
+      left: isUser ? 0 : 36,
+      right: 16,
+      bottom: 8,
+    ),
+    child: Align(
+      alignment: isUser
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.file(
+          File(msg["image"].toString()),
+          width: 220,
+          height: 220,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 220,
+              height: 120,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xff1E293B)
+                    : const Color(0xffF1F5F9),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.broken_image_outlined,
+                size: 40,
+                color: Colors.grey,
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  ),
+// THINKING / TEXT
+if (msg["thinking"] == true)
+  Padding(
+    padding: const EdgeInsets.only(
+      left: 36,
+      top: 4,
+      bottom: 6,
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          "Thinking",
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.2,
+            color: isDarkMode
+                ? Colors.white70
+                : Colors.black54,
+          ),
+        ),
 
-            Row(
-              children: [
-                Text(
-                  "Thinking",
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: isDarkMode
-                        ? Colors.white70
-                        : Colors.black54,
-                  ),
-                ),
+        const SizedBox(width: 8),
 
-                const SizedBox(width: 8),
-
-                LoadingAnimationWidget
-                    .threeArchedCircle(
-                  size: 18,
-                  color: Colors.cyan,
-                ),
-              ],
+        LoadingAnimationWidget.threeArchedCircle(
+          size: 18,
+          color: isDarkMode
+              ? const Color(0xff38BDF8)
+              : const Color(0xff06B6C4),
+        ),
+      ],
+    ),
+  )
+else
+  Padding(
+    padding: EdgeInsets.only(
+      left: isUser ? 0 : 36,
+      right: isUser ? 0 : 16,
+      top: isUser ? 0 : 2,
+      bottom: isUser ? 0 : 2,
+    ),
+    child: Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isUser ? 16 : 14,
+        vertical: isUser ? 11 : 10,
+      ),
+      decoration: isUser
+          ? BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xff2563EB)
+                  : const Color(0xffE8F0FE),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(5),
+              ),
             )
-
-          else
-
-            Padding(
-              padding: EdgeInsets.only(
-                left: isUser ? 0 : 36,
-                right: isUser ? 0 : 8,
-              ),
-
-              child: MarkdownBody(
-                data: msg["text"] ?? "",
-                selectable: true,
-
-                styleSheet:
-                    MarkdownStyleSheet(
-                  p: TextStyle(
-                    fontSize: 16,
-                    height: 1.65,
-                    color: isDarkMode
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
-
-                  h1: TextStyle(
-                    fontSize: 24,
-                    fontWeight:
-                        FontWeight.bold,
-                    color: isDarkMode
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-
-                  h2: TextStyle(
-                    fontSize: 20,
-                    fontWeight:
-                        FontWeight.bold,
-                    color: isDarkMode
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-
-                  h3: TextStyle(
-                    fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
-                    color: isDarkMode
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-
-                  code: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
-                ),
-              ),
+          : BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xff111827)
+                  : const Color(0xffF8FAFC),
+              borderRadius: BorderRadius.circular(14),
             ),
-            
+      child: MarkdownBody(
+        data: msg["text"] ?? "",
+        selectable: true,
+        styleSheet: MarkdownStyleSheet(
+          p: TextStyle(
+            fontSize: 16,
+            height: 1.65,
+            color: isDarkMode
+                ? Colors.white
+                : Colors.black87,
+          ),
+
+          h1: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode
+                ? Colors.white
+                : Colors.black,
+          ),
+
+          h2: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode
+                ? Colors.white
+                : Colors.black,
+          ),
+
+          h3: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode
+                ? Colors.white
+                : Colors.black,
+          ),
+
+          code: TextStyle(
+            fontSize: 14,
+            color: isDarkMode
+                ? Colors.white
+                : Colors.black87,
+          ),
+        ),
+      ),
+    ),
+  ),
             // ==================================================
 // PRODUCT CARD
 // ==================================================
@@ -2670,7 +3009,7 @@ if (!isUser &&
             ),
 
           // ==================================================
-// SOURCES — SOURCE LOGOS
+// SOURCES ? SOURCE LOGOS
 // ==================================================
 
 if (!isUser && sources.isNotEmpty)
@@ -3048,22 +3387,32 @@ Widget productCard(Map<String, dynamic> product) {
 }
   @override
 Widget build(BuildContext context) {
+
+  final displayChats = [
+    ...allChats.where((chat) => chat["pinned"] == true),
+    ...allChats.where((chat) => chat["pinned"] != true),
+  ];
+
+  final pinnedChats = allChats
+      .where((chat) => chat["pinned"] == true)
+      .toList();
+
+  final recentChats = allChats
+    .where((chat) => chat["pinned"] != true)
+    .toList()
+  ..sort((a, b) {
+    final aTime = a["updatedAt"] ?? 0;
+    final bTime = b["updatedAt"] ?? 0;
+
+    return (bTime as num).compareTo(aTime as num);
+  });
+
   return Scaffold(
+    backgroundColor: isDarkMode
+    ? const Color(0xff0F172A)
+    : const Color(0xffF8FAFC),
+    
 
-    floatingActionButton:
-showScrollButton
-?
-FloatingActionButton(
-
-mini: true,
-
-onPressed: scrollToBottom,
-
-child: Icon(Icons.arrow_downward),
-
-)
-
-: null,
 
    drawer: Drawer(
   backgroundColor: isDarkMode ? Colors.black : Colors.white,
@@ -3122,8 +3471,8 @@ child: Icon(Icons.arrow_downward),
 
 Text(
   isPremium
-      ? "💎 ${subscriptionType.toUpperCase()}"
-      : "🆓 Free Plan",
+      ? "${subscriptionType.toUpperCase()}"
+: "Free Plan",
   style: const TextStyle(
     color: Colors.white70,
     fontSize: 14,
@@ -3163,7 +3512,7 @@ if (!isPremium)
     ),
   ),
 ),
-      // 🆕 NEW CHAT
+      // ?? NEW CHAT
       ListTile(
   leading: Icon(
     Icons.add,
@@ -3202,120 +3551,259 @@ ListTile(
     ),
   ),
 
-  onTap: () {
+  onTap: () async {
 
     Navigator.pop(context);
 
-    showSearch(
+    final selectedChat = await showSearch<Map<String, dynamic>>(
       context: context,
-      delegate: ChatSearchDelegate(messages),
+      delegate: ChatSearchDelegate(allChats),
     );
 
+    if (selectedChat == null) return;
+
+    final chatIndex = allChats.indexOf(selectedChat);
+
+    if (chatIndex == -1) return;
+
+    setState(() {
+      currentChatIndex = chatIndex;
+      messages = List<Map<String, dynamic>>.from(
+        allChats[chatIndex]["messages"] ?? [],
+      );
+    });
   },
 ),
 
       const Divider(),
       
-
-      // ⭐ FAVORITES
-if (allChats.any((c) => c["favorite"] == true))
-  const Padding(
-    padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        "⭐ Favorites",
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-        ),
+// ?? CHAT LIST
+Expanded(
+  child: Scrollbar(
+    thumbVisibility: false,
+    thickness: 5,
+    radius: const Radius.circular(10),
+    child: ListView.builder(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
       ),
-    ),
-  ),
-      // 💬 CHAT LIST
-     Expanded(
-  child: ListView.builder(
-    itemCount: allChats.length,
+      padding: const EdgeInsets.only(
+        top: 4,
+        bottom: 16,
+      ),
+    itemCount:
+        (pinnedChats.isNotEmpty ? pinnedChats.length + 1 : 0) +
+        (recentChats.isNotEmpty ? recentChats.length + 1 : 0),
+
     itemBuilder: (context, index) {
+
+           // ==============================
+      // PINNED SECTION
+      // ==============================
+
+      if (pinnedChats.isNotEmpty) {
+
+        // ?? PINNED HEADER
+        if (index == 0) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                " Pinned",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          );
+        }
+
+        // ?? PINNED CHAT
+        if (index <= pinnedChats.length) {
+
+          final chat = pinnedChats[index - 1];
+
+          final originalIndex =
+              allChats.indexOf(chat);
+
+          return ListTile(
+            leading: const Icon(Icons.push_pin),
+
+            title: Text(
+              chat["title"] ?? "New Chat",
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            selected:
+                originalIndex == currentChatIndex,
+
+            selectedTileColor: isDarkMode
+                ? Colors.white12
+                : Colors.black12,
+
+            onTap: () {
+
+              if (originalIndex == -1) return;
+
+              setState(() {
+
+                currentChatIndex =
+                    originalIndex;
+
+                messages =
+                    List<Map<String, dynamic>>.from(
+                  chat["messages"] ?? [],
+                );
+
+              });
+
+              Navigator.pop(context);
+            },
+          );
+        }
+      }
+
+      // ==============================
+      // RECENTS SECTION
+      // ==============================
+
+      final recentHeaderIndex =
+          pinnedChats.isNotEmpty
+              ? pinnedChats.length + 1
+              : 0;
+
+      // ?? RECENTS HEADER
+      if (index == recentHeaderIndex) {
+
+        return const Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            18,
+            16,
+            6,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "Recents",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        );
+      }
+
+      // ?? RECENT CHAT
+      final recentIndex =
+          index - recentHeaderIndex - 1;
+
+      final chat =
+          recentChats[recentIndex];
+
+      final originalIndex =
+          allChats.indexOf(chat);
+
+
+
       return ListTile(
         leading: Icon(
-  allChats[index]["favorite"] == true
-      ? Icons.star
-      : Icons.chat,
-
-  color: allChats[index]["favorite"] == true
-      ? Colors.orange
-      : (isDarkMode
-          ? Colors.white
-          : Colors.black),
-),
-
-title: Row(
-  children: [
-    Expanded(
-      child: Text(
-        allChats[index]["title"] ?? "New Chat",
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: isDarkMode
-              ? Colors.white
-              : Colors.black,
+          chat["favorite"] == true
+              ? Icons.star
+              : Icons.chat,
+          color: chat["favorite"] == true
+              ? Colors.orange
+              : (isDarkMode
+                  ? Colors.white
+                  : Colors.black),
         ),
-      ),
-    ),
 
-    // ⏸ PAUSED BADGE
-    if (
-  !isOwner &&
-  !isPremium &&
-  allChats[index]["paused"] == true
-)
-      Container(
-        margin: const EdgeInsets.only(left: 8),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 7,
-          vertical: 3,
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                chat["title"] ?? "New Chat",
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isDarkMode
+                      ? Colors.white
+                      : Colors.black,
+                ),
+              ),
+            ),
+
+            // ?? PINNED INDICATOR
+            if (chat["pinned"] == true)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Icon(
+                  Icons.push_pin,
+                  size: 17,
+                  color: isDarkMode
+                      ? Colors.white70
+                      : Colors.black54,
+                ),
+              ),
+
+            // ?? PAUSED BADGE
+            if (
+              !isOwner &&
+              !isPremium &&
+              chat["paused"] == true
+            )
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 7,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.white12
+                      : Colors.black12,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  "? Paused",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode
+                        ? Colors.white70
+                        : Colors.black54,
+                  ),
+                ),
+              ),
+          ],
         ),
-        decoration: BoxDecoration(
-          color: isDarkMode
-              ? Colors.white12
-              : Colors.black12,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          "⏸ Paused",
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: isDarkMode
-                ? Colors.white70
-                : Colors.black54,
-          ),
-        ),
-      ),
-  ],
-),
- 
- 
 
-      selected: index == currentChatIndex,
+        selected: originalIndex == currentChatIndex,
 
-selectedTileColor: isDarkMode
-    ? Colors.white12
-    : Colors.black12,
+        selectedTileColor: isDarkMode
+            ? Colors.white12
+            : Colors.black12,
 
-onTap: () {
-          setState(() {
-            currentChatIndex = index;
+        // ?? OPEN CHAT
+       onTap: () {
+  if (originalIndex == -1) return;
 
-            messages = List<Map<String, dynamic>>.from(
-              allChats[index]["messages"],
-            );
-          });
+  controller.clear();
 
-          Navigator.pop(context);
-        },
+  setState(() {
+    currentChatIndex = originalIndex;
 
+    messages = List<Map<String, dynamic>>.from(
+      chat["messages"] ?? [],
+    );
+  });
+
+  Navigator.pop(context);
+},
+
+        // ?? CHAT OPTIONS
         onLongPress: () {
           showDialog(
             context: context,
@@ -3325,26 +3813,148 @@ onTap: () {
                 content: const Text("Choose an action"),
                 actions: [
 
-                  // ⭐ Favorite
+                  // ?? FAVORITE
                   TextButton(
                     onPressed: () async {
                       setState(() {
-                        allChats[index]["favorite"] =
-                            !(allChats[index]["favorite"] ?? false);
+                        chat["favorite"] =
+                            !(chat["favorite"] ?? false);
                       });
 
                       await saveChat();
 
                       Navigator.pop(context);
                     },
-                    child: Text(
-                      allChats[index]["favorite"] == true
-                          ? "Remove Star"
-                          : "Add Star",
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          chat["favorite"] == true
+                              ? Icons.star
+                              : Icons.star_outline,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          chat["favorite"] == true
+                              ? "Remove Star"
+                              : "Add Star",
+                        ),
+                      ],
                     ),
                   ),
 
-                  // Cancel
+                  // Rename
+                  TextButton(
+                    onPressed: () async {
+                      final controller =
+                          TextEditingController(
+                        text: chat["title"] ?? "New Chat",
+                      );
+
+                      final newTitle =
+                          await showDialog<String>(
+                        context: context,
+                        builder: (dialogContext) {
+                          return AlertDialog(
+                            title:
+                                const Text("Rename Chat"),
+                            content: TextField(
+                              controller: controller,
+                              autofocus: true,
+                              maxLength: 60,
+                              decoration:
+                                  const InputDecoration(
+                                hintText:
+                                    "Enter chat name",
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(
+                                      dialogContext);
+                                },
+                                child:
+                                    const Text("Cancel"),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final title =
+                                      controller.text
+                                          .trim();
+
+                                  if (title.isNotEmpty) {
+                                    Navigator.pop(
+                                      dialogContext,
+                                      title,
+                                    );
+                                  }
+                                },
+                                child:
+                                    const Text("Save"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+
+                      controller.dispose();
+
+                      if (newTitle == null ||
+                          newTitle.trim().isEmpty) {
+                        return;
+                      }
+
+                      await renameChat(
+                        originalIndex,
+                        newTitle.trim(),
+                      );
+
+                      Navigator.pop(context);
+                    },
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.edit_outlined),
+                        SizedBox(width: 8),
+                        Text("Rename"),
+                      ],
+                    ),
+                  ),
+
+                  // ?? PIN / UNPIN
+                  TextButton(
+                    onPressed: () async {
+                      setState(() {
+                        chat["pinned"] =
+                            !(chat["pinned"] ?? false);
+                      });
+
+                      await saveChat();
+
+                      Navigator.pop(context);
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          chat["pinned"] == true
+                              ? Icons.push_pin
+                              : Icons.push_pin_outlined,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          chat["pinned"] == true
+                              ? "Unpin"
+                              : "Pin",
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ?? CANCEL
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
@@ -3352,30 +3962,93 @@ onTap: () {
                     child: const Text("Cancel"),
                   ),
 
-                  // Delete Chat
+                  // ?? DELETE
                   TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
                     onPressed: () async {
+                      final shouldDelete =
+                          await showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) {
+                          return AlertDialog(
+                            title:
+                                const Text("Delete Chat?"),
+                            content: const Text(
+                              "This chat will be permanently removed. Continue?",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(
+                                    dialogContext,
+                                    false,
+                                  );
+                                },
+                                child:
+                                    const Text("Cancel"),
+                              ),
+                              TextButton(
+                                style:
+                                    TextButton.styleFrom(
+                                  foregroundColor:
+                                      Colors.red,
+                                ),
+                                onPressed: () {
+                                  Navigator.pop(
+                                    dialogContext,
+                                    true,
+                                  );
+                                },
+                                child:
+                                    const Text("Delete"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+
+                      if (shouldDelete != true) return;
+
                       setState(() {
-                        allChats.removeAt(index);
+                        if (originalIndex >= 0 &&
+                            originalIndex <
+                                allChats.length) {
+                          allChats.removeAt(originalIndex);
+                        }
 
                         if (allChats.isEmpty) {
                           allChats.insert(
-  0,
-  {
-    "title": "New Chat",
-    "messages": [],
-    "favorite": false,
-  },
-);
+                            0,
+                            {
+                              "id": DateTime.now()
+                                  .millisecondsSinceEpoch
+                                  .toString(),
+                              "title": "New Chat",
+                              "messages":
+                                  <Map<String, dynamic>>[],
+                              "favorite": false,
+                              "pinned": false,
+                              "messageCount": 0,
+                              "paused": false,
+                              "resetTime": null,
+                            },
+                          );
 
-currentChatIndex = 0;
-messages = [];
-                        } else {
                           currentChatIndex = 0;
+                          messages = [];
+                        } else if (
+                            currentChatIndex >=
+                            allChats.length) {
+                          currentChatIndex =
+                              allChats.length - 1;
 
                           messages =
                               List<Map<String, dynamic>>.from(
-                            allChats[0]["messages"],
+                            allChats[currentChatIndex]
+                                    ["messages"] ??
+                                [],
                           );
                         }
                       });
@@ -3384,51 +4057,29 @@ messages = [];
 
                       Navigator.pop(context);
                     },
-                    child: const Text("Delete"),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.delete_outline),
+                        SizedBox(width: 8),
+                        Text("Delete"),
+                      ],
+                    ),
                   ),
-        ],
+                ],
+              );
+            },
+          );
+        },
       );
     },
-  );
-},
-            );
-          },
-        ),
+  ),
+),
       ),
-
       const Divider(),
 
-ListTile(
-  leading: Icon(
-    Icons.download,
-    color: isDarkMode ? Colors.white : Colors.black,
-  ),
-  title: Text(
-    "Export Chat",
-    style: TextStyle(
-      color: isDarkMode ? Colors.white : Colors.black,
-    ),
-  ),
-  onTap: exportChat,
-),
 
-ListTile(
-  leading: Icon(
-    isDarkMode ? Icons.light_mode : Icons.dark_mode,
-    color: isDarkMode ? Colors.white : Colors.black,
-  ),
-  title: Text(
-    "Dark Mode",
-    style: TextStyle(
-      color: isDarkMode ? Colors.white : Colors.black,
-    ),
-  ),
-  onTap: () {
-    setState(() {
-      isDarkMode = !isDarkMode;
-    });
-  },
-),
+
 
 const Divider(),
 
@@ -3437,6 +4088,65 @@ ListTile(
   title: const Text("About VedaAI"),
   onTap: () {
     Navigator.pop(context);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("About VedaAI"),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "VedaAI",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 12),
+
+              Text(
+                "VedaAI is an AI-powered assistant designed "
+                "for study, coding, document analysis and "
+                "everyday questions.",
+              ),
+
+              SizedBox(height: 16),
+
+              Text(
+                "Created by",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              SizedBox(height: 4),
+
+              Text("Yash Krishnat Patil"),
+
+              SizedBox(height: 16),
+
+              Text(
+                "Version 1.0.0",
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
   },
 ),
 
@@ -3445,22 +4155,90 @@ ListTile(
   title: const Text("Privacy Policy"),
   onTap: () {
     Navigator.pop(context);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Privacy Policy"),
+          content: const SingleChildScrollView(
+            child: Text(
+              "VedaAI Privacy Policy\n\n"
+              "1. Information We Collect\n\n"
+              "VedaAI may process information such as your "
+              "account details, chat messages, uploaded images, "
+              "and PDF documents when you use the app.\n\n"
+              "2. How We Use Information\n\n"
+              "Information is used to provide AI responses, "
+              "process uploaded content, maintain chat history, "
+              "and provide app features and support.\n\n"
+              "3. AI Processing\n\n"
+              "When you send a message, image, or PDF for AI "
+              "processing, the required content may be sent to "
+              "the AI service used by VedaAI to generate a response.\n\n"
+              "4. Uploaded Files\n\n"
+              "Images and PDF files are processed to provide "
+              "the requested AI functionality. Do not upload "
+              "highly sensitive or confidential information.\n\n"
+              "5. Account and Security\n\n"
+              "Authentication information is used to protect "
+              "your account and provide access to VedaAI features. "
+              "We take reasonable measures to protect stored data.\n\n"
+              "6. Payments\n\n"
+              "Premium subscription payments are processed through "
+              "the payment service used by VedaAI. VedaAI does not "
+              "store your complete card or banking credentials.\n\n"
+              "7. Contact\n\n"
+              "For privacy or support questions, contact us at:\n"
+              "vedaaiking25@gmail.com\n\n"
+              "8. Policy Updates\n\n"
+              "This Privacy Policy may be updated when VedaAI "
+              "features or data practices change."
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
   },
 ),
 
-ListTile(
-  leading: const Icon(Icons.star_rate),
-  title: const Text("Rate App"),
-  onTap: () {
-    Navigator.pop(context);
-  },
-),
 
 ListTile(
   leading: const Icon(Icons.support_agent),
   title: const Text("Contact Support"),
-  onTap: () {
+  onTap: () async {
     Navigator.pop(context);
+
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'vedaaiking25@gmail.com',
+      queryParameters: {
+        'subject': 'VedaAI Support',
+        'body': 'Hello VedaAI Support Team,\n\n',
+      },
+    );
+
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "No email app is available on this device.",
+          ),
+        ),
+      );
+    }
   },
 ),
 
@@ -3489,7 +4267,14 @@ ListTile(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Icon(Icons.close),
+    SizedBox(width: 8),
+    Text("Cancel"),
+  ],
+),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -3512,13 +4297,14 @@ ListTile(
     ],
   ),
 ),
-
-          
-    // 🔝 APP BAR
     appBar: AppBar(
   elevation: 0,
-  backgroundColor: Colors.white,
-
+ backgroundColor: isDarkMode
+    ? const Color(0xff0F172A)
+    : const Color(0xffF8FAFC),
+iconTheme: IconThemeData(
+  color: isDarkMode ? Colors.white : Colors.black87,
+),
   title: Row(
     children: [
 
@@ -3571,7 +4357,7 @@ ListTile(
  actions: [
 
 
-  // 📤 Share Chat
+  // ?? Share Chat
   IconButton(
     tooltip: "Share Chat",
     icon: const Icon(Icons.share),
@@ -3581,7 +4367,7 @@ ListTile(
     },
   ),
 
-  // 🔔 Notifications
+  // ?? Notifications
  IconButton(
   tooltip: "Notifications",
   icon: const Icon(Icons.notifications_none),
@@ -3595,7 +4381,7 @@ ListTile(
   },
 ),
 
-  // ⋮ More
+  // ? More
   PopupMenuButton<String>(
     icon: const Icon(Icons.more_vert),
     onSelected: (value) {
@@ -3608,11 +4394,18 @@ ListTile(
         case "privacy":
           break;
 
-        case "contact":
-          break;
+       case "contact":
+  final Uri emailUri = Uri(
+    scheme: 'mailto',
+    path: 'vedaaiking25@gmail.com',
+    queryParameters: {
+      'subject': 'VedaAI Support',
+      'body': 'Hello VedaAI Support Team,\n\n',
+    },
+  );
 
-        case "rate":
-          break;
+  launchUrl(emailUri);
+  break;
 
       }
 
@@ -3635,17 +4428,12 @@ ListTile(
         child: Text("Contact Support"),
       ),
 
-      PopupMenuItem(
-        value: "rate",
-        child: Text("Rate App"),
-      ),
-
     ],
   ),
 
 ], 
     ),
-    // 💬 BODY
+    // ?? BODY
     body: SafeArea(
       child: Column(
         children: [
@@ -3656,14 +4444,14 @@ ListTile(
   Container(
     padding: const EdgeInsets.all(8),
     color: Colors.yellow.shade100,
-    child: Text("📌 Pinned Message"),
+    child: Text("Pinned Message"),
   ),
  // ================= PAUSED CARD =================
 
 if (
   !isOwner &&
   !isPremium &&
-  allChats[currentChatIndex]["paused"] == true
+  isCurrentChatPaused
 )
   Container(
     width: double.infinity,
@@ -3684,7 +4472,7 @@ if (
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
 
-        // ⏸ ICON
+        // ? ICON
         Container(
           width: 48,
           height: 48,
@@ -3825,21 +4613,97 @@ if (
 // ================= CHAT =================
 
 Expanded(
-  child: ListView.builder(
-    controller: scrollController,
-    padding: const EdgeInsets.only(bottom: 10),
-    itemCount: messages.length,
-    itemBuilder: (context, index) {
-      return chatBubble(
-        messages[index],
-        index,
-      );
-    },
+  child: Stack(
+    children: [
+
+      // CHAT MESSAGES
+      ListView.builder(
+        controller: scrollController,
+        padding: const EdgeInsets.only(bottom: 10),
+        itemCount: messages.length,
+        itemBuilder: (context, index) {
+
+          return TweenAnimationBuilder<double>(
+            key: ValueKey(
+              messages[index]["id"] ??
+              "${messages[index]["role"]}_${messages[index]["time"]}_$index",
+            ),
+            tween: Tween<double>(
+              begin: 0.0,
+              end: 1.0,
+            ),
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(
+                    0,
+                    12 * (1 - value),
+                  ),
+                  child: child,
+                ),
+              );
+            },
+            child: chatBubble(
+              messages[index],
+              index,
+            ),
+          );
+        },
+      ),
+
+      // ================= SCROLL TO BOTTOM BUTTON =================
+
+     if (showScrollButton)
+  Positioned(
+    left: 0,
+    right: 0,
+    bottom: 8,
+    child: Center(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: scrollToBottom,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xff1E293B)
+                  : Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                  color: Colors.black.withOpacity(0.20),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.keyboard_arrow_down,
+              size: 28,
+              color: isDarkMode
+                  ? Colors.white
+                  : Colors.black87,
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+           
+    ],
   ),
 ),
 
 
-          // 🤖 TYPING INDICATOR
+
+          // ?? TYPING INDICATOR
           if (isLoading)
   Center(
     child: LoadingAnimationWidget.threeArchedCircle(
@@ -3850,162 +4714,425 @@ Expanded(
 if (selectedImage != null)
   Padding(
     padding: const EdgeInsets.all(8),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.file(
-        selectedImage!,
-        height: 150,
-      ),
-    ),
-  ),
-          // 💬 INPUT BOX
-        Padding(
-  padding: const EdgeInsets.all(12),
-
-  child: Container(
-
-    padding: const EdgeInsets.symmetric(
-      horizontal: 8,
-      vertical: 6,
-    ),
-
-    decoration: BoxDecoration(
-
-      color: isDarkMode
-          ? const Color(0xff1E293B)
-          : Colors.white,
-
-      borderRadius: BorderRadius.circular(30),
-
-      border: Border.all(
-        color: Colors.white24,
-      ),
-
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 15,
-          offset: const Offset(0, 5),
-        ),
-      ],
-
-    ),
-
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    child: Stack(
       children: [
 
-
-IconButton(
-  icon: const Icon(Icons.add_circle_outline),
-  onPressed: showAttachmentMenu,
-),
-
-const SizedBox(width: 5),
-
-      Expanded(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxHeight: 300,
-          ),
-
-          child: TextField(
-  enabled: !(allChats[currentChatIndex]["paused"] ?? false),
-  controller: controller,
-
-  minLines: 1,
-  maxLines: null,
-
-  keyboardType: TextInputType.multiline,
-
-  textInputAction: TextInputAction.send,
-
-  onSubmitted: (value) {
-
-  if (allChats[currentChatIndex]["paused"] ?? false) {
-    return;
-  }
-
-  if (value.trim().isNotEmpty) {
-
-    if (selectedImage != null) {
-      uploadImage();
-    } else {
-      sendMessage();
-    }
-
-  }
-},
-            decoration: const InputDecoration(
-
-  hintText: "Ask anything...",
-
-  border: InputBorder.none,
-
-  enabledBorder: InputBorder.none,
-
-  focusedBorder: InputBorder.none,
-
-  contentPadding: EdgeInsets.symmetric(
-    horizontal: 15,
-    vertical: 12,
-  ),
-
-),
+        // IMAGE PREVIEW
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            selectedImage!,
+            height: 150,
           ),
         ),
-      ),
 
-      
-      IconButton(
-        icon: Icon(
-          isListening
-              ? Icons.mic
-              : Icons.mic_none,
+        // CLOSE BUTTON
+        Positioned(
+          top: 5,
+          right: 5,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedImage = null;
+              });
+            },
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.65),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
         ),
-        onPressed: () {
-          if (isListening) {
-            stopListening();
-          } else {
-            startListening();
-          }
-        },
+      ],
+    ),
+  ),
+  if (selectedPdf != null)
+  Padding(
+    padding: const EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 8,
+    ),
+    child: Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? const Color(0xff1E293B)
+            : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white24
+              : Colors.black12,
+        ),
       ),
+      child: Row(
+        children: [
 
-    IconButton(
-  icon: const Icon(Icons.send),
-  onPressed: (allChats[currentChatIndex]["paused"] ?? false)
-      ? null
-      : () {
+          // PDF ICON
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.picture_as_pdf,
+              color: Colors.red,
+              size: 30,
+            ),
+          ),
 
-          if (selectedImage != null) {
+          const SizedBox(width: 12),
 
-            uploadImage();
+          // PDF NAME
+          Expanded(
+            child: Text(
+              selectedPdf!.path.split('\\').last,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isDarkMode
+                    ? Colors.white
+                    : Colors.black87,
+              ),
+            ),
+          ),
 
-          } else {
+          // REMOVE PDF
+          IconButton(
+            icon: const Icon(
+              Icons.close,
+              color: Colors.grey,
+            ),
+            onPressed: () {
+              setState(() {
+                selectedPdf = null;
+              });
+            },
+          ),
+        ],
+      ),
+    ),
+  ),
+          // ==================================================
+          // ?? INPUT BOX
+          // ==================================================
 
-            sendMessage();
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
 
-          }
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
 
-        },
-),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xff1E293B)
+                    : Colors.white,
 
-    ],
+                borderRadius: BorderRadius.circular(26),
+
+                border: Border.all(
+                  color: isDarkMode
+                      ? Colors.white12
+                      : Colors.black12,
+                ),
+
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(
+                      isDarkMode ? 0.25 : 0.08,
+                    ),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+
+                  // IMAGE PREVIEW
+                  if (selectedImage != null)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.fromLTRB(
+                        4,
+                        2,
+                        4,
+                        6,
+                      ),
+                      alignment: Alignment.centerLeft,
+
+                      child: Stack(
+                        children: [
+
+                          ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(14),
+
+                            child: Image.file(
+                              selectedImage!,
+                              width: 95,
+                              height: 95,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+
+                          Positioned(
+                            top: 5,
+                            right: 5,
+
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedImage = null;
+                                });
+                              },
+
+                              child: Container(
+                                width: 26,
+                                height: 26,
+
+                                decoration: BoxDecoration(
+                                  color: Colors.black
+                                      .withOpacity(0.65),
+                                  shape: BoxShape.circle,
+                                ),
+
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 17,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // MAIN INPUT ROW
+                  Row(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.end,
+
+                    children: [
+
+                      // ATTACHMENT
+                      IconButton(
+                        visualDensity:
+                            VisualDensity.compact,
+
+                        padding:
+                            const EdgeInsets.all(7),
+
+                        constraints:
+                            const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+
+                        icon: Icon(
+                          Icons.add_circle_outline,
+                          size: 25,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : Colors.black87,
+                        ),
+
+                        onPressed:
+                            isCurrentChatPaused
+                                ? null
+                                : showAttachmentMenu,
+                      ),
+
+                      // TEXT FIELD
+                      Expanded(
+                        child: ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(
+                            maxHeight: 140,
+                          ),
+
+                          child: TextField(
+                            controller: controller,
+
+                            enabled:
+                                !isCurrentChatPaused,
+
+                            minLines: 1,
+                            maxLines: 5,
+
+                            keyboardType:
+                                TextInputType.multiline,
+
+                            textInputAction:
+                                TextInputAction.newline,
+
+                            style: TextStyle(
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : Colors.black87,
+                              fontSize: 16,
+                            ),
+
+                            onSubmitted: (value) {
+                              if (isCurrentChatPaused) {
+                                return;
+                              }
+
+                              if (selectedImage != null) {
+                                uploadImage();
+                                return;
+                              }
+
+                              if (selectedPdf != null) {
+                                uploadPdf();
+                                return;
+                              }
+
+                              if (value.trim().isNotEmpty) {
+                                sendMessage();
+                              }
+                            },
+
+                            decoration: InputDecoration(
+                              hintText:
+                                  "Ask anything...",
+
+                              hintStyle: TextStyle(
+                                color: isDarkMode
+                                    ? Colors.white38
+                                    : Colors.black38,
+                                fontSize: 16,
+                              ),
+
+                              border:
+                                  InputBorder.none,
+
+                              enabledBorder:
+                                  InputBorder.none,
+
+                              focusedBorder:
+                                  InputBorder.none,
+
+                              disabledBorder:
+                                  InputBorder.none,
+
+                              contentPadding:
+                                  const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // MICROPHONE
+                      IconButton(
+                        visualDensity:
+                            VisualDensity.compact,
+
+                        padding:
+                            const EdgeInsets.all(7),
+
+                        constraints:
+                            const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+
+                        icon: Icon(
+                          isListening
+                              ? Icons.mic
+                              : Icons.mic_none,
+
+                          size: 24,
+
+                          color: isListening
+                              ? const Color(0xff06B6D4)
+                              : isDarkMode
+                                  ? Colors.white70
+                                  : Colors.black87,
+                        ),
+
+                        onPressed:
+                            isCurrentChatPaused
+                                ? null
+                                : () {
+                                    if (isListening) {
+                                      stopListening();
+                                    } else {
+                                      startListening();
+                                    }
+                                  },
+                      ),
+
+                      // SEND
+                      // SEND
+Container(
+  width: 40,
+  height: 40,
+
+  decoration: BoxDecoration(
+    color: isCurrentChatPaused
+        ? Colors.grey
+        : const Color(0xff2563EB),
+    shape: BoxShape.circle,
+  ),
+
+  child: IconButton(
+    padding: EdgeInsets.zero,
+
+    icon: const Icon(
+      Icons.arrow_upward_rounded,
+      color: Colors.white,
+      size: 22,
+    ),
+
+    onPressed:
+        isCurrentChatPaused
+            ? null
+            : () {
+                if (selectedImage != null) {
+                  uploadImage();
+                } else if (selectedPdf != null) {
+                  uploadPdf();
+                } else {
+                  sendMessage();
+                }
+              },
   ),
 ),
-        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     ),
   );
-} 
+}
 }
 
-class ChatSearchDelegate extends SearchDelegate {
-  final List<Map<String, dynamic>> messages;
+class ChatSearchDelegate extends SearchDelegate<Map<String, dynamic>> {
+  final List<Map<String, dynamic>> chats;
 
-  ChatSearchDelegate(this.messages);
+  ChatSearchDelegate(this.chats);
 
   @override
   List<Widget>? buildActions(BuildContext context) {
@@ -4024,15 +5151,15 @@ class ChatSearchDelegate extends SearchDelegate {
     return IconButton(
       icon: const Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, null);
+        close(context, <String, dynamic>{});
       },
     );
   }
 
   @override
   Widget buildResults(BuildContext context) {
-    final results = messages.where((msg) {
-      return (msg["text"] ?? "")
+    final results = chats.where((chat) {
+      return (chat["title"] ?? "New Chat")
           .toString()
           .toLowerCase()
           .contains(query.toLowerCase());
@@ -4042,7 +5169,15 @@ class ChatSearchDelegate extends SearchDelegate {
       itemCount: results.length,
       itemBuilder: (context, index) {
         return ListTile(
-          title: Text(results[index]["text"] ?? ""),
+          leading: const Icon(Icons.chat_outlined),
+          title: Text(
+            results[index]["title"] ?? "New Chat",
+            overflow: TextOverflow.ellipsis,
+          ),
+          onTap: () {
+            final selectedChat = results[index];
+            close(context, selectedChat);
+          },
         );
       },
     );
@@ -4053,3 +5188,11 @@ class ChatSearchDelegate extends SearchDelegate {
     return buildResults(context);
   }
 }
+
+
+
+
+
+
+
+
