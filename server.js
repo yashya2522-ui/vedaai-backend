@@ -717,7 +717,7 @@ console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
   try {
 
     const r = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: "gemini-3.6-flash",
       contents: "Hello",
     });
 
@@ -1851,7 +1851,7 @@ console.log("Image saved in memory");
 
 const response = await axios.post(
 
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${API_KEY}`,
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`,
 
 {
 contents:[
@@ -2058,7 +2058,7 @@ console.log("PDF added successfully");
 
     const result = await ai.models.generateContent({
 
-     model: "gemini-3.8-flash",
+     model: "gemini-3.6-flash",
 
       contents: [
 
@@ -2194,7 +2194,7 @@ if (!pdf) {
 
     const result = await ai.models.generateContent({
 
- model: "gemini-3.8-flash",
+ model: "gemini-3.6-flash",
 
   contents: [
     {
@@ -6357,7 +6357,7 @@ console.log(
 console.log("============================================");
       const stream =
         await ai.models.generateContentStream({
-          model: "gemini-3.8-flash",
+          model: "gemini-3.6-flash",
           contents: prompt,
         });
 
