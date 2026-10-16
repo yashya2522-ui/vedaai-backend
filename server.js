@@ -6333,7 +6333,7 @@ This FINAL DATE AUTHORITY has priority for current date/time questions.
       console.log(
         "BEFORE generateContentStream"
       );
-    
+    const geminiStartTime = Date.now();
       console.log("========== FINAL PROMPT DATE DEBUG ==========");
 console.log("RUNTIME DATE:", currentIndiaDateTime.date);
 console.log("RUNTIME DAY:", currentIndiaDateTime.weekday);
@@ -6364,7 +6364,11 @@ console.log("============================================");
       console.log(
         "AFTER generateContentStream"
       );
-
+console.log(
+  "GEMINI STREAM START TIME:",
+  ((Date.now() - geminiStartTime) / 1000).toFixed(2),
+  "seconds"
+);
       // Sources Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¢Ã Â¥â€¡ response Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â£Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬
       // function object Ã Â¤ÂµÃ Â¤Â° temporarily store
       return {
