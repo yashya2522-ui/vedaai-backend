@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const wiki = require("wikipedia");
@@ -93,7 +93,6 @@ const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 // ==================================================
 
 function shouldSearchWeb(query, history = []) {
-
   if (!query || typeof query !== "string") {
     return false;
   }
@@ -101,7 +100,7 @@ function shouldSearchWeb(query, history = []) {
   const q = query.toLowerCase().trim();
 
   // ==================================================
-  // 1. EXPLICIT SEARCH / VERIFICATION
+  // EXPLICIT SEARCH / VERIFICATION
   // ==================================================
 
   const explicitSearchPatterns = [
@@ -120,291 +119,142 @@ function shouldSearchWeb(query, history = []) {
     "online check kar",
     "internet var bagh",
     "google var bagh",
-    "तपासून सांग",
-    "तपासून सांगा",
-    "खरं आहे का",
-    "खरे आहे का",
-    "खरं आहे की नाही",
-    "verify करून सांग",
-    "शोधून सांग",
-    "शोधून सांगा",
-    "ऑनलाइन तपासा"
+
+    "à¤¤à¤ªà¤¾à¤¸à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—",
+    "à¤¤à¤ªà¤¾à¤¸à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¤¾",
+    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¤¾",
+    "à¤–à¤°à¥‡ à¤†à¤¹à¥‡ à¤•à¤¾",
+    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¥€ à¤¨à¤¾à¤¹à¥€",
+    "verify à¤•à¤°à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—",
+    "à¤¶à¥‹à¤§à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—",
+    "à¤¶à¥‹à¤§à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¤¾",
+    "à¤‘à¤¨à¤²à¤¾à¤‡à¤¨ à¤¤à¤ªà¤¾à¤¸à¤¾"
   ];
 
-  if (
-    explicitSearchPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: EXPLICIT SEARCH");
+  if (explicitSearchPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: explicit request");
     return true;
   }
 
-
   // ==================================================
-  // 2. CURRENT / LATEST / RECENT
+  // CURRENT / LATEST INFORMATION
   // ==================================================
 
   const currentPatterns = [
-    "today",
-    "latest",
     "current",
     "currently",
-    "now",
     "right now",
-    "just now",
-    "live",
+    "latest",
+    "today",
+    "this month",
+    "this year",
     "recent",
     "recently",
-    "breaking",
-    "this year",
-    "this month",
-    "this week",
+    "new update",
+    "latest update",
+    "what's new",
+    "whats new",
+    "now",
 
-    "आज",
-    "आत्ता",
-    "सध्या",
-    "आत्ताचा",
-    "आत्ताची",
-    "आत्ताचे",
-    "सध्याचा",
-    "सध्याची",
-    "सध्याचे",
-    "ताजा",
-    "ताजे",
-    "ताजी",
-    "ताज्या",
-    "नवीनतम",
-    "अलीकडील"
+    "à¤¸à¤§à¥à¤¯à¤¾",
+    "à¤†à¤¤à¥à¤¤à¤¾",
+    "à¤†à¤¤à¥à¤¤à¤¾à¤šà¤¾",
+    "à¤†à¤¤à¥à¤¤à¤¾à¤šà¥€",
+    "à¤†à¤¤à¥à¤¤à¤¾à¤šà¥‡",
+    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¤¾",
+    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€",
+    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¥‡",
+    "à¤¤à¤¾à¤œà¤¾",
+    "à¤¤à¤¾à¤œà¥‡",
+    "à¤¤à¤¾à¤œà¥€",
+    "à¤¨à¤µà¥€à¤¨à¤¤à¤®",
+    "à¤…à¤²à¥€à¤•à¤¡à¥€à¤²"
   ];
 
-  if (
-    currentPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: CURRENT/LATEST");
+  if (currentPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: current/latest information");
     return true;
   }
 
-
   // ==================================================
-  // 3. CURRENT POSITION / OFFICE HOLDER
-  // ==================================================
-
-  const positionPatterns = [
-    "who is the cm",
-    "who is cm",
-    "who is chief minister",
-    "who is the chief minister",
-
-    "who is the pm",
-    "who is pm",
-    "who is prime minister",
-    "who is the prime minister",
-
-    "who is the president",
-    "who is president",
-
-    "who is the governor",
-    "who is governor",
-
-    "who is the deputy cm",
-    "who is deputy cm",
-    "who is deputy chief minister",
-
-    "who is the minister",
-    "who is minister",
-
-    "current cm",
-    "current pm",
-    "current president",
-    "current governor",
-    "current minister",
-    "current ceo",
-
-    "cm kon",
-    "cm कोण",
-    "मुख्यमंत्री कोण",
-    "पंतप्रधान कोण",
-    "राष्ट्रपती कोण",
-    "राज्यपाल कोण",
-    "मंत्री कोण",
-    "उपमुख्यमंत्री कोण",
-
-    "kon ahe",
-    "kon aahe",
-    "कोण आहे",
-    "कोण आहेत"
-  ];
-
-  const positionWords = [
-    "chief minister",
-    "prime minister",
-    "president",
-    "governor",
-    "minister",
-    "deputy minister",
-    "deputy cm",
-    "deputy chief minister",
-    "cm",
-    "pm",
-    "mla",
-    "mp",
-    "ceo",
-    "chairman",
-    "director",
-    "mayor",
-
-    "मुख्यमंत्री",
-    "पंतप्रधान",
-    "राष्ट्रपती",
-    "राज्यपाल",
-    "मंत्री",
-    "उपमुख्यमंत्री",
-    "आमदार",
-    "खासदार",
-    "महापौर"
-  ];
-
-  const asksWho =
-    positionPatterns.some(pattern =>
-      q.includes(pattern)
-    );
-
-  const containsPosition =
-    positionWords.some(word =>
-      q.includes(word)
-    );
-
-  if (asksWho && containsPosition) {
-    console.log("🌐 SEARCH REASON: CURRENT POSITION/OFFICE HOLDER");
-    return true;
-  }
-
-
-  // ==================================================
-  // 4. PRICE / PRODUCT CURRENT INFORMATION
+  // PRICE / RATES / FINANCE
   // ==================================================
 
   const pricePatterns = [
     "price",
     "cost",
     "rate",
+    "worth",
     "how much",
-    "किंमत",
-    "किंमती",
-    "किती आहे",
-    "कितीला",
-    "भाव",
-    "दर",
+    "price today",
+    "current price",
+    "market price",
 
-    "price sang",
-    "price kiti",
-    "price kay",
-    "kiti price",
-    "kiti la",
-    "kiti rupaye",
-    "rate kiti",
-    "rate sang"
+    "à¤•à¤¿à¤‚à¤®à¤¤",
+    "à¤•à¤¿à¤¤à¥€ à¤°à¥à¤ªà¤¯à¥‡",
+    "à¤•à¤¿à¤¤à¥€ à¤ªà¥ˆà¤¸à¥‡",
+    "à¤¦à¤°",
+    "à¤­à¤¾à¤µ",
+    "à¤†à¤œà¤šà¤¾ à¤­à¤¾à¤µ",
+    "à¤†à¤œà¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤"
   ];
 
   const productPatterns = [
     "phone",
     "mobile",
-    "smartphone",
-    "laptop",
-    "tv",
-    "television",
-    "watch",
-    "tablet",
     "iphone",
     "samsung",
-    "vivo",
-    "oppo",
-    "oneplus",
-    "realme",
-    "xiaomi",
-    "redmi",
-    "motorola",
-    "pixel",
-    "macbook",
-    "airpods",
-    "headphones",
-    "camera",
-    "gpu",
-    "graphics card",
-    "processor",
-    "ssd",
-    "ram",
-
-    "मोबाईल",
-    "फोन",
-    "लॅपटॉप",
-    "टीव्ही",
-    "कॅमेरा"
+    "laptop",
+    "computer",
+    "tv",
+    "watch",
+    "car",
+    "bike",
+    "gold",
+    "silver",
+    "à¤¸à¥‹à¤¨à¥‡",
+    "à¤šà¤¾à¤‚à¤¦à¥€",
+    "à¤®à¥‹à¤¬à¤¾à¤ˆà¤²",
+    "à¤«à¥‹à¤¨",
+    "à¤²à¥…à¤ªà¤Ÿà¥‰à¤ª"
   ];
 
-  const asksPrice =
-    pricePatterns.some(pattern =>
-      q.includes(pattern)
-    );
-
-  const mentionsProduct =
-    productPatterns.some(pattern =>
-      q.includes(pattern)
-    );
+  const asksPrice = pricePatterns.some(pattern => q.includes(pattern));
+  const mentionsProduct = productPatterns.some(pattern => q.includes(pattern));
 
   if (asksPrice && mentionsProduct) {
-    console.log("🌐 SEARCH REASON: PRODUCT PRICE");
+    console.log("WEB SEARCH: product price");
     return true;
   }
-
-
-  // ==================================================
-  // 5. FINANCE / MARKET
-  // ==================================================
 
   const financePatterns = [
     "gold price",
-    "gold rate",
     "silver price",
-    "silver rate",
     "stock price",
     "share price",
     "market price",
-    "sensex",
-    "nifty",
-    "bitcoin",
-    "crypto",
-    "cryptocurrency",
-    "exchange rate",
     "dollar rate",
-    "usd inr",
-    "forex",
+    "usd rate",
+    "exchange rate",
+    "bitcoin price",
+    "crypto price",
 
-    "सोन्याचा भाव",
-    "सोन्याचा दर",
-    "चांदीचा भाव",
-    "चांदीचा दर",
-    "शेअर भाव",
-    "शेअर किंमत",
-    "बाजारभाव",
-    "डॉलरचा भाव"
+    "à¤¸à¥‹à¤¨à¥à¤¯à¤¾à¤šà¤¾ à¤­à¤¾à¤µ",
+    "à¤¸à¥‹à¤¨à¥à¤¯à¤¾à¤šà¤¾ à¤¦à¤°",
+    "à¤šà¤¾à¤‚à¤¦à¥€à¤šà¤¾ à¤­à¤¾à¤µ",
+    "à¤šà¤¾à¤‚à¤¦à¥€à¤šà¤¾ à¤¦à¤°",
+    "à¤¶à¥‡à¤…à¤° à¤•à¤¿à¤‚à¤®à¤¤",
+    "à¤¬à¤¾à¤œà¤¾à¤°à¤­à¤¾à¤µ",
+    "à¤¡à¥‰à¤²à¤°à¤šà¤¾ à¤­à¤¾à¤µ"
   ];
 
-  if (
-    financePatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: FINANCE/MARKET");
+  if (financePatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: finance");
     return true;
   }
 
-
   // ==================================================
-  // 6. NEWS
+  // NEWS
   // ==================================================
 
   const newsPatterns = [
@@ -412,418 +262,212 @@ function shouldSearchWeb(query, history = []) {
     "latest news",
     "today news",
     "breaking news",
-    "news today",
-
-    "बातमी",
-    "बातम्या",
-    "आजच्या बातम्या",
-    "ताज्या बातम्या",
-    "न्यूज",
-    "समाचार",
-
-    "update",
-    "updates",
-    "update kay",
-    "kay update",
-    "काय अपडेट",
-    "अपडेट काय"
+    "headlines",
+    "à¤¸à¤®à¤¾à¤šà¤¾à¤°",
+    "à¤¬à¤¾à¤¤à¤®à¥à¤¯à¤¾",
+    "à¤†à¤œà¤šà¥à¤¯à¤¾ à¤¬à¤¾à¤¤à¤®à¥à¤¯à¤¾",
+    "à¤¤à¤¾à¤œà¥à¤¯à¤¾ à¤¬à¤¾à¤¤à¤®à¥à¤¯à¤¾",
+    "à¤¨à¥à¤¯à¥‚à¤œ",
+    "à¤…à¤ªà¤¡à¥‡à¤Ÿ à¤•à¤¾à¤¯",
+    "à¤•à¤¾à¤¯ à¤…à¤ªà¤¡à¥‡à¤Ÿ"
   ];
 
-  if (
-    newsPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: NEWS");
+  if (newsPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: news");
     return true;
   }
 
-
   // ==================================================
-  // 7. SPORTS
+  // SPORTS
   // ==================================================
 
   const sportsPatterns = [
-    "cricket",
-    "football",
-    "tennis",
-    "ipl",
-    "match",
     "score",
     "live score",
-    "current score",
-    "runs",
-    "wicket",
-    "overs",
-    "result",
+    "match result",
+    "match today",
     "winner",
-    "schedule",
-    "points table",
-    "ranking",
+    "who won",
+    "cricket",
+    "football",
+    "ipl",
     "world cup",
-    "championship",
-
-    "सामना",
-    "स्कोअर",
-    "स्कोर",
-    "धावा",
-    "विकेट",
-    "ओव्हर",
-    "निकाल",
-    "विजेता",
-    "वेळापत्रक"
+    "wicket",
+    "runs",
+    "match",
+    "à¤¨à¤¿à¤•à¤¾à¤²",
+    "à¤¸à¥à¤•à¥‹à¤…à¤°",
+    "à¤§à¤¾à¤µà¤¾",
+    "à¤µà¤¿à¤•à¥‡à¤Ÿ",
+    "à¤“à¤µà¥à¤¹à¤°",
+    "à¤µà¤¿à¤œà¥‡à¤¤à¤¾",
+    "à¤¸à¤¾à¤®à¤¨à¤¾"
   ];
 
-  if (
-    sportsPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: SPORTS");
+  if (sportsPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: sports");
     return true;
   }
 
-
   // ==================================================
-  // 8. WEATHER
+  // WEATHER
   // ==================================================
 
   const weatherPatterns = [
     "weather",
     "temperature",
-    "forecast",
     "rain",
-    "rainfall",
-    "humidity",
-    "climate",
-
-    "हवामान",
-    "तापमान",
-    "पाऊस",
-    "पावसाचा अंदाज",
-    "हवामानाचा अंदाज"
+    "forecast",
+    "weather today",
+    "weather tomorrow",
+    "à¤ªà¤¾à¤Šà¤¸",
+    "à¤¤à¤¾à¤ªà¤®à¤¾à¤¨",
+    "à¤¹à¤µà¤¾à¤®à¤¾à¤¨",
+    "à¤¹à¤µà¤¾à¤®à¤¾à¤¨à¤¾à¤šà¤¾ à¤…à¤‚à¤¦à¤¾à¤œ",
+    "à¤ªà¤¾à¤µà¤¸à¤¾à¤šà¤¾ à¤…à¤‚à¤¦à¤¾à¤œ"
   ];
 
-  if (
-    weatherPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: WEATHER");
+  if (weatherPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: weather");
     return true;
   }
 
-
   // ==================================================
-  // 9. GOVERNMENT / POLITICS / ELECTION
+  // GOVERNMENT / JOBS / SCHEMES
   // ==================================================
 
   const governmentPatterns = [
-    "election",
-    "government",
-    "politician",
-    "political party",
-    "cabinet",
-    "assembly election",
-    "lok sabha election",
-    "vidhan sabha",
-
-    "निवडणूक",
-    "सरकार",
-    "राजकारणी",
-    "राजकीय पक्ष",
-    "मंत्रिमंडळ",
-    "विधानसभा",
-    "लोकसभा"
-  ];
-
-  if (
-    governmentPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: GOVERNMENT/POLITICS");
-    return true;
-  }
-
-
-  // ==================================================
-  // 10. GOVERNMENT SCHEMES / JOBS
-  // ==================================================
-
-  const schemePatterns = [
+    "government job",
+    "govt job",
+    "government vacancy",
+    "govt vacancy",
+    "recruitment",
+    "vacancy",
+    "notification",
     "government scheme",
     "govt scheme",
-    "new scheme",
-    "scholarship",
-    "government job",
-    "latest job",
-    "vacancy",
-    "recruitment",
-    "notification",
-
-    "सरकारी योजना",
-    "शासकीय योजना",
-    "नवीन योजना",
-    "शिष्यवृत्ती",
-    "सरकारी नोकरी",
-    "भरती",
-    "जाहिरात",
-    "अधिसूचना"
+    "mpsc",
+    "upsc",
+    "ssc",
+    "chsl",
+    "police bharti",
+    "à¤­à¤°à¤¤à¥€",
+    "à¤¸à¤°à¤•à¤¾à¤°à¥€ à¤¨à¥‹à¤•à¤°à¥€",
+    "à¤¸à¤°à¤•à¤¾à¤°à¥€ à¤¨à¥Œà¤•à¤°à¥€",
+    "à¤œà¤¾à¤¹à¤¿à¤°à¤¾à¤¤",
+    "à¤…à¤§à¤¿à¤¸à¥‚à¤šà¤¨à¤¾",
+    "à¤¸à¤°à¤•à¤¾à¤°à¥€ à¤¯à¥‹à¤œà¤¨à¤¾",
+    "à¤¸à¤°à¤•à¤¾à¤°à¤šà¥€ à¤¯à¥‹à¤œà¤¨à¤¾"
   ];
 
-  if (
-    schemePatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: SCHEME/JOB");
+  if (governmentPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: government/jobs");
     return true;
   }
 
-
   // ==================================================
-  // 11. TECHNOLOGY CURRENT INFORMATION
+  // TECHNOLOGY / SOFTWARE CURRENT INFORMATION
   // ==================================================
 
   const technologyPatterns = [
     "latest version",
     "current version",
     "new version",
-    "latest update",
-    "new update",
     "release",
     "released",
-    "documentation",
-    "official documentation",
-    "latest api",
-    "new feature",
-    "latest feature",
-    "deprecated",
+    "pricing",
+    "api pricing",
+    "gemini latest",
+    "openai latest",
+    "flutter latest",
+    "node latest",
+    "npm latest",
+    "technology update",
 
-    "नवीन version",
-    "नवीन अपडेट",
-    "नवीन feature",
-    "नवीन आवृत्ती"
+    "à¤¨à¤µà¥€à¤¨ version",
+    "à¤¨à¤µà¥€à¤¨ à¤…à¤ªà¤¡à¥‡à¤Ÿ",
+    "à¤¨à¤µà¥€à¤¨ release",
+    "latest api"
   ];
 
-  if (
-    technologyPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: TECHNOLOGY CURRENT");
+  if (technologyPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: technology update");
     return true;
   }
 
-
   // ==================================================
-  // 12. YEAR DETECTION
-  // ==================================================
-
-  if (
-    /\b(2024|2025|2026|2027|2028|2029|2030)\b/.test(q)
-  ) {
-    console.log("🌐 SEARCH REASON: YEAR");
-    return true;
-  }
-
-
-  // ==================================================
-  // 13. PERSON / COMPANY RESEARCH
+  // RESEARCH / FACT CHECK
   // ==================================================
 
   const researchPatterns = [
-    "who is",
-    "who are",
+    "research",
+    "fact check",
+    "is this true",
+    "is it true",
+    "real or fake",
+    "true or false",
+    "verify",
+    "fact",
     "information about",
-    "information on",
     "details about",
-    "details of",
-    "profile of",
-    "biography of",
-
-    "कोण आहे",
-    "कोण आहेत",
-    "माहिती दे",
-    "माहिती सांगा",
-    "माहिती पाहिजे",
-    "यांच्याबद्दल",
-    "याच्याबद्दल"
+    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¤¾",
+    "à¤–à¤°à¥‡ à¤†à¤¹à¥‡ à¤•à¤¾",
+    "à¤–à¤°à¤‚ à¤•à¥€ à¤–à¥‹à¤Ÿà¤‚",
+    "à¤–à¤°à¤‚ à¤•à¥€ à¤¨à¤¾à¤¹à¥€",
+    "à¤®à¤¾à¤¹à¤¿à¤¤à¥€",
+    "à¤¤à¤ªà¤¶à¥€à¤²"
   ];
 
-  if (
-    researchPatterns.some(pattern =>
-      q.includes(pattern)
-    )
-  ) {
-    console.log("🌐 SEARCH REASON: ENTITY RESEARCH");
+  if (researchPatterns.some(pattern => q.includes(pattern))) {
+    console.log("WEB SEARCH: research/fact check");
     return true;
   }
 
-
   // ==================================================
-  // 14. CONTEXT-BASED FOLLOW-UP
+  // FOLLOW-UP QUESTIONS
   // ==================================================
 
-  if (Array.isArray(history) && history.length > 0) {
+  const followUpPatterns = [
+    "how much",
+    "price",
+    "rate",
+    "score",
+    "result",
+    "winner",
+    "now",
+    "latest",
+    "update",
+    "today",
+    "à¤•à¤¿à¤¤à¥€",
+    "à¤•à¤¿à¤¤à¥€ à¤†à¤¹à¥‡",
+    "à¤†à¤¤à¥à¤¤à¤¾",
+    "à¤¸à¤§à¥à¤¯à¤¾",
+    "à¤¨à¤¿à¤•à¤¾à¤²",
+    "à¤­à¤¾à¤µ",
+    "à¤¦à¤°",
+    "à¤…à¤ªà¤¡à¥‡à¤Ÿ",
+    "à¤•à¤¾à¤¯ à¤†à¤¹à¥‡",
+    "à¤•à¤§à¥€",
+    "à¤‰à¤ªà¤²à¤¬à¥à¤§",
+    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¤¾",
+    "à¤–à¤°à¥‡ à¤†à¤¹à¥‡ à¤•à¤¾"
+  ];
 
-    const recentHistory = history
-      .slice(-8)
-      .map(msg => msg?.text || "")
-      .join(" ")
-      .toLowerCase();
+  const looksLikeFollowUp = followUpPatterns.some(
+    pattern => q.includes(pattern)
+  );
 
-    const contextTopics = [
-      "price",
-      "rate",
-      "score",
-      "match",
-      "gold",
-      "silver",
-      "stock",
-      "share",
-      "weather",
-      "news",
-      "election",
-      "minister",
-      "government",
-      "vivo",
-      "samsung",
-      "iphone",
-      "oneplus",
-      "phone",
-      "laptop",
-
-      "भाव",
-      "दर",
-      "स्कोअर",
-      "सामना",
-      "सोने",
-      "चांदी",
-      "हवामान",
-      "बातमी",
-      "निवडणूक",
-      "मंत्री",
-      "सरकार",
-      "मोबाईल",
-      "फोन",
-      "लॅपटॉप"
-    ];
-
-    const followUpPatterns = [
-      "price",
-      "rate",
-      "score",
-      "result",
-      "winner",
-      "how much",
-      "now",
-      "latest",
-      "update",
-
-      "किती",
-      "किती आहे",
-      "आत्ता",
-      "सध्या",
-      "निकाल",
-      "भाव",
-      "दर",
-      "अपडेट",
-      "काय झालं",
-      "काय झालंय"
-    ];
-
-    const isShortQuestion =
-      q.split(/\s+/).filter(Boolean).length <= 12;
-
-    const historyHasTopic =
-      contextTopics.some(topic =>
-        recentHistory.includes(topic)
-      );
-
-    const isFollowUp =
-      followUpPatterns.some(pattern =>
-        q.includes(pattern)
-      );
-
-    if (
-      isShortQuestion &&
-      historyHasTopic &&
-      isFollowUp
-    ) {
-      console.log("🌐 SEARCH REASON: CONTEXT FOLLOW-UP");
-      return true;
-    }
+  if (looksLikeFollowUp && Array.isArray(history) && history.length > 0) {
+    console.log("WEB SEARCH: follow-up with history");
+    return true;
   }
 
-// ==================================================
-// DEFAULT SMART SEARCH
-// ==================================================
+  // ==================================================
+  // DEFAULT
+  // ==================================================
 
-console.log("🧠 DEFAULT SMART SEARCH CHECK");
-
-// If no specific rule matched above,
-// allow web search for factual / informational questions.
-
-const factualPatterns = [
-  "what",
-  "who",
-  "where",
-  "when",
-  "which",
-  "how much",
-  "how many",
-  "why",
-  "information",
-  "details",
-  "price",
-  "cost",
-  "rate",
-  "available",
-  "available now",
-  "is it true",
-  "true or false",
-
-  "काय",
-  "कोण",
-  "कुठे",
-  "कधी",
-  "किती",
-  "किती आहे",
-  "कितीला",
-  "कसा",
-  "कशी",
-  "कसे",
-  "का",
-  "माहिती",
-  "तपशील",
-  "किंमत",
-  "भाव",
-  "दर",
-  "उपलब्ध",
-  "खरं आहे का",
-  "खरे आहे का"
-];
-
-const looksFactual =
-  factualPatterns.some(pattern =>
-    q.includes(pattern)
-  );
-
-if (looksFactual) {
-  console.log(
-    "🌐 SEARCH REASON: GENERAL FACTUAL QUESTION"
-  );
-
-  return true;
-}
-
-console.log(
-  "⚪ SEARCH NOT REQUIRED: GENERAL CHAT"
-);
-
-return false;
+  console.log("WEB SEARCH: not required");
+  return false;
 }
 
 // ================= WEB CACHE =================
@@ -915,21 +559,21 @@ function buildSearchQuery(query, history = []) {
     /\bkay news\b/i,
 
     // Marathi Unicode
-    /आत्ता/u,
-    /सध्या/u,
-    /आज/u,
-    /आजची/u,
-    /आजचा/u,
-    /काल/u,
-    /कालची/u,
-    /नवीन/u,
-    /अपडेट/u,
-    /अपडेट्स/u,
-    /काय झालं/u,
-    /काय झालंय/u,
-    /काय झालाय/u,
-    /काय बातमी/u,
-    /सध्याची/u
+    /Ã Â¤â€ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾/u,
+    /Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾/u,
+    /Ã Â¤â€ Ã Â¤Å“/u,
+    /Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â‚¬/u,
+    /Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¤Â¾/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â²/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â²Ã Â¤Å¡Ã Â¥â‚¬/u,
+    /Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨/u,
+    /Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸/u,
+    /Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â¸/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€š/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€šÃ Â¤Â¯/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤Â¾Ã Â¤Â¯/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤Â¬Ã Â¤Â¾Ã Â¤Â¤Ã Â¤Â®Ã Â¥â‚¬/u,
+    /Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬/u
   ];
 
   const hasExplicitCurrentIntent =
@@ -957,12 +601,12 @@ function buildSearchQuery(query, history = []) {
     "recent",
     "news",
     "batmi",
-    "बातमी",
-    "अपडेट",
-    "अपडेट्स",
-    "नवीन",
-    "सध्याची",
-    "सध्याचे"
+    "Ã Â¤Â¬Ã Â¤Â¾Ã Â¤Â¤Ã Â¤Â®Ã Â¥â‚¬",
+    "Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸",
+    "Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â¸",
+    "Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨",
+    "Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬",
+    "Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â€¡"
   ];
 
   const hasUpdateIntent =
@@ -982,13 +626,13 @@ function buildSearchQuery(query, history = []) {
     /\banything new\b/i,
     /\bwhat happened\b/i,
 
-    /मग काय/u,
-    /आता काय/u,
-    /पुढे काय/u,
-    /आणखी काय/u,
-    /नवीन काय/u,
-    /काय झालं/u,
-    /काय झालंय/u
+    /Ã Â¤Â®Ã Â¤â€” Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
+    /Ã Â¤â€ Ã Â¤Â¤Ã Â¤Â¾ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
+    /Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¢Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
+    /Ã Â¤â€ Ã Â¤Â£Ã Â¤â€“Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
+    /Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€š/u,
+    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€šÃ Â¤Â¯/u
   ];
 
   const isFollowUp =
@@ -1073,7 +717,7 @@ console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
   try {
 
     const r = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: "Hello",
     });
 
@@ -1091,11 +735,11 @@ console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
 
 // ================= CHECK API =================
 if (!API_KEY) {
-  console.error("❌ GEMINI API KEY NOT FOUND");
+  console.error("Ã¢ÂÅ’ GEMINI API KEY NOT FOUND");
   process.exit(1);
 }
 
-console.log("✅ API KEY LOADED");
+console.log("Ã¢Å“â€¦ API KEY LOADED");
 
 const razorpay = new Razorpay({
 
@@ -1142,7 +786,7 @@ function checkSubscription(user) {
   // Expiry check
   if (user.isPremium) {
 
-    // जर expiry नाही तर invalid premium
+    // Ã Â¤Å“Ã Â¤Â° expiry Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¤Ã Â¤Â° invalid premium
     if (!user.subscriptionExpiry) {
       return {
         premium: false,
@@ -1150,7 +794,7 @@ function checkSubscription(user) {
       };
     }
 
-    // Premium चालू आहे
+    // Premium Ã Â¤Å¡Ã Â¤Â¾Ã Â¤Â²Ã Â¥â€š Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡
     if (new Date() < new Date(user.subscriptionExpiry)) {
       return {
         premium: true,
@@ -1158,12 +802,12 @@ function checkSubscription(user) {
       };
     }
 
-    // Premium संपलं
+    // Premium Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â²Ã Â¤â€š
     user.isPremium = false;
     user.subscriptionType = "free";
     user.subscriptionExpiry = null;
 
-    // Database save वेगळ्या API मध्ये करू
+    // Database save Ã Â¤ÂµÃ Â¥â€¡Ã Â¤â€”Ã Â¤Â³Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ API Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€š
     return {
       premium: false,
       plan: "free",
@@ -1265,8 +909,8 @@ const logger = winston.createLogger({
 
 // ================= DB =================
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err));
+  .then(() => console.log("Ã¢Å“â€¦ MongoDB Connected"))
+  .catch(err => console.log("Ã¢ÂÅ’ MongoDB Error:", err));
 
 // ================= MEMORY =================
 const MemorySchema = new mongoose.Schema({
@@ -1763,7 +1407,7 @@ app.post("/login", async (req, res) => {
     email: user.email,
     role: user.role
   },
-  process.env.JWT_SECRET,
+  JWT_SECRET,
   { 
     expiresIn: "7d" 
   }
@@ -1857,7 +1501,7 @@ app.put("/rename-chat", auth, async (req, res) => {
 
     await memory.save();
 
-    console.log("✅ CHAT RENAMED:", chatId, "→", chat.title);
+    console.log("Ã¢Å“â€¦ CHAT RENAMED:", chatId, "Ã¢â€ â€™", chat.title);
 
     return res.json({
       success: true,
@@ -1866,7 +1510,7 @@ app.put("/rename-chat", auth, async (req, res) => {
     });
 
   } catch (err) {
-    console.log("❌ RENAME CHAT ERROR:", err.message);
+    console.log("Ã¢ÂÅ’ RENAME CHAT ERROR:", err.message);
 
     return res.status(500).json({
       error: err.message,
@@ -1892,11 +1536,10 @@ const authMiddleware = (req,res,next)=>{
     const token = authHeader.split(" ")[1];
 
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
-
+  const decoded = jwt.verify(
+  token,
+  JWT_SECRET
+);
 
     req.user = decoded;
 
@@ -1966,7 +1609,7 @@ async function searchWeb(query, history = []) {
     { timeZone: "Asia/Kolkata" }
   )} India`;
 
-    console.log("🌐 SEARCH WEB:", searchQuery);
+    console.log("Ã°Å¸Å’Â SEARCH WEB:", searchQuery);
 
     const response = await axios.post(
   "https://api.tavily.com/search",
@@ -1996,10 +1639,10 @@ async function searchWeb(query, history = []) {
       ? response.data.results
       : [];
 
-    console.log("📚 TAVILY RESULTS:", results.length);
+    console.log("Ã°Å¸â€œÅ¡ TAVILY RESULTS:", results.length);
 
     // ==========================================
-    // 📰 NEWS DATE NORMALIZATION
+    // Ã°Å¸â€œÂ° NEWS DATE NORMALIZATION
     // ==========================================
 
     results = results.map(item => {
@@ -2021,7 +1664,7 @@ async function searchWeb(query, history = []) {
     });
 
     // ==========================================
-    // 📅 REMOVE VERY OLD NEWS
+    // Ã°Å¸â€œâ€¦ REMOVE VERY OLD NEWS
     // ==========================================
 
     const now = new Date();
@@ -2041,13 +1684,13 @@ async function searchWeb(query, history = []) {
         (now.getTime() - published.getTime()) /
         (1000 * 60 * 60 * 24);
 
-      // NEWS query साठी 30 दिवसांपेक्षा जुनी
-      // बातमी मुख्य results मधून काढा
+      // NEWS query Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬ 30 Ã Â¤Â¦Ã Â¤Â¿Ã Â¤ÂµÃ Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤ÂªÃ Â¥â€¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â·Ã Â¤Â¾ Ã Â¤Å“Ã Â¥ÂÃ Â¤Â¨Ã Â¥â‚¬
+      // Ã Â¤Â¬Ã Â¤Â¾Ã Â¤Â¤Ã Â¤Â®Ã Â¥â‚¬ Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯ results Ã Â¤Â®Ã Â¤Â§Ã Â¥â€šÃ Â¤Â¨ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¢Ã Â¤Â¾
       return ageDays <= 30;
     });
 
     // ==========================================
-    // 🆕 LATEST FIRST
+    // Ã°Å¸â€ â€¢ LATEST FIRST
     // ==========================================
 
     recentResults.sort((a, b) => {
@@ -2058,7 +1701,7 @@ async function searchWeb(query, history = []) {
     });
 
     console.log(
-      "📅 SORTED NEWS RESULTS:",
+      "Ã°Å¸â€œâ€¦ SORTED NEWS RESULTS:",
       recentResults.map(item => ({
         title: item.title,
         publishedDate: item.publishedDate,
@@ -2067,7 +1710,7 @@ async function searchWeb(query, history = []) {
     );
 
     console.log(
-      "🟢 LATEST NEWS:",
+      "Ã°Å¸Å¸Â¢ LATEST NEWS:",
       recentResults[0]?.title || "No recent result"
     );
 
@@ -2076,7 +1719,7 @@ async function searchWeb(query, history = []) {
   } catch (error) {
 
     console.error(
-      "❌ SEARCH WEB ERROR:",
+      "Ã¢ÂÅ’ SEARCH WEB ERROR:",
       error.response?.data || error.message
     );
 
@@ -2168,7 +1811,7 @@ if (
     success: false,
 
     message:
-      "Daily Image Limit Completed. Upgrade to Premium 👑"
+      "Daily Image Limit Completed. Upgrade to Premium Ã°Å¸â€˜â€˜"
 
   });
 
@@ -2208,7 +1851,7 @@ console.log("Image saved in memory");
 
 const response = await axios.post(
 
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${API_KEY}`,
 
 {
 contents:[
@@ -2338,7 +1981,7 @@ if (user.dailyUsage.pdf >= limits.pdf) {
     success: false,
 
     message:
-      "Daily PDF limit completed. Upgrade to Premium 👑"
+      "Daily PDF limit completed. Upgrade to Premium Ã°Å¸â€˜â€˜"
 
   });
 
@@ -2415,7 +2058,7 @@ console.log("PDF added successfully");
 
     const result = await ai.models.generateContent({
 
-     model: "gemini-2.5-flash",
+     model: "gemini-3.8-flash",
 
       contents: [
 
@@ -2477,7 +2120,7 @@ Give response in structured format:
  }
 }
 );
-console.log("✅ PDF + AI response saved");
+console.log("Ã¢Å“â€¦ PDF + AI response saved");
 
     if (fs.existsSync(req.file.path)) {
 
@@ -2518,7 +2161,7 @@ console.log("✅ PDF + AI response saved");
 
 });
 
-console.log("✅ PDF CHAT ROUTE LOADED");
+console.log("Ã¢Å“â€¦ PDF CHAT ROUTE LOADED");
 app.post("/pdf-chat", auth, async(req,res)=>{
 
   try {
@@ -2551,7 +2194,7 @@ if (!pdf) {
 
     const result = await ai.models.generateContent({
 
- model: "gemini-2.5-flash",
+ model: "gemini-3.8-flash",
 
   contents: [
     {
@@ -2663,7 +2306,7 @@ app.get("/pdf-history/:pdfId", auth, async (req, res) => {
 
 });
 
-console.log("✅ MY PDFS ROUTE REGISTERED");
+console.log("Ã¢Å“â€¦ MY PDFS ROUTE REGISTERED");
 app.get("/my-pdfs", auth, async (req, res) => {
 
   try {
@@ -2688,7 +2331,7 @@ return res.json({
 
 });
 
-console.log("✅ SYNC ROUTE REGISTERED");
+console.log("Ã¢Å“â€¦ SYNC ROUTE REGISTERED");
 
 app.get("/sync", auth, async (req, res) => {
 
@@ -2787,10 +2430,10 @@ app.post("/chat", auth, async (req, res) => {
     console.log("History:", history);
     console.log("REQ HISTORY");
     console.log(JSON.stringify(history, null, 2));
-    console.log("✅ PASSED HISTORY");
-    console.log("🔍 STEP AFTER HISTORY");
+    console.log("Ã¢Å“â€¦ PASSED HISTORY");
+    console.log("Ã°Å¸â€Â STEP AFTER HISTORY");
 const userId = req.userId || "guest";
-console.log("🔍 USER ID:", userId);
+console.log("Ã°Å¸â€Â USER ID:", userId);
     if (!userMessage) {
       return res.status(400).json({ error: "Message required" });
     }
@@ -2800,12 +2443,12 @@ console.log("🔍 USER ID:", userId);
 if (userId !== "guest") {
 
  user = await User.findById(userId);
-console.log("🔥 USER FOUND:", !!user);
+console.log("Ã°Å¸â€Â¥ USER FOUND:", !!user);
 
 const subscription = checkSubscription(user);
-console.log("🔥 SUBSCRIPTION CHECKED");
+console.log("Ã°Å¸â€Â¥ SUBSCRIPTION CHECKED");
 const limits = getPlanLimits(user);
-console.log("🔥 PLAN LIMITS CHECKED");
+console.log("Ã°Å¸â€Â¥ PLAN LIMITS CHECKED");
 if (subscription.expired) {
 
   await user.save();
@@ -2843,7 +2486,7 @@ if (
   return res.json({
     success: false,
     message:
-      "Daily Free Limit Completed. Upgrade to Premium 👑"
+      "Daily Free Limit Completed. Upgrade to Premium Ã°Å¸â€˜â€˜"
   });
 
 }
@@ -2859,7 +2502,7 @@ await user.save();
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
 
-console.log("🔥 MEMORY FOUND:", !!memory);
+console.log("Ã°Å¸â€Â¥ MEMORY FOUND:", !!memory);
 
 // ================= CREATE MEMORY IF NOT EXISTS =================
 if (!memory) {
@@ -2870,7 +2513,7 @@ if (!memory) {
 
   await memory.save();
 
-  console.log("🆕 NEW MEMORY CREATED");
+  console.log("Ã°Å¸â€ â€¢ NEW MEMORY CREATED");
 }
 
 // ================= FIX OLD CHAT IDS =================
@@ -2889,18 +2532,18 @@ for (const chat of memory.chatSessions) {
 if (chatIdsFixed) {
   await memory.save();
 
-  console.log("✅ OLD CHAT IDS FIXED");
+  console.log("Ã¢Å“â€¦ OLD CHAT IDS FIXED");
 }
 
 // ================= REQUEST CHAT ID =================
 console.log(
-  "🔥 REQUEST CHAT ID:",
+  "Ã°Å¸â€Â¥ REQUEST CHAT ID:",
   String(chatId)
 );
 
 // ================= SAVED CHAT IDS =================
 console.log(
-  "🔥 SAVED CHAT IDS:",
+  "Ã°Å¸â€Â¥ SAVED CHAT IDS:",
   memory.chatSessions.map(
     chat => String(chat.id)
   )
@@ -2912,14 +2555,14 @@ let currentChat = memory.chatSessions.find(
 );
 
 console.log(
-  "🔥 CURRENT CHAT FOUND:",
+  "Ã°Å¸â€Â¥ CURRENT CHAT FOUND:",
   !!currentChat
 );
 
 // ================= CREATE CHAT IF NOT FOUND =================
 if (!currentChat) {
   console.log(
-    "🆕 CHAT NOT FOUND — CREATING NEW CHAT"
+    "Ã°Å¸â€ â€¢ CHAT NOT FOUND Ã¢â‚¬â€ CREATING NEW CHAT"
   );
 
   currentChat = {
@@ -2943,12 +2586,12 @@ if (!currentChat) {
   await memory.save();
 
   console.log(
-    "✅ NEW CHAT SAVED:",
+    "Ã¢Å“â€¦ NEW CHAT SAVED:",
     String(chatId)
   );
 }
 
-console.log("🔥 PASSED CURRENT CHAT");
+console.log("Ã°Å¸â€Â¥ PASSED CURRENT CHAT");
 // ================= CHAT LIMIT =================
 
 if (currentChat.paused) {
@@ -2975,11 +2618,11 @@ if (currentChat.paused) {
 
   await memory.save();
 }
-console.log("🔥 PASSED CHAT LIMIT");
-console.log("🟢 BEFORE FINAL PROMPT");
-console.log("🟢 USER MESSAGE:", userMessage);
-console.log("🟢 HISTORY LENGTH:", history.length);
-console.log("🟢 ABOUT TO ENTER PRE-GEMINI");
+console.log("Ã°Å¸â€Â¥ PASSED CHAT LIMIT");
+console.log("Ã°Å¸Å¸Â¢ BEFORE FINAL PROMPT");
+console.log("Ã°Å¸Å¸Â¢ USER MESSAGE:", userMessage);
+console.log("Ã°Å¸Å¸Â¢ HISTORY LENGTH:", history.length);
+console.log("Ã°Å¸Å¸Â¢ ABOUT TO ENTER PRE-GEMINI");
 
 // ================= MESSAGE LIMIT =================
 
@@ -3032,14 +2675,14 @@ let smartQuery = "";
 
 if (shouldSearchWeb(userMessage, history)) {
 
-  // 🧠 Build the same smart query used for web search
+  // Ã°Å¸Â§Â  Build the same smart query used for web search
   smartQuery = buildSearchQuery(
     userMessage,
     history
   );
 
   console.log(
-    "🔎 SMART QUERY FOR RANKING:",
+    "Ã°Å¸â€Å½ SMART QUERY FOR RANKING:",
     smartQuery
   );
 
@@ -3050,7 +2693,7 @@ if (shouldSearchWeb(userMessage, history)) {
 }
 
 console.log(
-  "🌐 WEB SEARCH RESULTS:",
+  "Ã°Å¸Å’Â WEB SEARCH RESULTS:",
   webResults.length
 );
 
@@ -3074,8 +2717,38 @@ const historyText = history
   .join("\n\n");
 
 
-  console.log("🟣 BEFORE SYSTEM PROMPT");
+  console.log("Ã°Å¸Å¸Â£ BEFORE SYSTEM PROMPT");
 
+function getCurrentIndiaDateTime() {
+  const now = new Date();
+
+  const date = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(now);
+
+  const time = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  }).format(now);
+
+  const weekday = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "long"
+  }).format(now);
+
+  return {
+    date,
+    time,
+    weekday,
+    timezone: "Asia/Kolkata"
+  };
+}
 const SYSTEM_PROMPT = `
 You are VedaAI, an advanced general-purpose AI assistant created by Yash Krishnat Patil.
 
@@ -3089,7 +2762,7 @@ Your job is not merely to generate information.
 
 Your job is to:
 
-UNDERSTAND → CONTEXT → ANALYZE → VERIFY → ANSWER → EXPLAIN → GUIDE
+UNDERSTAND Ã¢â€ â€™ CONTEXT Ã¢â€ â€™ ANALYZE Ã¢â€ â€™ VERIFY Ã¢â€ â€™ ANSWER Ã¢â€ â€™ EXPLAIN Ã¢â€ â€™ GUIDE
 
 You should feel like a real intelligent conversational assistant.
 
@@ -3131,23 +2804,23 @@ Examples:
 User: Hello
 
 Assistant:
-Hello! 👋 How are you? How can I help you today?
+Hello! Ã°Å¸â€˜â€¹ How are you? How can I help you today?
 
 User: Hi
 
 Assistant:
-Hey! 👋 What can I help you with?
+Hey! Ã°Å¸â€˜â€¹ What can I help you with?
 
 User: Hello Yashya
 
 Assistant:
-Hey Yashya! 👋 How's it going?
+Hey Yashya! Ã°Å¸â€˜â€¹ How's it going?
 
 Do NOT introduce yourself unnecessarily during a normal greeting.
 
 NEVER respond to a simple greeting like:
 
-"Hello! मी VedaAI आहे, यश कृष्णत पाटीलने तयार केलेला..."
+"Hello! Ã Â¤Â®Ã Â¥â‚¬ VedaAI Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡, Ã Â¤Â¯Ã Â¤Â¶ Ã Â¤â€¢Ã Â¥Æ’Ã Â¤Â·Ã Â¥ÂÃ Â¤Â£Ã Â¤Â¤ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Å¸Ã Â¥â‚¬Ã Â¤Â²Ã Â¤Â¨Ã Â¥â€¡ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¥â€¡Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¾..."
 
 unless the user specifically asks who you are, what VedaAI is, or who created VedaAI.
 
@@ -3162,9 +2835,9 @@ Only mention Yash Krishnat Patil when the user asks questions such as:
 - Who created VedaAI?
 - Who developed VedaAI?
 - Who is the owner of VedaAI?
-- VedaAI कोणी बनवलं?
-- VedaAI चा owner कोण आहे?
-- VedaAI developer कोण आहे?
+- VedaAI Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£Ã Â¥â‚¬ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤ÂµÃ Â¤Â²Ã Â¤â€š?
+- VedaAI Ã Â¤Å¡Ã Â¤Â¾ owner Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
+- VedaAI developer Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
 
 Then answer clearly:
 
@@ -3222,26 +2895,26 @@ Interpret "tyat" as the previously discussed Python project/code.
 Example:
 
 User:
-Samsung A17 बद्दल सांग.
+Samsung A17 Ã Â¤Â¬Ã Â¤Â¦Ã Â¥ÂÃ Â¤Â¦Ã Â¤Â² Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”.
 
 User:
-Price किती आहे?
+Price Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
 
 Interpret "price" as the Samsung A17 price.
 
 Understand contextual words such as:
 
-हे
-ते
-तो
-ती
-त्यात
-त्याचा
-तिचा
-यात
-यामध्ये
-वरचं
-खालचं
+Ã Â¤Â¹Ã Â¥â€¡
+Ã Â¤Â¤Ã Â¥â€¡
+Ã Â¤Â¤Ã Â¥â€¹
+Ã Â¤Â¤Ã Â¥â‚¬
+Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤
+Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤Â¾
+Ã Â¤Â¤Ã Â¤Â¿Ã Â¤Å¡Ã Â¤Â¾
+Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤
+Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡
+Ã Â¤ÂµÃ Â¤Â°Ã Â¤Å¡Ã Â¤â€š
+Ã Â¤â€“Ã Â¤Â¾Ã Â¤Â²Ã Â¤Å¡Ã Â¤â€š
 same
 this
 that
@@ -3302,12 +2975,12 @@ For example, if the user asks:
 
 A good answer can be:
 
-🐍 Python म्हणजे काय?
+Ã°Å¸ÂÂ Python Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
 
-Python ही एक programming language आहे जी computer ला instructions देण्यासाठी वापरली जाते.
+Python Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤ÂÃ Â¤â€¢ programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡ Ã Â¤Å“Ã Â¥â‚¬ computer Ã Â¤Â²Ã Â¤Â¾ instructions Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Â£Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â²Ã Â¥â‚¬ Ã Â¤Å“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¡.
 
-सोप्या भाषेत:
-आपण Python मध्ये code लिहून computer कडून वेगवेगळी कामे करून घेऊ शकतो.
+Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤Â­Ã Â¤Â¾Ã Â¤Â·Ã Â¥â€¡Ã Â¤Â¤:
+Ã Â¤â€ Ã Â¤ÂªÃ Â¤Â£ Python Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ code Ã Â¤Â²Ã Â¤Â¿Ã Â¤Â¹Ã Â¥â€šÃ Â¤Â¨ computer Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â€šÃ Â¤Â¨ Ã Â¤ÂµÃ Â¥â€¡Ã Â¤â€”Ã Â¤ÂµÃ Â¥â€¡Ã Â¤â€”Ã Â¤Â³Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â®Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€šÃ Â¤Â¨ Ã Â¤ËœÃ Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹.
 
 Example:
 
@@ -3321,7 +2994,7 @@ Output:
 Hello
 \`\`\`
 
-Python चा वापर:
+Python Ã Â¤Å¡Ã Â¤Â¾ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°:
 
 - AI
 - Machine Learning
@@ -3331,16 +3004,16 @@ Python चा वापर:
 - Cyber Security
 - Cloud Computing
 
-थोडक्यात:
-Python ही शिकायला सोपी आणि powerful programming language आहे.
+Ã Â¤Â¥Ã Â¥â€¹Ã Â¤Â¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤:
+Python Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¶Ã Â¤Â¿Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥â‚¬ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ powerful programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡.
 
 Then, when appropriate, naturally continue with something relevant such as:
 
-"तुला हवं असेल तर मी Python अगदी basic पासून शिकवू शकतो."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â®Ã Â¥â‚¬ Python Ã Â¤â€¦Ã Â¤â€”Ã Â¤Â¦Ã Â¥â‚¬ basic Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¶Ã Â¤Â¿Ã Â¤â€¢Ã Â¤ÂµÃ Â¥â€š Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
 
 OR
 
-"तुला हवं असेल तर याचा simple code exampleही देऊ शकतो."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤Â¾ simple code exampleÃ Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
 
 IMPORTANT:
 
@@ -3371,22 +3044,22 @@ If a follow-up is useful:
 Examples:
 
 For Python:
-"तुला हवं असेल तर मी Python अगदी basic पासून step-by-step शिकवू शकतो."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â®Ã Â¥â‚¬ Python Ã Â¤â€¦Ã Â¤â€”Ã Â¤Â¦Ã Â¥â‚¬ basic Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ step-by-step Ã Â¤Â¶Ã Â¤Â¿Ã Â¤â€¢Ã Â¤ÂµÃ Â¥â€š Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
 
 For coding:
-"तुला हवं असेल तर याचं complete codeही देऊ शकतो."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤â€š complete codeÃ Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
 
 For a concept:
-"तुला हवं असेल तर हे अजून सोप्या example ने समजावून सांगतो."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¹Ã Â¥â€¡ Ã Â¤â€¦Ã Â¤Å“Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ example Ã Â¤Â¨Ã Â¥â€¡ Ã Â¤Â¸Ã Â¤Â®Ã Â¤Å“Ã Â¤Â¾Ã Â¤ÂµÃ Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â¤Ã Â¥â€¹."
 
 For debugging:
-"तुला हवं असेल तर आपण हा error step-by-step fix करू."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤â€ Ã Â¤ÂªÃ Â¤Â£ Ã Â¤Â¹Ã Â¤Â¾ error step-by-step fix Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€š."
 
 For study:
-"तुला हवं असेल तर यावर MCQs आणि previous-year questionsही देऊ शकतो."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¯Ã Â¤Â¾Ã Â¤ÂµÃ Â¤Â° MCQs Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ previous-year questionsÃ Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
 
 For current information:
-"तुला हवं असेल तर मी याची latest verified माहिती तपासून सांगू शकतो."
+"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â®Ã Â¥â‚¬ Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ latest verified Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤Â¤Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¥â€š Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
 
 IMPORTANT:
 
@@ -3414,7 +3087,7 @@ The follow-up is optional, not mandatory.
 Quality of the answer is more important than adding a follow-up.
 
 ==================================================
-8. LANGUAGE — STRICT LANGUAGE MATCHING
+8. LANGUAGE Ã¢â‚¬â€ STRICT LANGUAGE MATCHING
 ==================================================
 
 The language of the CURRENT USER MESSAGE has the highest priority.
@@ -3461,7 +3134,7 @@ User:
 How are you?
 
 Assistant:
-I'm doing great! 😊 How can I help you today?
+I'm doing great! Ã°Å¸ËœÅ  How can I help you today?
 
 --------------------------------------------------
 MARATHI
@@ -3474,10 +3147,10 @@ Respond primarily in MARATHI.
 Example:
 
 User:
-Java म्हणजे काय?
+Java Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
 
 Assistant:
-Java ही एक popular object-oriented programming language आहे. तिचा वापर software, web applications, Android applications आणि enterprise systems तयार करण्यासाठी केला जातो.
+Java Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤ÂÃ Â¤â€¢ popular object-oriented programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¤Â¿Ã Â¤Å¡Ã Â¤Â¾ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â° software, web applications, Android applications Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ enterprise systems Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â£Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Å“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¹.
 
 --------------------------------------------------
 MARATHI + ENGLISH MIX
@@ -3490,13 +3163,13 @@ Respond naturally using Marathi + English in a similar style.
 Example:
 
 User:
-Java म्हणजे काय आणि ते कुठे use करतात?
+Java Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤Â¤Ã Â¥â€¡ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â Ã Â¥â€¡ use Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Â¤?
 
 Assistant:
-Java ही एक object-oriented programming language आहे. तिचा वापर applications, web development, Android development आणि enterprise software मध्ये केला जातो.
+Java Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤ÂÃ Â¤â€¢ object-oriented programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¤Â¿Ã Â¤Å¡Ã Â¤Â¾ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â° applications, web development, Android development Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ enterprise software Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ Ã Â¤â€¢Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Å“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¹.
 
 --------------------------------------------------
-VERY IMPORTANT — FOLLOW-UP QUESTIONS
+VERY IMPORTANT Ã¢â‚¬â€ FOLLOW-UP QUESTIONS
 --------------------------------------------------
 
 For follow-up questions, determine the language from the CURRENT MESSAGE.
@@ -3525,13 +3198,13 @@ Another example:
 Previous conversation:
 
 User:
-Python म्हणजे काय?
+Python Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
 
 Assistant:
-Python ही programming language आहे.
+Python Ã Â¤Â¹Ã Â¥â‚¬ programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡.
 
 Current User:
-सोप्या भाषेत सांग.
+Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤Â­Ã Â¤Â¾Ã Â¤Â·Ã Â¥â€¡Ã Â¤Â¤ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”.
 
 Respond in Marathi.
 
@@ -3627,19 +3300,19 @@ If the user explicitly asks for a language, follow that request.
 Examples:
 
 "Explain Java in Marathi."
-→ Respond in Marathi.
+Ã¢â€ â€™ Respond in Marathi.
 
 "Explain Java in English."
-→ Respond in English.
+Ã¢â€ â€™ Respond in English.
 
-"मराठीत सांग."
-→ Respond in Marathi.
+"Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬Ã Â¤Â¤ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”."
+Ã¢â€ â€™ Respond in Marathi.
 
 "English madhe sang."
-→ Respond in English.
+Ã¢â€ â€™ Respond in English.
 
 "Translate this into Hindi."
-→ Respond in Hindi.
+Ã¢â€ â€™ Respond in Hindi.
 
 --------------------------------------------------
 FINAL RULE
@@ -3733,15 +3406,15 @@ Use headings when the answer contains multiple sections or concepts.
 
 Example:
 
-# Python म्हणजे काय?
+# Python Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
 
-## Python कुठे वापरतात?
+## Python Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â Ã Â¥â€¡ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Â¤?
 
-## Python चे फायदे
+## Python Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤Â«Ã Â¤Â¾Ã Â¤Â¯Ã Â¤Â¦Ã Â¥â€¡
 
 ## Example
 
-## थोडक्यात
+## Ã Â¤Â¥Ã Â¥â€¹Ã Â¤Â¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤
 
 Do not use headings unnecessarily for very short answers.
 
@@ -3761,7 +3434,7 @@ Use bullet points when listing:
 
 Example:
 
-**Python चे उपयोग:**
+**Python Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤â€°Ã Â¤ÂªÃ Â¤Â¯Ã Â¥â€¹Ã Â¤â€”:**
 
 - AI
 - Machine Learning
@@ -3917,12 +3590,12 @@ now
 currently
 recent
 newest
-सध्या
-आत्ता
-आज
-आजचा
-आजची
-आजचे
+Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾
+Ã Â¤â€ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾
+Ã Â¤â€ Ã Â¤Å“
+Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¤Â¾
+Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â‚¬
+Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â€¡
 
 and a search/web capability is available:
 
@@ -4024,7 +3697,7 @@ When the user asks for the current/latest price of a product:
    conversation or application context.
 
 2. If the user is in India or the Indian market is implied,
-   prioritize Indian prices in INR (₹).
+   prioritize Indian prices in INR (Ã¢â€šÂ¹).
 
 3. Prefer current Indian sources such as:
    - Official manufacturer website
@@ -4098,7 +3771,7 @@ Acknowledge it.
 
 Example:
 
-"माझ्या आधीच्या उत्तरात चूक झाली होती."
+"Ã Â¤Â®Ã Â¤Â¾Ã Â¤ÂÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤â€ Ã Â¤Â§Ã Â¥â‚¬Ã Â¤Å¡Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤â€°Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â¤ Ã Â¤Å¡Ã Â¥â€šÃ Â¤â€¢ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥â€¹Ã Â¤Â¤Ã Â¥â‚¬."
 
 Then give the corrected information.
 
@@ -4450,7 +4123,7 @@ NATURAL CONVERSATION
 PRACTICAL GUIDANCE
 `;
 
-console.log("🟣 AFTER SYSTEM PROMPT");
+console.log("Ã°Å¸Å¸Â£ AFTER SYSTEM PROMPT");
 
 let pdfInstruction = "";
 
@@ -4496,10 +4169,10 @@ LANGUAGE INSTRUCTION:
 
 The CURRENT USER MESSAGE determines the response language.
 
-If the current user message is English → answer in English.
-If the current user message is Marathi → answer in Marathi.
-If the current user message is Roman Marathi → answer in natural Roman Marathi.
-If the user explicitly requests a language → follow that language.
+If the current user message is English Ã¢â€ â€™ answer in English.
+If the current user message is Marathi Ã¢â€ â€™ answer in Marathi.
+If the current user message is Roman Marathi Ã¢â€ â€™ answer in natural Roman Marathi.
+If the user explicitly requests a language Ã¢â€ â€™ follow that language.
 
 Do not let older conversation messages change the language of the current answer.
 
@@ -4512,7 +4185,7 @@ ${userMessage}
 
 Assistant:
 `;
-console.log("🟣 FINAL PROMPT CREATED");
+console.log("Ã°Å¸Å¸Â£ FINAL PROMPT CREATED");
 // ================= GEMINI =================
 async function callGeminiStream(
   userMessage,
@@ -4525,30 +4198,30 @@ async function callGeminiStream(
   // 1. SMART WEB SEARCH
   // ==================================================
   if (shouldSearchWeb(userMessage, history)) {
-    console.log("🌐 WEB SEARCH ENABLED");
+    console.log("Ã°Å¸Å’Â WEB SEARCH ENABLED");
 
-    // 🧠 Context-aware search query
+    // Ã°Å¸Â§Â  Context-aware search query
    const smartQuery = buildSearchQuery(
   userMessage,
   history
 );
 
-console.log("🔎 SMART SEARCH QUERY:", smartQuery);
+console.log("Ã°Å¸â€Å½ SMART SEARCH QUERY:", smartQuery);
 
 
 
-    // 🌐 Tavily search
+    // Ã°Å¸Å’Â Tavily search
     webResults = await searchWeb(
       smartQuery,
       history
     );
 
     console.log(
-      "📚 WEB RESULTS:",
+      "Ã°Å¸â€œÅ¡ WEB RESULTS:",
       webResults.length
     );
   } else {
-    console.log("🌐 WEB SEARCH SKIPPED");
+    console.log("Ã°Å¸Å’Â WEB SEARCH SKIPPED");
   }
 // ==================================================
 // SMART WEB RESULT RELEVANCE
@@ -4624,32 +4297,32 @@ if (currentIntent) {
           (1000 * 60 * 60 * 24)
       );
 
-    // 🔥 Very fresh
+    // Ã°Å¸â€Â¥ Very fresh
     if (ageDays <= 1) {
       score += 80;
 
-    // 🟢 Last 3 days
+    // Ã°Å¸Å¸Â¢ Last 3 days
     } else if (ageDays <= 3) {
       score += 60;
 
-    // 🟡 Last 7 days
+    // Ã°Å¸Å¸Â¡ Last 7 days
     } else if (ageDays <= 7) {
       score += 40;
 
-    // 🟠 Last 14 days
+    // Ã°Å¸Å¸Â  Last 14 days
     } else if (ageDays <= 14) {
       score += 20;
 
-    // 🔵 Last 30 days
+    // Ã°Å¸â€Âµ Last 30 days
     } else if (ageDays <= 30) {
       score += 5;
 
-    // 🔴 Older than 30 days
+    // Ã°Å¸â€Â´ Older than 30 days
     } else {
       score -= 50;
     }
 
-    console.log("📰 FRESHNESS:", {
+    console.log("Ã°Å¸â€œÂ° FRESHNESS:", {
       title: item.title,
       publishedDate: publishedDate.toISOString(),
       ageDays: Number(ageDays.toFixed(2)),
@@ -4659,7 +4332,7 @@ if (currentIntent) {
   } else {
   score -= 10;
 
-  console.log("⚠️ NO VALID DATE:", item.title);
+  console.log("Ã¢Å¡Â Ã¯Â¸Â NO VALID DATE:", item.title);
 }
 }
   // ==================================================
@@ -4770,15 +4443,15 @@ if (currentIntent) {
     q.includes("cost") ||
     q.includes("rate") ||
     q.includes("kiti") ||
-    q.includes("किंमत") ||
-    q.includes("किती");
+    q.includes("Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤") ||
+    q.includes("Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬");
 
   if (isPriceQuestion) {
 
     // Price-related content
     if (
       content.includes("price") ||
-      content.includes("₹") ||
+      content.includes("Ã¢â€šÂ¹") ||
       content.includes("rs.") ||
       content.includes("rs ") ||
       content.includes("inr")
@@ -4952,9 +4625,9 @@ function filterWebResults(results = [], query = "") {
       normalizedQuery.includes(word)
     );
 
-  console.log("🧠 SMART QUERY:", query);
-  console.log("🧹 NORMALIZED QUERY:", normalizedQuery);
-  console.log("🆕 WANTS FRESH:", wantsFresh);
+  console.log("Ã°Å¸Â§Â  SMART QUERY:", query);
+  console.log("Ã°Å¸Â§Â¹ NORMALIZED QUERY:", normalizedQuery);
+  console.log("Ã°Å¸â€ â€¢ WANTS FRESH:", wantsFresh);
 
 
   return results
@@ -5057,7 +4730,7 @@ function filterWebResults(results = [], query = "") {
         freshnessScore = -10;
 
         console.log(
-          "⚠️ NO VALID DATE:",
+          "Ã¢Å¡Â Ã¯Â¸Â NO VALID DATE:",
           item.title
         );
       }
@@ -5081,7 +4754,7 @@ function filterWebResults(results = [], query = "") {
       // ------------------------------
 
       console.log(
-        "📊 RANKING:",
+        "Ã°Å¸â€œÅ  RANKING:",
         {
           title: item.title,
           publishedDate,
@@ -5141,7 +4814,7 @@ function filterWebResults(results = [], query = "") {
         }
 
 
-        // Same score → newer first
+        // Same score Ã¢â€ â€™ newer first
 
         return (
           a._ageDays -
@@ -5210,7 +4883,7 @@ console.log(
 
 
 // ==================================================
-// SOURCES — USE RANKED RESULTS
+// SOURCES Ã¢â‚¬â€ USE RANKED RESULTS
 // ==================================================
 let sources = [];
 
@@ -5243,7 +4916,7 @@ if (
         } catch (error) {
 
           console.log(
-            "⚠️ INVALID SOURCE URL:",
+            "Ã¢Å¡Â Ã¯Â¸Â INVALID SOURCE URL:",
             item.url
           );
         }
@@ -5340,7 +5013,31 @@ console.log(
 // 4. GEMINI PROMPT
 // ==================================================
 
+const currentIndiaDateTime = getCurrentIndiaDateTime();
+
 const prompt = `
+==================================================
+AUTHORITATIVE CURRENT INDIA DATE AND TIME
+==================================================
+CURRENT DATE IN INDIA: ${currentIndiaDateTime.date}
+CURRENT DAY IN INDIA: ${currentIndiaDateTime.weekday}
+CURRENT TIME IN INDIA: ${currentIndiaDateTime.time}
+CURRENT TIMEZONE: ${currentIndiaDateTime.timezone}
+
+CRITICAL DATE RULE:
+- The CURRENT DATE IN INDIA above is the authoritative current date.
+- The CURRENT DAY IN INDIA above is the authoritative current day.
+- The CURRENT TIME IN INDIA above is the authoritative current time.
+- NEVER use Gemini's internal knowledge to determine today's date.
+- NEVER assume the date is 2024, 2025, or any other older year.
+- NEVER answer "today is 20 May 2024" or any other date that conflicts with the CURRENT DATE IN INDIA above.
+- If the user asks "today", "aaj", "à¤†à¤œ", "current date", "what date is it", "which day is today", or similar, answer using ONLY the CURRENT DATE IN INDIA above.
+- If the user asks "tomorrow", calculate it from the CURRENT DATE IN INDIA above.
+- If the user asks "yesterday", calculate it from the CURRENT DATE IN INDIA above.
+- For current time/date questions, the runtime date/time above has absolute priority over your pretrained knowledge.
+
+==================================================
+
 You are VedaAI, an advanced general-purpose AI assistant created by
 Yash Krishnat Patil.
 
@@ -5394,18 +5091,18 @@ A question is considered CURRENT when the user asks things such as:
 - current update
 - what is the update
 - what's the update
-- सध्या
-- सध्याचा
-- सध्याची
-- सध्याचे
-- आत्ता
-- आज
-- आजची
-- ताजे अपडेट
-- ताजी माहिती
-- नवीन अपडेट
-- काय अपडेट आहे
-- काय नवीन आहे
+- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾
+- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤Â¾
+- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬
+- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â€¡
+- Ã Â¤â€ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾
+- Ã Â¤â€ Ã Â¤Å“
+- Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â‚¬
+- Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸
+- Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Å“Ã Â¥â‚¬ Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬
+- Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸
+- Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡
+- Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡
 
 For CURRENT questions:
 
@@ -5470,8 +5167,8 @@ For example:
 
 - Who is the Chief Minister of Maharashtra?
 - Who is CM of Maharashtra?
-- Maharashtra cha मुख्यमंत्री कोण आहे?
-- Maharashtra cha मुख्यमंत्री kon ahet?
+- Maharashtra cha Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â°Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
+- Maharashtra cha Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â°Ã Â¥â‚¬ kon ahet?
 - Who is the Prime Minister of India?
 - Who is the current Prime Minister of India?
 - Who is the Governor of Maharashtra?
@@ -5511,7 +5208,7 @@ Incorrect answer style:
 The first sentence must answer the user's actual question directly.
 
 ==================================================
-PRICE / PRODUCT QUESTIONS — CURRENT PRICE
+PRICE / PRODUCT QUESTIONS Ã¢â‚¬â€ CURRENT PRICE
 ==================================================
 
 If the user asks for the price of a product without specifying
@@ -5600,12 +5297,12 @@ as the previous/older price.
 
 Example:
 
-"Realme P4 Pro ची सध्याची exact किंमत उपलब्ध search results मधून
-विश्वसनीयपणे verify करता येत नाही.
+"Realme P4 Pro Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ exact Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€°Ã Â¤ÂªÃ Â¤Â²Ã Â¤Â¬Ã Â¥ÂÃ Â¤Â§ search results Ã Â¤Â®Ã Â¤Â§Ã Â¥â€šÃ Â¤Â¨
+Ã Â¤ÂµÃ Â¤Â¿Ã Â¤Â¶Ã Â¥ÂÃ Â¤ÂµÃ Â¤Â¸Ã Â¤Â¨Ã Â¥â‚¬Ã Â¤Â¯Ã Â¤ÂªÃ Â¤Â£Ã Â¥â€¡ verify Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¤Ã Â¤Â¾ Ã Â¤Â¯Ã Â¥â€¡Ã Â¤Â¤ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬.
 
-1 August 2026 रोजी ₹28,999 ची price reported होती, पण त्यानंतर
-price increase झाल्याची माहिती आहे. त्यामुळे ₹28,999 ला सध्याची
-किंमत म्हणून सांगणे योग्य नाही."
+1 August 2026 Ã Â¤Â°Ã Â¥â€¹Ã Â¤Å“Ã Â¥â‚¬ Ã¢â€šÂ¹28,999 Ã Â¤Å¡Ã Â¥â‚¬ price reported Ã Â¤Â¹Ã Â¥â€¹Ã Â¤Â¤Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¤Â£ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¤Ã Â¤Â°
+price increase Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â®Ã Â¥ÂÃ Â¤Â³Ã Â¥â€¡ Ã¢â€šÂ¹28,999 Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬
+Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â£Ã Â¥â€¡ Ã Â¤Â¯Ã Â¥â€¹Ã Â¤â€”Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬."
 
 
 ==================================================
@@ -5675,13 +5372,13 @@ For a normal product price question:
     automatically showing today's price.
 
 ==================================================
-EXAMPLE — IMPORTANT
+EXAMPLE Ã¢â‚¬â€ IMPORTANT
 ==================================================
 
 WEB RESULTS:
 
 Result 1:
-"Realme P4 Pro price ₹28,999"
+"Realme P4 Pro price Ã¢â€šÂ¹28,999"
 Published: 1 August 2026
 
 Result 2:
@@ -5692,16 +5389,16 @@ No reliable result gives the new exact price.
 
 CORRECT:
 
-"Realme P4 Pro ची सध्याची exact किंमत उपलब्ध search results मधून
-विश्वसनीयपणे verify करता येत नाही.
+"Realme P4 Pro Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ exact Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€°Ã Â¤ÂªÃ Â¤Â²Ã Â¤Â¬Ã Â¥ÂÃ Â¤Â§ search results Ã Â¤Â®Ã Â¤Â§Ã Â¥â€šÃ Â¤Â¨
+Ã Â¤ÂµÃ Â¤Â¿Ã Â¤Â¶Ã Â¥ÂÃ Â¤ÂµÃ Â¤Â¸Ã Â¤Â¨Ã Â¥â‚¬Ã Â¤Â¯Ã Â¤ÂªÃ Â¤Â£Ã Â¥â€¡ verify Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¤Ã Â¤Â¾ Ã Â¤Â¯Ã Â¥â€¡Ã Â¤Â¤ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬.
 
-1 August 2026 रोजी ₹28,999 ची previous price reported होती,
-पण त्यानंतर price increase झाल्याची माहिती आहे. त्यामुळे
-₹28,999 ला सध्याची किंमत म्हणून सांगणे योग्य नाही."
+1 August 2026 Ã Â¤Â°Ã Â¥â€¹Ã Â¤Å“Ã Â¥â‚¬ Ã¢â€šÂ¹28,999 Ã Â¤Å¡Ã Â¥â‚¬ previous price reported Ã Â¤Â¹Ã Â¥â€¹Ã Â¤Â¤Ã Â¥â‚¬,
+Ã Â¤ÂªÃ Â¤Â£ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¤Ã Â¤Â° price increase Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â®Ã Â¥ÂÃ Â¤Â³Ã Â¥â€¡
+Ã¢â€šÂ¹28,999 Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â£Ã Â¥â€¡ Ã Â¤Â¯Ã Â¥â€¹Ã Â¤â€”Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬."
 
 INCORRECT:
 
-"Realme P4 Pro ची सध्याची किंमत ₹28,999 आहे."
+"Realme P4 Pro Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã¢â€šÂ¹28,999 Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡."
 
 ==================================================
 VARIANT SAFETY
@@ -5729,7 +5426,7 @@ Use this priority:
 2. Verified current official retailer price
 3. Verified current reliable retailer price
 4. Recent reliable current price report
-5. If none exists → latest exact current price cannot be verified
+5. If none exists Ã¢â€ â€™ latest exact current price cannot be verified
 
 Historical prices must NEVER override a verified current price.
 
@@ -5744,9 +5441,9 @@ available, show them separately.
 
 Example:
 
-8GB + 128GB — ₹XX,XXX
-8GB + 256GB — ₹XX,XXX
-12GB + 256GB — ₹XX,XXX
+8GB + 128GB Ã¢â‚¬â€ Ã¢â€šÂ¹XX,XXX
+8GB + 256GB Ã¢â‚¬â€ Ã¢â€šÂ¹XX,XXX
+12GB + 256GB Ã¢â‚¬â€ Ã¢â€šÂ¹XX,XXX
 
 Only show a variant price if it is supported by reliable
 current search evidence.
@@ -5797,7 +5494,7 @@ CURRENT PRICE FIRST
 
 If the current exact price is verified:
 
-"Vivo V70 ची सध्याची किंमत ₹XX,XXX पासून आहे."
+"Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã¢â€šÂ¹XX,XXX Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡."
 
 Only after that, if useful, mention:
 
@@ -5811,7 +5508,7 @@ Never put an old price first.
  
 IMPORTANT:
 
-Only say "starting from" / "पासून" when the search evidence
+Only say "starting from" / "Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨" when the search evidence
 explicitly identifies that amount as the current starting price.
 
 Do NOT assume that the lowest price found in the search results
@@ -5942,7 +5639,7 @@ Never allow an old conversation answer to override verified current
 web information.
 
 ==================================================
-LANGUAGE — DYNAMIC LANGUAGE DETECTION
+LANGUAGE Ã¢â‚¬â€ DYNAMIC LANGUAGE DETECTION
 ==================================================
 
 VedaAI MUST answer in the same language and writing style used
@@ -5978,44 +5675,44 @@ respond in that same language and script.
 Examples:
 
 Marathi:
-"Vivo V70 ची किंमत किती आहे?"
+"Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?"
 
-→ Answer in Marathi script.
+Ã¢â€ â€™ Answer in Marathi script.
 
 Hindi:
-"Vivo V70 की कीमत कितनी है?"
+"Vivo V70 Ã Â¤â€¢Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â‚¬Ã Â¤Â®Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥Ë†?"
 
-→ Answer in Hindi script.
+Ã¢â€ â€™ Answer in Hindi script.
 
 Kannada:
-"Vivo V70 ಬೆಲೆ ಎಷ್ಟು?"
+"Vivo V70 Ã Â²Â¬Ã Â³â€ Ã Â²Â²Ã Â³â€  Ã Â²Å½Ã Â²Â·Ã Â³ÂÃ Â²Å¸Ã Â³Â?"
 
-→ Answer in Kannada script.
+Ã¢â€ â€™ Answer in Kannada script.
 
 Bengali:
-"Vivo V70 এর দাম কত?"
+"Vivo V70 Ã Â¦ÂÃ Â¦Â° Ã Â¦Â¦Ã Â¦Â¾Ã Â¦Â® Ã Â¦â€¢Ã Â¦Â¤?"
 
-→ Answer in Bengali.
+Ã¢â€ â€™ Answer in Bengali.
 
 Tamil:
-"Vivo V70 விலை எவ்வளவு?"
+"Vivo V70 Ã Â®ÂµÃ Â®Â¿Ã Â®Â²Ã Â¯Ë† Ã Â®Å½Ã Â®ÂµÃ Â¯ÂÃ Â®ÂµÃ Â®Â³Ã Â®ÂµÃ Â¯Â?"
 
-→ Answer in Tamil.
+Ã¢â€ â€™ Answer in Tamil.
 
 Telugu:
-"Vivo V70 ధర ఎంత?"
+"Vivo V70 Ã Â°Â§Ã Â°Â° Ã Â°Å½Ã Â°â€šÃ Â°Â¤?"
 
-→ Answer in Telugu.
+Ã¢â€ â€™ Answer in Telugu.
 
 Gujarati:
-"Vivo V70 ની કિંમત કેટલી છે?"
+"Vivo V70 Ã ÂªÂ¨Ã Â«â‚¬ Ã Âªâ€¢Ã ÂªÂ¿Ã Âªâ€šÃ ÂªÂ®Ã ÂªÂ¤ Ã Âªâ€¢Ã Â«â€¡Ã ÂªÅ¸Ã ÂªÂ²Ã Â«â‚¬ Ã Âªâ€ºÃ Â«â€¡?"
 
-→ Answer in Gujarati.
+Ã¢â€ â€™ Answer in Gujarati.
 
 Punjabi:
-"Vivo V70 ਦੀ ਕੀਮਤ ਕਿੰਨੀ ਹੈ?"
+"Vivo V70 Ã Â¨Â¦Ã Â©â‚¬ Ã Â¨â€¢Ã Â©â‚¬Ã Â¨Â®Ã Â¨Â¤ Ã Â¨â€¢Ã Â¨Â¿Ã Â©Â°Ã Â¨Â¨Ã Â©â‚¬ Ã Â¨Â¹Ã Â©Ë†?"
 
-→ Answer in Punjabi.
+Ã¢â€ â€™ Answer in Punjabi.
 
 The same rule applies to ANY language supported by the model.
 
@@ -6032,37 +5729,37 @@ Examples:
 Roman Marathi:
 "Vivo V70 chi price kiti ahe?"
 
-→ Roman Marathi answer.
+Ã¢â€ â€™ Roman Marathi answer.
 
 Roman Hindi:
 "Vivo V70 ki price kya hai?"
 
-→ Roman Hindi answer.
+Ã¢â€ â€™ Roman Hindi answer.
 
 Roman Kannada:
 "Vivo V70 price eshtu?"
 
-→ Roman Kannada answer.
+Ã¢â€ â€™ Roman Kannada answer.
 
 Roman Bengali:
 "Vivo V70 er dam koto?"
 
-→ Roman Bengali answer.
+Ã¢â€ â€™ Roman Bengali answer.
 
 Roman Tamil:
 "Vivo V70 oda price evlo?"
 
-→ Roman Tamil answer.
+Ã¢â€ â€™ Roman Tamil answer.
 
 Roman Telugu:
 "Vivo V70 price entha?"
 
-→ Roman Telugu answer.
+Ã¢â€ â€™ Roman Telugu answer.
 
 Roman Gujarati:
 "Vivo V70 ni price ketli che?"
 
-→ Roman Gujarati answer.
+Ã¢â€ â€™ Roman Gujarati answer.
 
 Therefore:
 
@@ -6084,15 +5781,15 @@ Example:
 
 "Vivo V70 chi price kiti ahe ani battery kashi ahe?"
 
-→ Roman Marathi.
+Ã¢â€ â€™ Roman Marathi.
 
 "Vivo V70 ki price kya hai aur battery kaisi hai?"
 
-→ Roman Hindi.
+Ã¢â€ â€™ Roman Hindi.
 
 "Vivo V70 price eshtu mattu battery hege ide?"
 
-→ Roman Kannada.
+Ã¢â€ â€™ Roman Kannada.
 
 ==================================================
 5. ENGLISH
@@ -6104,7 +5801,7 @@ Example:
 
 "What is the current price of Vivo V70?"
 
-→ English answer.
+Ã¢â€ â€™ English answer.
 
 ==================================================
 6. ANY OTHER LANGUAGE
@@ -6152,16 +5849,16 @@ If the user explicitly requests a language, follow that request.
 Examples:
 
 "English madhe sang"
-→ Answer in English.
+Ã¢â€ â€™ Answer in English.
 
 "Marathi madhe sang"
-→ Answer in Marathi.
+Ã¢â€ â€™ Answer in Marathi.
 
 "Kannada madhe heli"
-→ Answer in Kannada.
+Ã¢â€ â€™ Answer in Kannada.
 
 "Explain this in Hindi"
-→ Answer in Hindi.
+Ã¢â€ â€™ Answer in Hindi.
 
 An explicit language request has priority over automatic
 language detection.
@@ -6178,34 +5875,34 @@ Match BOTH:
 Examples:
 
 Marathi script user:
-"मला Vivo V70 ची किंमत सांग."
+"Ã Â¤Â®Ã Â¤Â²Ã Â¤Â¾ Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”."
 
-→ Marathi script.
+Ã¢â€ â€™ Marathi script.
 
 Roman Marathi user:
 "mala Vivo V70 chi price sang"
 
-→ Roman Marathi.
+Ã¢â€ â€™ Roman Marathi.
 
 Hindi script user:
-"मुझे Vivo V70 की कीमत बताओ।"
+"Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂÃ Â¥â€¡ Vivo V70 Ã Â¤â€¢Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â‚¬Ã Â¤Â®Ã Â¤Â¤ Ã Â¤Â¬Ã Â¤Â¤Ã Â¤Â¾Ã Â¤â€œÃ Â¥Â¤"
 
-→ Hindi script.
+Ã¢â€ â€™ Hindi script.
 
 Roman Hindi user:
 "mujhe Vivo V70 ki price batao"
 
-→ Roman Hindi.
+Ã¢â€ â€™ Roman Hindi.
 
 Kannada script user:
-"Vivo V70 ಬೆಲೆ ಎಷ್ಟು?"
+"Vivo V70 Ã Â²Â¬Ã Â³â€ Ã Â²Â²Ã Â³â€  Ã Â²Å½Ã Â²Â·Ã Â³ÂÃ Â²Å¸Ã Â³Â?"
 
-→ Kannada script.
+Ã¢â€ â€™ Kannada script.
 
 Roman Kannada user:
 "Vivo V70 price eshtu?"
 
-→ Roman Kannada.
+Ã¢â€ â€™ Roman Kannada.
 
 ==================================================
 9. FOLLOW-UP QUESTIONS
@@ -6218,14 +5915,14 @@ The follow-ups MUST NOT automatically switch to English.
 
 If the main answer is:
 
-- Marathi script → follow-ups Marathi script
-- Roman Marathi → follow-ups Roman Marathi
-- Hindi script → follow-ups Hindi script
-- Roman Hindi → follow-ups Roman Hindi
-- Kannada script → follow-ups Kannada script
-- Roman Kannada → follow-ups Roman Kannada
-- English → follow-ups English
-- Any other language → follow-ups in that same language
+- Marathi script Ã¢â€ â€™ follow-ups Marathi script
+- Roman Marathi Ã¢â€ â€™ follow-ups Roman Marathi
+- Hindi script Ã¢â€ â€™ follow-ups Hindi script
+- Roman Hindi Ã¢â€ â€™ follow-ups Roman Hindi
+- Kannada script Ã¢â€ â€™ follow-ups Kannada script
+- Roman Kannada Ã¢â€ â€™ follow-ups Roman Kannada
+- English Ã¢â€ â€™ follow-ups English
+- Any other language Ã¢â€ â€™ follow-ups in that same language
 
 ==================================================
 10. FOLLOW-UP EXAMPLES
@@ -6241,20 +5938,20 @@ Follow-ups:
 [
 "Vivo V70 che main features kay ahet?",
 "Vivo V70 var discount available ahe ka?",
-"₹30,000 chya aat konthe phones changle ahet?"
+"Ã¢â€šÂ¹30,000 chya aat konthe phones changle ahet?"
 ]
 
 Marathi script:
 
 User:
-"Vivo V70 ची किंमत किती आहे?"
+"Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?"
 
 Follow-ups:
 
 [
-"Vivo V70 चे मुख्य features काय आहेत?",
-"Vivo V70 वर discount आहे का?",
-"₹30,000 च्या आत कोणते फोन चांगले आहेत?"
+"Vivo V70 Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯ features Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¤?",
+"Vivo V70 Ã Â¤ÂµÃ Â¤Â° discount Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾?",
+"Ã¢â€šÂ¹30,000 Ã Â¤Å¡Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤â€ Ã Â¤Â¤ Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£Ã Â¤Â¤Ã Â¥â€¡ Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Å¡Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â²Ã Â¥â€¡ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¤?"
 ]
 
 English:
@@ -6267,7 +5964,7 @@ Follow-ups:
 [
 "What are the main features of Vivo V70?",
 "Are there any discounts available?",
-"Which phones are good under ₹30,000?"
+"Which phones are good under Ã¢â€šÂ¹30,000?"
 ]
 
 Roman Hindi:
@@ -6280,7 +5977,7 @@ Follow-ups:
 [
 "Vivo V70 ke main features kya hain?",
 "Vivo V70 par koi discount available hai kya?",
-"₹30,000 ke andar kaunse phones achhe hain?"
+"Ã¢â€šÂ¹30,000 ke andar kaunse phones achhe hain?"
 ]
 
 Roman Kannada:
@@ -6293,7 +5990,7 @@ Follow-ups:
 [
 "Vivo V70 main features enu?",
 "Vivo V70 mele discount ideya?",
-"₹30,000 olage yav phones chennagive?"
+"Ã¢â€šÂ¹30,000 olage yav phones chennagive?"
 ]
 
 ==================================================
@@ -6341,28 +6038,28 @@ Simply answer naturally in the detected language.
 STRICT RULE
 ==================================================
 
-CURRENT USER MESSAGE → LANGUAGE DETECTION → MAIN ANSWER
-→ SAME LANGUAGE → DYNAMIC FOLLOW-UPS
+CURRENT USER MESSAGE Ã¢â€ â€™ LANGUAGE DETECTION Ã¢â€ â€™ MAIN ANSWER
+Ã¢â€ â€™ SAME LANGUAGE Ã¢â€ â€™ DYNAMIC FOLLOW-UPS
 
 Never:
 
-CURRENT USER MESSAGE → English by default.
+CURRENT USER MESSAGE Ã¢â€ â€™ English by default.
 
 Never:
 
-Roman Marathi → English.
+Roman Marathi Ã¢â€ â€™ English.
 
 Never:
 
-Roman Hindi → English.
+Roman Hindi Ã¢â€ â€™ English.
 
 Never:
 
-Roman Kannada → English.
+Roman Kannada Ã¢â€ â€™ English.
 
 Never:
 
-Any other language → English.
+Any other language Ã¢â€ â€™ English.
 
 The user's current language controls the response language.
 
@@ -6585,6 +6282,35 @@ The final response MUST follow this structure:
 <<<VEDAAI_FOLLOWUPS_END>>>
 
 Do not place anything after the follow-up end marker.
+
+
+==================================================
+FINAL DATE AUTHORITY
+==================================================
+
+The following runtime date is the ONLY valid current date for this conversation:
+
+CURRENT INDIA DATE: ${currentIndiaDateTime.date}
+CURRENT INDIA DAY: ${currentIndiaDateTime.weekday}
+CURRENT INDIA TIME: ${currentIndiaDateTime.time}
+CURRENT INDIA TIMEZONE: ${currentIndiaDateTime.timezone}
+
+For any question asking today's date, current date, today's day,
+tomorrow, yesterday, current time, current month, or current year:
+
+1. Use ONLY the runtime values above.
+2. Ignore Gemini's pretrained knowledge about the current date.
+3. Ignore any older date appearing in Conversation History.
+4. Ignore any older date appearing in web search results unless the
+   user explicitly asks about that historical date.
+5. Never answer with a date that conflicts with CURRENT INDIA DATE.
+6. If asked "à¤†à¤œà¤šà¥€ à¤¤à¤¾à¤°à¥€à¤– à¤•à¤¾à¤¯ à¤†à¤¹à¥‡?", answer using CURRENT INDIA DATE.
+7. The current date is NOT 20 May 2024, 23 June 2024, or any other
+   historical date unless the user explicitly asks about that date.
+
+This FINAL DATE AUTHORITY has priority for current date/time questions.
+
+==================================================
 `;
 
   console.log(
@@ -6601,16 +6327,37 @@ Do not place anything after the follow-up end marker.
   ) {
     try {
       console.log(
-        `🤖 GEMINI ATTEMPT: ${attempt}`
+        `Ã°Å¸Â¤â€“ GEMINI ATTEMPT: ${attempt}`
       );
 
       console.log(
         "BEFORE generateContentStream"
       );
+    
+      console.log("========== FINAL PROMPT DATE DEBUG ==========");
+console.log("RUNTIME DATE:", currentIndiaDateTime.date);
+console.log("RUNTIME DAY:", currentIndiaDateTime.weekday);
+console.log("RUNTIME TIME:", currentIndiaDateTime.time);
 
+console.log(
+  "PROMPT HAS CURRENT DATE:",
+  prompt.includes(currentIndiaDateTime.date)
+);
+
+console.log(
+  "PROMPT HAS 23 JUNE 2024:",
+  prompt.includes("23 June 2024")
+);
+
+console.log(
+  "PROMPT HAS 20 MAY 2024:",
+  prompt.includes("20 May 2024")
+);
+
+console.log("============================================");
       const stream =
         await ai.models.generateContentStream({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.8-flash",
           contents: prompt,
         });
 
@@ -6618,8 +6365,8 @@ Do not place anything after the follow-up end marker.
         "AFTER generateContentStream"
       );
 
-      // Sources पुढे response मध्ये वापरण्यासाठी
-      // function object वर temporarily store
+      // Sources Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¢Ã Â¥â€¡ response Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â£Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬
+      // function object Ã Â¤ÂµÃ Â¤Â° temporarily store
       return {
   stream,
   sources,
@@ -6627,7 +6374,7 @@ Do not place anything after the follow-up end marker.
 
     } catch (err) {
       console.log(
-        "❌ STREAM ERROR:",
+        "Ã¢ÂÅ’ STREAM ERROR:",
         err.status
       );
 
@@ -6641,7 +6388,7 @@ Do not place anything after the follow-up end marker.
         attempt < 2
       ) {
         console.log(
-          "⏳ Gemini busy. Retrying..."
+          "Ã¢ÂÂ³ Gemini busy. Retrying..."
         );
 
         await new Promise(
@@ -6680,11 +6427,11 @@ res.setHeader(
 // ==================================================
 
 console.log(
-  "✅ PASSED ALL PRE-GEMINI CODE"
+  "Ã¢Å“â€¦ PASSED ALL PRE-GEMINI CODE"
 );
 
 console.log(
-  "🚀 ABOUT TO CALL GEMINI"
+  "Ã°Å¸Å¡â‚¬ ABOUT TO CALL GEMINI"
 );
 
 console.log(
@@ -6736,7 +6483,7 @@ function parseVedaAIResponse(text = "") {
         JSON.parse(productJsonText);
     } catch (error) {
       console.log(
-        "⚠️ PRODUCT JSON PARSE FAILED:",
+        "Ã¢Å¡Â Ã¯Â¸Â PRODUCT JSON PARSE FAILED:",
         error.message
       );
 
@@ -6788,7 +6535,7 @@ function parseVedaAIResponse(text = "") {
       }
     } catch (error) {
       console.log(
-        "⚠️ FOLLOWUPS JSON PARSE FAILED:",
+        "Ã¢Å¡Â Ã¯Â¸Â FOLLOWUPS JSON PARSE FAILED:",
         error.message
       );
     }
@@ -6815,7 +6562,7 @@ function parseVedaAIResponse(text = "") {
 // CALL GEMINI
 // ==================================================
 
-console.log("🟠 BEFORE callGeminiStream");
+console.log("Ã°Å¸Å¸Â  BEFORE callGeminiStream");
 
 const result = await callGeminiStream(
   userMessage,
@@ -6826,8 +6573,8 @@ const result = await callGeminiStream(
 const stream = result.stream;
 const sources = result.sources || [];
 
-console.log("🟢 AFTER callGeminiStream");
-console.log("📚 SOURCES TO SEND:", sources);
+console.log("Ã°Å¸Å¸Â¢ AFTER callGeminiStream");
+console.log("Ã°Å¸â€œÅ¡ SOURCES TO SEND:", sources);
 
 
 // ==================================================
@@ -6965,6 +6712,62 @@ if (
 
 
 // ==================================================
+// SEND WEB SOURCES
+// ==================================================
+
+if (
+  Array.isArray(sources) &&
+  sources.length > 0
+) {
+
+  const cleanSources = sources
+    .filter(item =>
+      item &&
+      typeof item.url === "string" &&
+      item.url.trim().length > 0
+    )
+    .map(item => ({
+      title:
+        item.title ||
+        item.domain ||
+        "Web Source",
+
+      domain:
+        item.domain ||
+        "",
+
+      url:
+        item.url
+    }))
+    .slice(0, 8);
+
+  console.log(
+    "========== SOURCES SENT TO FLUTTER =========="
+  );
+
+  console.log(
+    JSON.stringify(
+      cleanSources,
+      null,
+      2
+    )
+  );
+
+  res.write(
+    "<<<VEDAAI_SOURCES_START>>>\n"
+  );
+
+  res.write(
+    JSON.stringify(cleanSources)
+  );
+
+  res.write(
+    "\n<<<VEDAAI_SOURCES_END>>>\n"
+  );
+}
+
+
+// ==================================================
 // SAVE CHAT
 // ==================================================
 
@@ -7023,7 +6826,7 @@ if (
 const endTime = Date.now();
 
 console.log(
-  `⚡ Response Time: ${endTime - startTime} ms`
+  `Ã¢Å¡Â¡ Response Time: ${endTime - startTime} ms`
 );
 
 res.end();
@@ -7033,10 +6836,10 @@ res.end();
   console.log("========== GEMINI ERROR ==========");
   console.log(err);
 
-  console.log("❌ FINAL ERROR:", err);
-  console.log("❌ ERROR MESSAGE:", err.message);
-  console.log("❌ ERROR STATUS:", err.status);
-  console.log("❌ ERROR STACK:", err.stack);
+  console.log("Ã¢ÂÅ’ FINAL ERROR:", err);
+  console.log("Ã¢ÂÅ’ ERROR MESSAGE:", err.message);
+  console.log("Ã¢ÂÅ’ ERROR STATUS:", err.status);
+  console.log("Ã¢ÂÅ’ ERROR STACK:", err.stack);
 
   console.log("========== FULL ERROR DETAILS ==========");
   console.log("NAME:", err?.name);
@@ -7064,7 +6867,7 @@ res.end();
     err.message?.includes("RESOURCE_EXHAUSTED")
   ) {
 
-    console.log("⚠️ GEMINI QUOTA EXCEEDED");
+    console.log("Ã¢Å¡Â Ã¯Â¸Â GEMINI QUOTA EXCEEDED");
 
     res.write(
       "<<<VEDAAI_RESPONSE_START>>>\n"
@@ -7090,7 +6893,7 @@ res.end();
     err.message?.includes("UNAVAILABLE")
   ) {
 
-    console.log("⚠️ GEMINI TEMPORARILY UNAVAILABLE");
+    console.log("Ã¢Å¡Â Ã¯Â¸Â GEMINI TEMPORARILY UNAVAILABLE");
 
     res.write(
       "<<<VEDAAI_RESPONSE_START>>>\n"
@@ -7110,7 +6913,7 @@ res.end();
 
   // ================= OTHER ERROR =================
 
-  console.log("⚠️ UNKNOWN GEMINI ERROR");
+  console.log("Ã¢Å¡Â Ã¯Â¸Â UNKNOWN GEMINI ERROR");
 
   res.write(
     "<<<VEDAAI_RESPONSE_START>>>\n"
@@ -7383,13 +7186,15 @@ message:"Verification failed"
 
 // ================= HOME =================
 app.get("/", (req, res) => {
-  res.send("🔥 VedaAI backend running");
+  res.send("Ã°Å¸â€Â¥ VedaAI backend running");
 });
 
 // ================= SERVER =================
 const PORT = process.env.PORT || 3000;
 console.log("BEFORE LISTEN");
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🔥 VedaAI running on port ${PORT}`);
+  console.log(`Ã°Å¸â€Â¥ VedaAI running on port ${PORT}`);
 });
+
+
 
