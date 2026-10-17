@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -42,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final response = await http.post(
 
         Uri.parse(
-          "https://vedaai-backend-production-bf1d.up.railway.app/signup"
+          "https://vedaai-backend-25-2pl4.onrender.com/signup"
         ),
 
         headers: {
