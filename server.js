@@ -1440,6 +1440,52 @@ return res.json({
   }
 });
 
+// ================= CREATE NEW CHAT =================
+app.post("/create-chat", auth, async (req, res) => {
+  try {
+    const memory = await Memory.findOne({
+      userId: req.userId,
+    });
+
+    let userMemory = memory;
+
+    if (!userMemory) {
+      userMemory = new Memory({
+        userId: req.userId,
+        chatSessions: [],
+      });
+    }
+
+    const chatId = new mongoose.Types.ObjectId().toString();
+
+    const newChat = {
+      id: chatId,
+      title: "New Chat",
+      favorite: false,
+      messageCount: 0,
+      paused: false,
+      resetTime: null,
+      messages: [],
+    };
+
+    userMemory.chatSessions.push(newChat);
+
+    await userMemory.save();
+
+    return res.status(201).json({
+      success: true,
+      chat: newChat,
+    });
+  } catch (err) {
+    console.error("CREATE CHAT ERROR:", err.message);
+
+    return res.status(500).json({
+      success: false,
+      error: "Failed to create chat",
+    });
+  }
+});
+
 app.get("/load-chats", auth, async (req, res) => {
   try {
 
