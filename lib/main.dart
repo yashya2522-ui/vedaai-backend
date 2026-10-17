@@ -22,9 +22,13 @@ import 'splash_screen.dart';
 import 'subscription_screen.dart';
 import 'package:vedaai/notifications_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  tzdata.initializeTimeZones();
   runApp(const MyApp());
 }
 
@@ -73,7 +77,21 @@ bool isPremium = false;
 bool isOwner = false;
 String subscriptionType = "free";
   int currentChatIndex = 0;
+bool showWelcomeScreen = true;
 
+String getTimeGreeting() {
+  final hour = DateTime.now().hour;
+
+  if (hour >= 5 && hour < 12) {
+    return "Good Morning";
+  } else if (hour >= 12 && hour < 17) {
+    return "Good Afternoon";
+  } else if (hour >= 17 && hour < 21) {
+    return "Good Evening";
+  } else {
+    return "Good Night";
+  }
+}
 String userName = "User";
 
   List<Map<String, dynamic>> messages = [];
@@ -103,12 +121,11 @@ void startNewChat() {
     messages = [];
     controller.clear();
 
-    allChats = [
-      {
-        "title": "New Chat",
-        "messages": []
-      }
-    ];
+    allChats.insert(0, {
+      "id": DateTime.now().millisecondsSinceEpoch.toString(),
+      "title": "New Chat",
+      "messages": []
+    });
 
     currentChatIndex = 0;
   });
@@ -343,7 +360,7 @@ Future<void> uploadPdf() async {
 
     var request = http.MultipartRequest(
       "POST",
-      Uri.parse("http://10.169.139.137:3000/pdf"),
+      Uri.parse("https://vedaai-backend-25-2pl4.onrender.com/pdf"),
     );
 
     request.headers["Authorization"] = "Bearer $token";
@@ -625,7 +642,7 @@ Future<void> uploadImage() async {
     final request = http.MultipartRequest(
       "POST",
       Uri.parse(
-        "http://10.169.139.137:3000/image",
+        "https://vedaai-backend-25-2pl4.onrender.com/image",
       ),
     );
 
@@ -812,7 +829,7 @@ Future loadChat() async {
 
     final response = await http.get(
       Uri.parse(
-        "http://10.169.139.137:3000/load-chats",
+        "https://vedaai-backend-25-2pl4.onrender.com/load-chats",
       ),
       headers: {
         "Authorization": "Bearer $token",
@@ -891,11 +908,9 @@ Future loadChat() async {
      setState(() {
   allChats = loadedChats;
 
-  currentChatIndex = 0;
+  currentChatIndex = -1;
 
-  messages = List<Map<String, dynamic>>.from(
-    allChats[0]["messages"] ?? [],
-  );
+  messages = [];
 
   controller.clear();
 });
@@ -969,7 +984,7 @@ Future<void> renameChat(int index, String newTitle) async {
     }
 
     final response = await http.put(
-      Uri.parse("http://10.169.139.137:3000/rename-chat"),
+      Uri.parse("https://vedaai-backend-25-2pl4.onrender.com/rename-chat"),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token",
@@ -1007,30 +1022,74 @@ Future<void> renameChat(int index, String newTitle) async {
     );
   }
 }
+
 Future<void> newChat() async {
-  setState(() {
-   allChats.add({
-  "id": DateTime.now().millisecondsSinceEpoch.toString(),
-  "title": "New Chat",
-  "messages": <Map<String, dynamic>>[],
-  "favorite": false,
-  "pinned": false,
-  "messageCount": 0,
-  "paused": false,
-  "resetTime": null,
-  "updatedAt": DateTime.now().millisecondsSinceEpoch,
-});
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
 
-    currentChatIndex = allChats.length - 1;
+    if (token == null) {
+      if (!mounted) return;
 
-    messages = [];
-    controller.clear();
-  });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please login again."),
+        ),
+      );
+      return;
+    }
 
-  await saveChat();
+    final response = await http.post(
+      Uri.parse(
+        "https://vedaai-backend-25-2pl4.onrender.com/create-chat",
+      ),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
 
-  scrollToBottom();
+    if (response.statusCode != 201) {
+      throw Exception(
+        "Create chat failed: ${response.statusCode}",
+      );
+    }
+
+    final data = jsonDecode(response.body);
+    final chat = Map<String, dynamic>.from(data["chat"]);
+
+    chat["messages"] = <Map<String, dynamic>>[];
+    chat["favorite"] ??= false;
+    chat["pinned"] ??= false;
+    chat["messageCount"] ??= 0;
+    chat["paused"] ??= false;
+    chat["resetTime"] ??= null;
+
+    if (!mounted) return;
+
+    setState(() {
+      allChats.insert(0, chat);
+      currentChatIndex = 0;
+      messages = [];
+      showWelcomeScreen = false;
+      controller.clear();
+    });
+
+    scrollToBottom();
+  } catch (e) {
+    debugPrint("NEW CHAT ERROR: $e");
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Unable to create chat. Please try again."),
+      ),
+    );
+  }
 }
+
+
 
 Future<void> clearChat() async {
   setState(() {
@@ -1129,7 +1188,7 @@ Future<String> getAIResponse(String text) async {
 }
 
     final url = Uri.parse(
-      "http://10.169.139.137:3000/chat"
+      "https://vedaai-backend-25-2pl4.onrender.com/chat"
     );
 
     final res = await http.post(
@@ -1230,7 +1289,7 @@ Future<void> streamAIResponse(
     final request = http.Request(
       "POST",
       Uri.parse(
-        "http://10.169.139.137:3000/chat",
+        "https://vedaai-backend-25-2pl4.onrender.com/chat",
       ),
     );
 
@@ -2515,6 +2574,20 @@ Future<void> stopListening() async {
 ) {
   final bool isUser = msg["role"] == "user";
 
+  final String previousUserText = (index > 0)
+      ? (messages[index - 1]["role"] == "user"
+          ? (messages[index - 1]["text"]?.toString() ?? "")
+          : "")
+      : "";
+
+  final String currentText = msg["text"]?.toString() ?? "";
+
+  final bool isTimeQuery = !isUser &&
+      RegExp(
+        r'\b(time|clock|current time|what time|local time|time now)\b',
+        caseSensitive: false,
+      ).hasMatch(previousUserText);
+
   final List<Map<String, dynamic>> sources =
       List<Map<String, dynamic>>.from(
     msg["sources"] ?? [],
@@ -2863,6 +2936,32 @@ else
       child: MarkdownBody(
         data: msg["text"] ?? "",
         selectable: true,
+        sizedImageBuilder: (config) {
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: Image.network(
+      config.uri.toString(),
+      width: double.infinity,
+      fit: BoxFit.contain,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return const Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return const Padding(
+          padding: EdgeInsets.all(12),
+          child: Text("Image could not be loaded."),
+        );
+      },
+    ),
+  );
+},
         styleSheet: MarkdownStyleSheet(
           p: TextStyle(
             fontSize: 16,
@@ -2907,6 +3006,14 @@ else
     ),
   ),
             // ==================================================
+            // LIVE CLOCK CARD
+            if (isTimeQuery &&
+                msg["thinking"] != true &&
+                previousUserText.isNotEmpty)
+              VedaLiveClock(
+                city: "India",
+                timeZone: "Asia/Kolkata",
+              ),
 // PRODUCT CARD
 // ==================================================
 
@@ -4610,6 +4717,113 @@ if (
     ),
   ),
 
+if (showWelcomeScreen && messages.isEmpty)
+  Expanded(
+    child: Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xff2563EB),
+                    Color(0xff7C3AED),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.20),
+                    blurRadius: 25,
+                    spreadRadius: 3,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  "👑",
+                  style: TextStyle(fontSize: 36),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              "${getTimeGreeting()}, $userName",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: isDarkMode
+                    ? Colors.white
+                    : const Color(0xff0F172A),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Text(
+              "Welcome to VedaAI 👑",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode
+                    ? Colors.white70
+                    : const Color(0xff334155),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Text(
+              "Your AI assistant for study, coding,\nsearch, images and documents.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: isDarkMode
+                    ? Colors.white54
+                    : Colors.black54,
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            SizedBox(
+              width: 180,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: newChat,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text(
+                  "New Chat",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff2563EB),
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
 // ================= CHAT =================
 
 Expanded(
@@ -5191,6 +5405,150 @@ class ChatSearchDelegate extends SearchDelegate<Map<String, dynamic>> {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+// =====================================================
+// VEDAAI LIVE WORLD CLOCK WIDGET
+// =====================================================
+
+class VedaLiveClock extends StatefulWidget {
+  final String city;
+  final String timeZone;
+
+  const VedaLiveClock({
+    super.key,
+    required this.city,
+    required this.timeZone,
+  });
+
+  @override
+  State<VedaLiveClock> createState() => _VedaLiveClockState();
+}
+
+class _VedaLiveClockState extends State<VedaLiveClock> {
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+  bool get __isDarkMode => Theme.of(context).brightness == Brightness.dark;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final location = tz.getLocation(widget.timeZone);
+    final now = tz.TZDateTime.now(location);
+
+    final timeText = DateFormat('hh:mm:ss a').format(now);
+    final dateText = DateFormat('EEEE, d MMMM yyyy').format(now);
+    final offset = now.timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final hours = offset.inHours.abs().toString().padLeft(2, '0');
+    final minutes = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12, bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _isDarkMode
+            ? const Color(0xff172554)
+            : const Color(0xffEFF6FF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xff38BDF8).withOpacity(0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.public,
+                color: Color(0xff38BDF8),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  widget.city,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: _isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.circle,
+                size: 9,
+                color: Colors.green,
+              ),
+              const SizedBox(width: 5),
+              const Text(
+                'LIVE',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            timeText,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              color: _isDarkMode ? Colors.white : const Color(0xff1D4ED8),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            dateText,
+            style: TextStyle(
+              fontSize: 13,
+              color: _isDarkMode ? Colors.white70 : Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'UTC$sign$hours:$minutes  •  ${widget.timeZone}',
+            style: TextStyle(
+              fontSize: 12,
+              color: _isDarkMode ? Colors.white60 : Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 
 
