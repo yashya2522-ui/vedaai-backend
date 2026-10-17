@@ -1357,15 +1357,18 @@ bool receivingResponse = false;
 bool receivingSources = false;
 bool receivingFollowUps = false;
 bool receivingProduct = false;
+bool receivingImages = false;
 
 String sourceBuffer = "";
 String followUpBuffer = "";
 String productBuffer = "";
+String imageBuffer = "";
 
 List<Map<String, dynamic>> receivedSources = [];
 List<String> receivedFollowUps = [];
 
 Map<String, dynamic>? receivedProduct;
+List<Map<String, dynamic>> receivedImages = [];
 
 // ==================================================
 // MARKERS
@@ -1382,6 +1385,8 @@ const followUpsEnd = "<<<VEDAAI_FOLLOWUPS_END>>>";
 
 const productStart = "<<<VEDAAI_PRODUCT_START>>>";
 const productEnd = "<<<VEDAAI_PRODUCT_END>>>";
+const imagesStart = "<<<VEDAAI_IMAGES_START>>>";
+const imagesEnd = "<<<VEDAAI_IMAGES_END>>>";
 
 // ==================================================
 // ALL MARKERS
@@ -1396,6 +1401,8 @@ final allMarkers = [
   followUpsEnd,
   productStart,
   productEnd,
+  imagesStart,
+  imagesEnd,
 ];
 
 // Keep enough characters at the end of a chunk
@@ -1454,6 +1461,54 @@ await for (
 
     processed = false;
 
+    // ==================================================
+    // IMAGES JSON PARSER ADDED
+    // ==================================================
+
+    if (receivingImages) {
+      final end = buffer.indexOf(imagesEnd);
+
+      if (end != -1) {
+        imageBuffer += buffer.substring(0, end);
+        buffer = buffer.substring(end + imagesEnd.length);
+
+        try {
+          final decoded = jsonDecode(imageBuffer.trim());
+
+          if (decoded is List) {
+            receivedImages = decoded
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .where((e) =>
+                    e["url"] is String &&
+                    (e["url"] as String).startsWith("http"))
+                .toList();
+
+            if (mounted) {
+              setState(() {
+                allChats[currentChatIndex]["messages"][index]["images"] =
+                    receivedImages;
+
+                messages = List<Map<String, dynamic>>.from(
+                  allChats[currentChatIndex]["messages"],
+                );
+              });
+            }
+
+            print("VEDAAI IMAGES RECEIVED: ${receivedImages.length}");
+          }
+        } catch (e) {
+          print("VEDAAI IMAGES PARSE ERROR: $e");
+        }
+
+        imageBuffer = "";
+        receivingImages = false;
+        processed = true;
+        continue;
+      }
+
+      break;
+    }
     // ==================================================
     // SOURCES
     // ==================================================
@@ -1879,9 +1934,15 @@ await for (
     }
 
     // ==================================================
-    // SOURCES START
+// SOURCES START
     // ==================================================
 
+    if (buffer.startsWith(imagesStart)) {
+      buffer = buffer.substring(imagesStart.length);
+      receivingImages = true;
+      processed = true;
+      continue;
+    }
     if (buffer.startsWith(sourcesStart)) {
 
       buffer =
@@ -1976,6 +2037,10 @@ if (buffer.isNotEmpty) {
   } else if (receivingProduct) {
 
     productBuffer += buffer;
+
+  } else if (receivingImages) {
+
+    imageBuffer += buffer;
   }
 
   buffer = "";
@@ -3014,6 +3079,71 @@ else
                 city: "India",
                 timeZone: "Asia/Kolkata",
               ),
+ // VEDAAI IMAGE RESULTS CARD
+ // ==================================================
+
+ if (!isUser &&
+     msg["thinking"] != true &&
+     msg["images"] is List &&
+     (msg["images"] as List).isNotEmpty)
+   Padding(
+     padding: const EdgeInsets.only(left: 36, right: 16, top: 8, bottom: 8),
+     child: SizedBox(
+       height: 190,
+       child: ListView.separated(
+         scrollDirection: Axis.horizontal,
+         itemCount: (msg["images"] as List).length,
+         separatorBuilder: (_, __) => const SizedBox(width: 10),
+         itemBuilder: (context, imageIndex) {
+           final image = Map<String, dynamic>.from(
+             (msg["images"] as List)[imageIndex] as Map,
+           );
+           final imageUrl = image["url"]?.toString() ?? "";
+           final imageTitle = image["title"]?.toString() ?? "Image";
+
+           return SizedBox(
+             width: 160,
+             child: Card(
+               clipBehavior: Clip.antiAlias,
+               margin: EdgeInsets.zero,
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Expanded(
+                     child: Image.network(
+                       imageUrl,
+                       width: double.infinity,
+                       fit: BoxFit.cover,
+                       loadingBuilder: (context, child, progress) {
+                         if (progress == null) return child;
+                         return const Center(
+                           child: CircularProgressIndicator(),
+                         );
+                       },
+                       errorBuilder: (context, error, stackTrace) {
+                         return const Center(
+                           child: Icon(Icons.broken_image_outlined, size: 36),
+                         );
+                       },
+                     ),
+                   ),
+                   Padding(
+                     padding: const EdgeInsets.all(8),
+                     child: Text(
+                       imageTitle,
+                       maxLines: 2,
+                       overflow: TextOverflow.ellipsis,
+                       style: const TextStyle(fontSize: 12),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+           );
+         },
+       ),
+     ),
+   ),
 // PRODUCT CARD
 // ==================================================
 
@@ -4746,7 +4876,7 @@ if (showWelcomeScreen && messages.isEmpty)
               ),
               child: const Center(
                 child: Text(
-                  "👑",
+                  "ðŸ‘‘",
                   style: TextStyle(fontSize: 36),
                 ),
               ),
@@ -4769,7 +4899,7 @@ if (showWelcomeScreen && messages.isEmpty)
             const SizedBox(height: 10),
 
             Text(
-              "Welcome to VedaAI 👑",
+              "Welcome to VedaAI ðŸ‘‘",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
@@ -5538,7 +5668,7 @@ class _VedaLiveClockState extends State<VedaLiveClock> {
           ),
           const SizedBox(height: 4),
           Text(
-            'UTC$sign$hours:$minutes  •  ${widget.timeZone}',
+            'UTC$sign$hours:$minutes  â€¢  ${widget.timeZone}',
             style: TextStyle(
               fontSize: 12,
               color: _isDarkMode ? Colors.white60 : Colors.black54,
@@ -5549,6 +5679,9 @@ class _VedaLiveClockState extends State<VedaLiveClock> {
     );
   }
 }
+
+
+
 
 
 

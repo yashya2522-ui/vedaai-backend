@@ -79,7 +79,11 @@ let currentPdfText = "";
 let chatHistory = [];
 
 // ================= CONFIG =================
-const JWT_SECRET = process.env.JWT_SECRET || "vedaai_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is required");
+}
 const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({
   apiKey: API_KEY,
@@ -120,15 +124,15 @@ function shouldSearchWeb(query, history = []) {
     "internet var bagh",
     "google var bagh",
 
-    "à¤¤à¤ªà¤¾à¤¸à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—",
-    "à¤¤à¤ªà¤¾à¤¸à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¤¾",
-    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¤¾",
-    "à¤–à¤°à¥‡ à¤†à¤¹à¥‡ à¤•à¤¾",
-    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¥€ à¤¨à¤¾à¤¹à¥€",
-    "verify à¤•à¤°à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—",
-    "à¤¶à¥‹à¤§à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—",
-    "à¤¶à¥‹à¤§à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¤¾",
-    "à¤‘à¤¨à¤²à¤¾à¤‡à¤¨ à¤¤à¤ªà¤¾à¤¸à¤¾"
+    "तपासून सांग",
+    "तपासून सांगा",
+    "खरं आहे का",
+    "खरे आहे का",
+    "खरं आहे की नाही",
+    "verify करून सांग",
+    "शोधून सांग",
+    "शोधून सांगा",
+    "ऑनलाइन तपासा"
   ];
 
   if (explicitSearchPatterns.some(pattern => q.includes(pattern))) {
@@ -156,19 +160,19 @@ function shouldSearchWeb(query, history = []) {
     "whats new",
     "now",
 
-    "à¤¸à¤§à¥à¤¯à¤¾",
-    "à¤†à¤¤à¥à¤¤à¤¾",
-    "à¤†à¤¤à¥à¤¤à¤¾à¤šà¤¾",
-    "à¤†à¤¤à¥à¤¤à¤¾à¤šà¥€",
-    "à¤†à¤¤à¥à¤¤à¤¾à¤šà¥‡",
-    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¤¾",
-    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€",
-    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¥‡",
-    "à¤¤à¤¾à¤œà¤¾",
-    "à¤¤à¤¾à¤œà¥‡",
-    "à¤¤à¤¾à¤œà¥€",
-    "à¤¨à¤µà¥€à¤¨à¤¤à¤®",
-    "à¤…à¤²à¥€à¤•à¤¡à¥€à¤²"
+    "सध्या",
+    "आत्ता",
+    "आत्ताचा",
+    "आत्ताची",
+    "आत्ताचे",
+    "सध्याचा",
+    "सध्याची",
+    "सध्याचे",
+    "ताजा",
+    "ताजे",
+    "ताजी",
+    "नवीनतम",
+    "अलीकडील"
   ];
 
   if (currentPatterns.some(pattern => q.includes(pattern))) {
@@ -190,13 +194,13 @@ function shouldSearchWeb(query, history = []) {
     "current price",
     "market price",
 
-    "à¤•à¤¿à¤‚à¤®à¤¤",
-    "à¤•à¤¿à¤¤à¥€ à¤°à¥à¤ªà¤¯à¥‡",
-    "à¤•à¤¿à¤¤à¥€ à¤ªà¥ˆà¤¸à¥‡",
-    "à¤¦à¤°",
-    "à¤­à¤¾à¤µ",
-    "à¤†à¤œà¤šà¤¾ à¤­à¤¾à¤µ",
-    "à¤†à¤œà¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤"
+    "किंमत",
+    "किती रुपये",
+    "किती पैसे",
+    "दर",
+    "भाव",
+    "आजचा भाव",
+    "आजची किंमत"
   ];
 
   const productPatterns = [
@@ -212,11 +216,11 @@ function shouldSearchWeb(query, history = []) {
     "bike",
     "gold",
     "silver",
-    "à¤¸à¥‹à¤¨à¥‡",
-    "à¤šà¤¾à¤‚à¤¦à¥€",
-    "à¤®à¥‹à¤¬à¤¾à¤ˆà¤²",
-    "à¤«à¥‹à¤¨",
-    "à¤²à¥…à¤ªà¤Ÿà¥‰à¤ª"
+    "सोने",
+    "चांदी",
+    "मोबाईल",
+    "फोन",
+    "लॅपटॉप"
   ];
 
   const asksPrice = pricePatterns.some(pattern => q.includes(pattern));
@@ -239,13 +243,13 @@ function shouldSearchWeb(query, history = []) {
     "bitcoin price",
     "crypto price",
 
-    "à¤¸à¥‹à¤¨à¥à¤¯à¤¾à¤šà¤¾ à¤­à¤¾à¤µ",
-    "à¤¸à¥‹à¤¨à¥à¤¯à¤¾à¤šà¤¾ à¤¦à¤°",
-    "à¤šà¤¾à¤‚à¤¦à¥€à¤šà¤¾ à¤­à¤¾à¤µ",
-    "à¤šà¤¾à¤‚à¤¦à¥€à¤šà¤¾ à¤¦à¤°",
-    "à¤¶à¥‡à¤…à¤° à¤•à¤¿à¤‚à¤®à¤¤",
-    "à¤¬à¤¾à¤œà¤¾à¤°à¤­à¤¾à¤µ",
-    "à¤¡à¥‰à¤²à¤°à¤šà¤¾ à¤­à¤¾à¤µ"
+    "सोन्याचा भाव",
+    "सोन्याचा दर",
+    "चांदीचा भाव",
+    "चांदीचा दर",
+    "शेअर किंमत",
+    "बाजारभाव",
+    "डॉलरचा भाव"
   ];
 
   if (financePatterns.some(pattern => q.includes(pattern))) {
@@ -263,13 +267,13 @@ function shouldSearchWeb(query, history = []) {
     "today news",
     "breaking news",
     "headlines",
-    "à¤¸à¤®à¤¾à¤šà¤¾à¤°",
-    "à¤¬à¤¾à¤¤à¤®à¥à¤¯à¤¾",
-    "à¤†à¤œà¤šà¥à¤¯à¤¾ à¤¬à¤¾à¤¤à¤®à¥à¤¯à¤¾",
-    "à¤¤à¤¾à¤œà¥à¤¯à¤¾ à¤¬à¤¾à¤¤à¤®à¥à¤¯à¤¾",
-    "à¤¨à¥à¤¯à¥‚à¤œ",
-    "à¤…à¤ªà¤¡à¥‡à¤Ÿ à¤•à¤¾à¤¯",
-    "à¤•à¤¾à¤¯ à¤…à¤ªà¤¡à¥‡à¤Ÿ"
+    "समाचार",
+    "बातम्या",
+    "आजच्या बातम्या",
+    "ताज्या बातम्या",
+    "न्यूज",
+    "अपडेट काय",
+    "काय अपडेट"
   ];
 
   if (newsPatterns.some(pattern => q.includes(pattern))) {
@@ -295,13 +299,13 @@ function shouldSearchWeb(query, history = []) {
     "wicket",
     "runs",
     "match",
-    "à¤¨à¤¿à¤•à¤¾à¤²",
-    "à¤¸à¥à¤•à¥‹à¤…à¤°",
-    "à¤§à¤¾à¤µà¤¾",
-    "à¤µà¤¿à¤•à¥‡à¤Ÿ",
-    "à¤“à¤µà¥à¤¹à¤°",
-    "à¤µà¤¿à¤œà¥‡à¤¤à¤¾",
-    "à¤¸à¤¾à¤®à¤¨à¤¾"
+    "निकाल",
+    "स्कोअर",
+    "धावा",
+    "विकेट",
+    "ओव्हर",
+    "विजेता",
+    "सामना"
   ];
 
   if (sportsPatterns.some(pattern => q.includes(pattern))) {
@@ -320,11 +324,11 @@ function shouldSearchWeb(query, history = []) {
     "forecast",
     "weather today",
     "weather tomorrow",
-    "à¤ªà¤¾à¤Šà¤¸",
-    "à¤¤à¤¾à¤ªà¤®à¤¾à¤¨",
-    "à¤¹à¤µà¤¾à¤®à¤¾à¤¨",
-    "à¤¹à¤µà¤¾à¤®à¤¾à¤¨à¤¾à¤šà¤¾ à¤…à¤‚à¤¦à¤¾à¤œ",
-    "à¤ªà¤¾à¤µà¤¸à¤¾à¤šà¤¾ à¤…à¤‚à¤¦à¤¾à¤œ"
+    "पाऊस",
+    "तापमान",
+    "हवामान",
+    "हवामानाचा अंदाज",
+    "पावसाचा अंदाज"
   ];
 
   if (weatherPatterns.some(pattern => q.includes(pattern))) {
@@ -351,13 +355,13 @@ function shouldSearchWeb(query, history = []) {
     "ssc",
     "chsl",
     "police bharti",
-    "à¤­à¤°à¤¤à¥€",
-    "à¤¸à¤°à¤•à¤¾à¤°à¥€ à¤¨à¥‹à¤•à¤°à¥€",
-    "à¤¸à¤°à¤•à¤¾à¤°à¥€ à¤¨à¥Œà¤•à¤°à¥€",
-    "à¤œà¤¾à¤¹à¤¿à¤°à¤¾à¤¤",
-    "à¤…à¤§à¤¿à¤¸à¥‚à¤šà¤¨à¤¾",
-    "à¤¸à¤°à¤•à¤¾à¤°à¥€ à¤¯à¥‹à¤œà¤¨à¤¾",
-    "à¤¸à¤°à¤•à¤¾à¤°à¤šà¥€ à¤¯à¥‹à¤œà¤¨à¤¾"
+    "भरती",
+    "सरकारी नोकरी",
+    "सरकारी नौकरी",
+    "जाहिरात",
+    "अधिसूचना",
+    "सरकारी योजना",
+    "सरकारची योजना"
   ];
 
   if (governmentPatterns.some(pattern => q.includes(pattern))) {
@@ -384,9 +388,9 @@ function shouldSearchWeb(query, history = []) {
     "npm latest",
     "technology update",
 
-    "à¤¨à¤µà¥€à¤¨ version",
-    "à¤¨à¤µà¥€à¤¨ à¤…à¤ªà¤¡à¥‡à¤Ÿ",
-    "à¤¨à¤µà¥€à¤¨ release",
+    "नवीन version",
+    "नवीन अपडेट",
+    "नवीन release",
     "latest api"
   ];
 
@@ -410,12 +414,12 @@ function shouldSearchWeb(query, history = []) {
     "fact",
     "information about",
     "details about",
-    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¤¾",
-    "à¤–à¤°à¥‡ à¤†à¤¹à¥‡ à¤•à¤¾",
-    "à¤–à¤°à¤‚ à¤•à¥€ à¤–à¥‹à¤Ÿà¤‚",
-    "à¤–à¤°à¤‚ à¤•à¥€ à¤¨à¤¾à¤¹à¥€",
-    "à¤®à¤¾à¤¹à¤¿à¤¤à¥€",
-    "à¤¤à¤ªà¤¶à¥€à¤²"
+    "खरं आहे का",
+    "खरे आहे का",
+    "खरं की खोटं",
+    "खरं की नाही",
+    "माहिती",
+    "तपशील"
   ];
 
   if (researchPatterns.some(pattern => q.includes(pattern))) {
@@ -438,19 +442,19 @@ function shouldSearchWeb(query, history = []) {
     "latest",
     "update",
     "today",
-    "à¤•à¤¿à¤¤à¥€",
-    "à¤•à¤¿à¤¤à¥€ à¤†à¤¹à¥‡",
-    "à¤†à¤¤à¥à¤¤à¤¾",
-    "à¤¸à¤§à¥à¤¯à¤¾",
-    "à¤¨à¤¿à¤•à¤¾à¤²",
-    "à¤­à¤¾à¤µ",
-    "à¤¦à¤°",
-    "à¤…à¤ªà¤¡à¥‡à¤Ÿ",
-    "à¤•à¤¾à¤¯ à¤†à¤¹à¥‡",
-    "à¤•à¤§à¥€",
-    "à¤‰à¤ªà¤²à¤¬à¥à¤§",
-    "à¤–à¤°à¤‚ à¤†à¤¹à¥‡ à¤•à¤¾",
-    "à¤–à¤°à¥‡ à¤†à¤¹à¥‡ à¤•à¤¾"
+    "किती",
+    "किती आहे",
+    "आत्ता",
+    "सध्या",
+    "निकाल",
+    "भाव",
+    "दर",
+    "अपडेट",
+    "काय आहे",
+    "कधी",
+    "उपलब्ध",
+    "खरं आहे का",
+    "खरे आहे का"
   ];
 
   const looksLikeFollowUp = followUpPatterns.some(
@@ -559,21 +563,21 @@ function buildSearchQuery(query, history = []) {
     /\bkay news\b/i,
 
     // Marathi Unicode
-    /Ã Â¤â€ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾/u,
-    /Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾/u,
-    /Ã Â¤â€ Ã Â¤Å“/u,
-    /Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â‚¬/u,
-    /Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¤Â¾/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â²/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â²Ã Â¤Å¡Ã Â¥â‚¬/u,
-    /Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨/u,
-    /Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸/u,
-    /Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â¸/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€š/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€šÃ Â¤Â¯/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤Â¾Ã Â¤Â¯/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤Â¬Ã Â¤Â¾Ã Â¤Â¤Ã Â¤Â®Ã Â¥â‚¬/u,
-    /Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬/u
+    /à¤†à¤¤à¥à¤¤à¤¾/u,
+    /à¤¸à¤§à¥à¤¯à¤¾/u,
+    /à¤†à¤œ/u,
+    /à¤†à¤œà¤šà¥€/u,
+    /à¤†à¤œà¤šà¤¾/u,
+    /à¤•à¤¾à¤²/u,
+    /à¤•à¤¾à¤²à¤šà¥€/u,
+    /à¤¨à¤µà¥€à¤¨/u,
+    /à¤…à¤ªà¤¡à¥‡à¤Ÿ/u,
+    /à¤…à¤ªà¤¡à¥‡à¤Ÿà¥à¤¸/u,
+    /à¤•à¤¾à¤¯ à¤à¤¾à¤²à¤‚/u,
+    /à¤•à¤¾à¤¯ à¤à¤¾à¤²à¤‚à¤¯/u,
+    /à¤•à¤¾à¤¯ à¤à¤¾à¤²à¤¾à¤¯/u,
+    /à¤•à¤¾à¤¯ à¤¬à¤¾à¤¤à¤®à¥€/u,
+    /à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€/u
   ];
 
   const hasExplicitCurrentIntent =
@@ -601,12 +605,12 @@ function buildSearchQuery(query, history = []) {
     "recent",
     "news",
     "batmi",
-    "Ã Â¤Â¬Ã Â¤Â¾Ã Â¤Â¤Ã Â¤Â®Ã Â¥â‚¬",
-    "Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸",
-    "Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â¸",
-    "Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨",
-    "Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬",
-    "Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â€¡"
+    "à¤¬à¤¾à¤¤à¤®à¥€",
+    "à¤…à¤ªà¤¡à¥‡à¤Ÿ",
+    "à¤…à¤ªà¤¡à¥‡à¤Ÿà¥à¤¸",
+    "à¤¨à¤µà¥€à¤¨",
+    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€",
+    "à¤¸à¤§à¥à¤¯à¤¾à¤šà¥‡"
   ];
 
   const hasUpdateIntent =
@@ -626,13 +630,13 @@ function buildSearchQuery(query, history = []) {
     /\banything new\b/i,
     /\bwhat happened\b/i,
 
-    /Ã Â¤Â®Ã Â¤â€” Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
-    /Ã Â¤â€ Ã Â¤Â¤Ã Â¤Â¾ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
-    /Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¢Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
-    /Ã Â¤â€ Ã Â¤Â£Ã Â¤â€“Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
-    /Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€š/u,
-    /Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤â€šÃ Â¤Â¯/u
+    /à¤®à¤— à¤•à¤¾à¤¯/u,
+    /à¤†à¤¤à¤¾ à¤•à¤¾à¤¯/u,
+    /à¤ªà¥à¤¢à¥‡ à¤•à¤¾à¤¯/u,
+    /à¤†à¤£à¤–à¥€ à¤•à¤¾à¤¯/u,
+    /à¤¨à¤µà¥€à¤¨ à¤•à¤¾à¤¯/u,
+    /à¤•à¤¾à¤¯ à¤à¤¾à¤²à¤‚/u,
+    /à¤•à¤¾à¤¯ à¤à¤¾à¤²à¤‚à¤¯/u
   ];
 
   const isFollowUp =
@@ -710,7 +714,7 @@ function buildSearchQuery(query, history = []) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 console.log("========= SERVER TEST =========");
-console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
+
 
 /*
 (async () => {
@@ -735,11 +739,11 @@ console.log("KEY PREFIX:", API_KEY ? API_KEY.substring(0, 6) : "NONE");
 
 // ================= CHECK API =================
 if (!API_KEY) {
-  console.error("Ã¢ÂÅ’ GEMINI API KEY NOT FOUND");
+  console.error("âŒ GEMINI API KEY NOT FOUND");
   process.exit(1);
 }
 
-console.log("Ã¢Å“â€¦ API KEY LOADED");
+console.log("âœ… API KEY LOADED");
 
 const razorpay = new Razorpay({
 
@@ -786,7 +790,7 @@ function checkSubscription(user) {
   // Expiry check
   if (user.isPremium) {
 
-    // Ã Â¤Å“Ã Â¤Â° expiry Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¤Ã Â¤Â° invalid premium
+    // à¤œà¤° expiry à¤¨à¤¾à¤¹à¥€ à¤¤à¤° invalid premium
     if (!user.subscriptionExpiry) {
       return {
         premium: false,
@@ -794,7 +798,7 @@ function checkSubscription(user) {
       };
     }
 
-    // Premium Ã Â¤Å¡Ã Â¤Â¾Ã Â¤Â²Ã Â¥â€š Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡
+    // Premium à¤šà¤¾à¤²à¥‚ à¤†à¤¹à¥‡
     if (new Date() < new Date(user.subscriptionExpiry)) {
       return {
         premium: true,
@@ -802,12 +806,12 @@ function checkSubscription(user) {
       };
     }
 
-    // Premium Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â²Ã Â¤â€š
+    // Premium à¤¸à¤‚à¤ªà¤²à¤‚
     user.isPremium = false;
     user.subscriptionType = "free";
     user.subscriptionExpiry = null;
 
-    // Database save Ã Â¤ÂµÃ Â¥â€¡Ã Â¤â€”Ã Â¤Â³Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ API Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€š
+    // Database save à¤µà¥‡à¤—à¤³à¥à¤¯à¤¾ API à¤®à¤§à¥à¤¯à¥‡ à¤•à¤°à¥‚
     return {
       premium: false,
       plan: "free",
@@ -909,8 +913,8 @@ const logger = winston.createLogger({
 
 // ================= DB =================
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("Ã¢Å“â€¦ MongoDB Connected"))
-  .catch(err => console.log("Ã¢ÂÅ’ MongoDB Error:", err));
+  .then(() => console.log("âœ… MongoDB Connected"))
+  .catch(err => console.log("âŒ MongoDB Error:", err));
 
 // ================= MEMORY =================
 const MemorySchema = new mongoose.Schema({
@@ -1547,7 +1551,7 @@ app.put("/rename-chat", auth, async (req, res) => {
 
     await memory.save();
 
-    console.log("Ã¢Å“â€¦ CHAT RENAMED:", chatId, "Ã¢â€ â€™", chat.title);
+    console.log("âœ… CHAT RENAMED:", chatId, "â†’", chat.title);
 
     return res.json({
       success: true,
@@ -1556,7 +1560,7 @@ app.put("/rename-chat", auth, async (req, res) => {
     });
 
   } catch (err) {
-    console.log("Ã¢ÂÅ’ RENAME CHAT ERROR:", err.message);
+    console.log("âŒ RENAME CHAT ERROR:", err.message);
 
     return res.status(500).json({
       error: err.message,
@@ -1655,7 +1659,7 @@ async function searchWeb(query, history = []) {
     { timeZone: "Asia/Kolkata" }
   )} India`;
 
-    console.log("Ã°Å¸Å’Â SEARCH WEB:", searchQuery);
+    console.log("ðŸŒ SEARCH WEB:", searchQuery);
 
     const response = await axios.post(
   "https://api.tavily.com/search",
@@ -1685,10 +1689,10 @@ async function searchWeb(query, history = []) {
       ? response.data.results
       : [];
 
-    console.log("Ã°Å¸â€œÅ¡ TAVILY RESULTS:", results.length);
+    console.log("ðŸ“š TAVILY RESULTS:", results.length);
 
     // ==========================================
-    // Ã°Å¸â€œÂ° NEWS DATE NORMALIZATION
+    // ðŸ“° NEWS DATE NORMALIZATION
     // ==========================================
 
     results = results.map(item => {
@@ -1710,7 +1714,7 @@ async function searchWeb(query, history = []) {
     });
 
     // ==========================================
-    // Ã°Å¸â€œâ€¦ REMOVE VERY OLD NEWS
+    // ðŸ“… REMOVE VERY OLD NEWS
     // ==========================================
 
     const now = new Date();
@@ -1730,13 +1734,13 @@ async function searchWeb(query, history = []) {
         (now.getTime() - published.getTime()) /
         (1000 * 60 * 60 * 24);
 
-      // NEWS query Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬ 30 Ã Â¤Â¦Ã Â¤Â¿Ã Â¤ÂµÃ Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤ÂªÃ Â¥â€¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â·Ã Â¤Â¾ Ã Â¤Å“Ã Â¥ÂÃ Â¤Â¨Ã Â¥â‚¬
-      // Ã Â¤Â¬Ã Â¤Â¾Ã Â¤Â¤Ã Â¤Â®Ã Â¥â‚¬ Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯ results Ã Â¤Â®Ã Â¤Â§Ã Â¥â€šÃ Â¤Â¨ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¢Ã Â¤Â¾
+      // NEWS query à¤¸à¤¾à¤ à¥€ 30 à¤¦à¤¿à¤µà¤¸à¤¾à¤‚à¤ªà¥‡à¤•à¥à¤·à¤¾ à¤œà¥à¤¨à¥€
+      // à¤¬à¤¾à¤¤à¤®à¥€ à¤®à¥à¤–à¥à¤¯ results à¤®à¤§à¥‚à¤¨ à¤•à¤¾à¤¢à¤¾
       return ageDays <= 30;
     });
 
     // ==========================================
-    // Ã°Å¸â€ â€¢ LATEST FIRST
+    // ðŸ†• LATEST FIRST
     // ==========================================
 
     recentResults.sort((a, b) => {
@@ -1747,7 +1751,7 @@ async function searchWeb(query, history = []) {
     });
 
     console.log(
-      "Ã°Å¸â€œâ€¦ SORTED NEWS RESULTS:",
+      "ðŸ“… SORTED NEWS RESULTS:",
       recentResults.map(item => ({
         title: item.title,
         publishedDate: item.publishedDate,
@@ -1756,7 +1760,7 @@ async function searchWeb(query, history = []) {
     );
 
     console.log(
-      "Ã°Å¸Å¸Â¢ LATEST NEWS:",
+      "ðŸŸ¢ LATEST NEWS:",
       recentResults[0]?.title || "No recent result"
     );
 
@@ -1765,7 +1769,7 @@ async function searchWeb(query, history = []) {
   } catch (error) {
 
     console.error(
-      "Ã¢ÂÅ’ SEARCH WEB ERROR:",
+      "âŒ SEARCH WEB ERROR:",
       error.response?.data || error.message
     );
 
@@ -1857,7 +1861,7 @@ if (
     success: false,
 
     message:
-      "Daily Image Limit Completed. Upgrade to Premium Ã°Å¸â€˜â€˜"
+      "Daily Image Limit Completed. Upgrade to Premium ðŸ‘‘"
 
   });
 
@@ -2027,7 +2031,7 @@ if (user.dailyUsage.pdf >= limits.pdf) {
     success: false,
 
     message:
-      "Daily PDF limit completed. Upgrade to Premium Ã°Å¸â€˜â€˜"
+      "Daily PDF limit completed. Upgrade to Premium ðŸ‘‘"
 
   });
 
@@ -2166,7 +2170,7 @@ Give response in structured format:
  }
 }
 );
-console.log("Ã¢Å“â€¦ PDF + AI response saved");
+console.log("âœ… PDF + AI response saved");
 
     if (fs.existsSync(req.file.path)) {
 
@@ -2207,7 +2211,7 @@ console.log("Ã¢Å“â€¦ PDF + AI response saved");
 
 });
 
-console.log("Ã¢Å“â€¦ PDF CHAT ROUTE LOADED");
+console.log("âœ… PDF CHAT ROUTE LOADED");
 app.post("/pdf-chat", auth, async(req,res)=>{
 
   try {
@@ -2352,7 +2356,7 @@ app.get("/pdf-history/:pdfId", auth, async (req, res) => {
 
 });
 
-console.log("Ã¢Å“â€¦ MY PDFS ROUTE REGISTERED");
+console.log("âœ… MY PDFS ROUTE REGISTERED");
 app.get("/my-pdfs", auth, async (req, res) => {
 
   try {
@@ -2377,7 +2381,7 @@ return res.json({
 
 });
 
-console.log("Ã¢Å“â€¦ SYNC ROUTE REGISTERED");
+console.log("âœ… SYNC ROUTE REGISTERED");
 
 app.get("/sync", auth, async (req, res) => {
 
@@ -2476,10 +2480,10 @@ app.post("/chat", auth, async (req, res) => {
     console.log("History:", history);
     console.log("REQ HISTORY");
     console.log(JSON.stringify(history, null, 2));
-    console.log("Ã¢Å“â€¦ PASSED HISTORY");
-    console.log("Ã°Å¸â€Â STEP AFTER HISTORY");
+    console.log("âœ… PASSED HISTORY");
+    console.log("ðŸ” STEP AFTER HISTORY");
 const userId = req.userId || "guest";
-console.log("Ã°Å¸â€Â USER ID:", userId);
+console.log("ðŸ” USER ID:", userId);
     if (!userMessage) {
       return res.status(400).json({ error: "Message required" });
     }
@@ -2489,12 +2493,12 @@ console.log("Ã°Å¸â€Â USER ID:", userId);
 if (userId !== "guest") {
 
  user = await User.findById(userId);
-console.log("Ã°Å¸â€Â¥ USER FOUND:", !!user);
+console.log("ðŸ”¥ USER FOUND:", !!user);
 
 const subscription = checkSubscription(user);
-console.log("Ã°Å¸â€Â¥ SUBSCRIPTION CHECKED");
+console.log("ðŸ”¥ SUBSCRIPTION CHECKED");
 const limits = getPlanLimits(user);
-console.log("Ã°Å¸â€Â¥ PLAN LIMITS CHECKED");
+console.log("ðŸ”¥ PLAN LIMITS CHECKED");
 if (subscription.expired) {
 
   await user.save();
@@ -2532,7 +2536,7 @@ if (
   return res.json({
     success: false,
     message:
-      "Daily Free Limit Completed. Upgrade to Premium Ã°Å¸â€˜â€˜"
+      "Daily Free Limit Completed. Upgrade to Premium ðŸ‘‘"
   });
 
 }
@@ -2548,7 +2552,7 @@ await user.save();
 // ================= MEMORY =================
 let memory = await Memory.findOne({ userId });
 
-console.log("Ã°Å¸â€Â¥ MEMORY FOUND:", !!memory);
+console.log("ðŸ”¥ MEMORY FOUND:", !!memory);
 
 // ================= CREATE MEMORY IF NOT EXISTS =================
 if (!memory) {
@@ -2559,7 +2563,7 @@ if (!memory) {
 
   await memory.save();
 
-  console.log("Ã°Å¸â€ â€¢ NEW MEMORY CREATED");
+  console.log("ðŸ†• NEW MEMORY CREATED");
 }
 
 // ================= FIX OLD CHAT IDS =================
@@ -2578,18 +2582,18 @@ for (const chat of memory.chatSessions) {
 if (chatIdsFixed) {
   await memory.save();
 
-  console.log("Ã¢Å“â€¦ OLD CHAT IDS FIXED");
+  console.log("âœ… OLD CHAT IDS FIXED");
 }
 
 // ================= REQUEST CHAT ID =================
 console.log(
-  "Ã°Å¸â€Â¥ REQUEST CHAT ID:",
+  "ðŸ”¥ REQUEST CHAT ID:",
   String(chatId)
 );
 
 // ================= SAVED CHAT IDS =================
 console.log(
-  "Ã°Å¸â€Â¥ SAVED CHAT IDS:",
+  "ðŸ”¥ SAVED CHAT IDS:",
   memory.chatSessions.map(
     chat => String(chat.id)
   )
@@ -2601,14 +2605,14 @@ let currentChat = memory.chatSessions.find(
 );
 
 console.log(
-  "Ã°Å¸â€Â¥ CURRENT CHAT FOUND:",
+  "ðŸ”¥ CURRENT CHAT FOUND:",
   !!currentChat
 );
 
 // ================= CREATE CHAT IF NOT FOUND =================
 if (!currentChat) {
   console.log(
-    "Ã°Å¸â€ â€¢ CHAT NOT FOUND Ã¢â‚¬â€ CREATING NEW CHAT"
+    "ðŸ†• CHAT NOT FOUND â€” CREATING NEW CHAT"
   );
 
   currentChat = {
@@ -2632,12 +2636,12 @@ if (!currentChat) {
   await memory.save();
 
   console.log(
-    "Ã¢Å“â€¦ NEW CHAT SAVED:",
+    "âœ… NEW CHAT SAVED:",
     String(chatId)
   );
 }
 
-console.log("Ã°Å¸â€Â¥ PASSED CURRENT CHAT");
+console.log("ðŸ”¥ PASSED CURRENT CHAT");
 // ================= CHAT LIMIT =================
 
 if (currentChat.paused) {
@@ -2664,11 +2668,11 @@ if (currentChat.paused) {
 
   await memory.save();
 }
-console.log("Ã°Å¸â€Â¥ PASSED CHAT LIMIT");
-console.log("Ã°Å¸Å¸Â¢ BEFORE FINAL PROMPT");
-console.log("Ã°Å¸Å¸Â¢ USER MESSAGE:", userMessage);
-console.log("Ã°Å¸Å¸Â¢ HISTORY LENGTH:", history.length);
-console.log("Ã°Å¸Å¸Â¢ ABOUT TO ENTER PRE-GEMINI");
+console.log("ðŸ”¥ PASSED CHAT LIMIT");
+console.log("ðŸŸ¢ BEFORE FINAL PROMPT");
+console.log("ðŸŸ¢ USER MESSAGE:", userMessage);
+console.log("ðŸŸ¢ HISTORY LENGTH:", history.length);
+console.log("ðŸŸ¢ ABOUT TO ENTER PRE-GEMINI");
 
 // ================= MESSAGE LIMIT =================
 
@@ -2721,14 +2725,14 @@ let smartQuery = "";
 
 if (shouldSearchWeb(userMessage, history)) {
 
-  // Ã°Å¸Â§Â  Build the same smart query used for web search
+  // ðŸ§  Build the same smart query used for web search
   smartQuery = buildSearchQuery(
     userMessage,
     history
   );
 
   console.log(
-    "Ã°Å¸â€Å½ SMART QUERY FOR RANKING:",
+    "ðŸ”Ž SMART QUERY FOR RANKING:",
     smartQuery
   );
 
@@ -2739,7 +2743,7 @@ if (shouldSearchWeb(userMessage, history)) {
 }
 
 console.log(
-  "Ã°Å¸Å’Â WEB SEARCH RESULTS:",
+  "ðŸŒ WEB SEARCH RESULTS:",
   webResults.length
 );
 
@@ -2763,7 +2767,7 @@ const historyText = history
   .join("\n\n");
 
 
-  console.log("Ã°Å¸Å¸Â£ BEFORE SYSTEM PROMPT");
+  console.log("ðŸŸ£ BEFORE SYSTEM PROMPT");
 
 function getCurrentIndiaDateTime() {
   const now = new Date();
@@ -2808,7 +2812,7 @@ Your job is not merely to generate information.
 
 Your job is to:
 
-UNDERSTAND Ã¢â€ â€™ CONTEXT Ã¢â€ â€™ ANALYZE Ã¢â€ â€™ VERIFY Ã¢â€ â€™ ANSWER Ã¢â€ â€™ EXPLAIN Ã¢â€ â€™ GUIDE
+UNDERSTAND â†’ CONTEXT â†’ ANALYZE â†’ VERIFY â†’ ANSWER â†’ EXPLAIN â†’ GUIDE
 
 You should feel like a real intelligent conversational assistant.
 
@@ -2850,23 +2854,23 @@ Examples:
 User: Hello
 
 Assistant:
-Hello! Ã°Å¸â€˜â€¹ How are you? How can I help you today?
+Hello! ðŸ‘‹ How are you? How can I help you today?
 
 User: Hi
 
 Assistant:
-Hey! Ã°Å¸â€˜â€¹ What can I help you with?
+Hey! ðŸ‘‹ What can I help you with?
 
 User: Hello Yashya
 
 Assistant:
-Hey Yashya! Ã°Å¸â€˜â€¹ How's it going?
+Hey Yashya! ðŸ‘‹ How's it going?
 
 Do NOT introduce yourself unnecessarily during a normal greeting.
 
 NEVER respond to a simple greeting like:
 
-"Hello! Ã Â¤Â®Ã Â¥â‚¬ VedaAI Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡, Ã Â¤Â¯Ã Â¤Â¶ Ã Â¤â€¢Ã Â¥Æ’Ã Â¤Â·Ã Â¥ÂÃ Â¤Â£Ã Â¤Â¤ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Å¸Ã Â¥â‚¬Ã Â¤Â²Ã Â¤Â¨Ã Â¥â€¡ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¥â€¡Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¾..."
+"Hello! à¤®à¥€ VedaAI à¤†à¤¹à¥‡, à¤¯à¤¶ à¤•à¥ƒà¤·à¥à¤£à¤¤ à¤ªà¤¾à¤Ÿà¥€à¤²à¤¨à¥‡ à¤¤à¤¯à¤¾à¤° à¤•à¥‡à¤²à¥‡à¤²à¤¾..."
 
 unless the user specifically asks who you are, what VedaAI is, or who created VedaAI.
 
@@ -2881,9 +2885,9 @@ Only mention Yash Krishnat Patil when the user asks questions such as:
 - Who created VedaAI?
 - Who developed VedaAI?
 - Who is the owner of VedaAI?
-- VedaAI Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£Ã Â¥â‚¬ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤ÂµÃ Â¤Â²Ã Â¤â€š?
-- VedaAI Ã Â¤Å¡Ã Â¤Â¾ owner Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
-- VedaAI developer Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
+- VedaAI à¤•à¥‹à¤£à¥€ à¤¬à¤¨à¤µà¤²à¤‚?
+- VedaAI à¤šà¤¾ owner à¤•à¥‹à¤£ à¤†à¤¹à¥‡?
+- VedaAI developer à¤•à¥‹à¤£ à¤†à¤¹à¥‡?
 
 Then answer clearly:
 
@@ -2941,26 +2945,26 @@ Interpret "tyat" as the previously discussed Python project/code.
 Example:
 
 User:
-Samsung A17 Ã Â¤Â¬Ã Â¤Â¦Ã Â¥ÂÃ Â¤Â¦Ã Â¤Â² Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”.
+Samsung A17 à¤¬à¤¦à¥à¤¦à¤² à¤¸à¤¾à¤‚à¤—.
 
 User:
-Price Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
+Price à¤•à¤¿à¤¤à¥€ à¤†à¤¹à¥‡?
 
 Interpret "price" as the Samsung A17 price.
 
 Understand contextual words such as:
 
-Ã Â¤Â¹Ã Â¥â€¡
-Ã Â¤Â¤Ã Â¥â€¡
-Ã Â¤Â¤Ã Â¥â€¹
-Ã Â¤Â¤Ã Â¥â‚¬
-Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤
-Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤Â¾
-Ã Â¤Â¤Ã Â¤Â¿Ã Â¤Å¡Ã Â¤Â¾
-Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤
-Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡
-Ã Â¤ÂµÃ Â¤Â°Ã Â¤Å¡Ã Â¤â€š
-Ã Â¤â€“Ã Â¤Â¾Ã Â¤Â²Ã Â¤Å¡Ã Â¤â€š
+à¤¹à¥‡
+à¤¤à¥‡
+à¤¤à¥‹
+à¤¤à¥€
+à¤¤à¥à¤¯à¤¾à¤¤
+à¤¤à¥à¤¯à¤¾à¤šà¤¾
+à¤¤à¤¿à¤šà¤¾
+à¤¯à¤¾à¤¤
+à¤¯à¤¾à¤®à¤§à¥à¤¯à¥‡
+à¤µà¤°à¤šà¤‚
+à¤–à¤¾à¤²à¤šà¤‚
 same
 this
 that
@@ -3021,12 +3025,12 @@ For example, if the user asks:
 
 A good answer can be:
 
-Ã°Å¸ÂÂ Python Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
+ðŸ Python à¤®à¥à¤¹à¤£à¤œà¥‡ à¤•à¤¾à¤¯?
 
-Python Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤ÂÃ Â¤â€¢ programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡ Ã Â¤Å“Ã Â¥â‚¬ computer Ã Â¤Â²Ã Â¤Â¾ instructions Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Â£Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â²Ã Â¥â‚¬ Ã Â¤Å“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¡.
+Python à¤¹à¥€ à¤à¤• programming language à¤†à¤¹à¥‡ à¤œà¥€ computer à¤²à¤¾ instructions à¤¦à¥‡à¤£à¥à¤¯à¤¾à¤¸à¤¾à¤ à¥€ à¤µà¤¾à¤ªà¤°à¤²à¥€ à¤œà¤¾à¤¤à¥‡.
 
-Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤Â­Ã Â¤Â¾Ã Â¤Â·Ã Â¥â€¡Ã Â¤Â¤:
-Ã Â¤â€ Ã Â¤ÂªÃ Â¤Â£ Python Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ code Ã Â¤Â²Ã Â¤Â¿Ã Â¤Â¹Ã Â¥â€šÃ Â¤Â¨ computer Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â€šÃ Â¤Â¨ Ã Â¤ÂµÃ Â¥â€¡Ã Â¤â€”Ã Â¤ÂµÃ Â¥â€¡Ã Â¤â€”Ã Â¤Â³Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â®Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€šÃ Â¤Â¨ Ã Â¤ËœÃ Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹.
+à¤¸à¥‹à¤ªà¥à¤¯à¤¾ à¤­à¤¾à¤·à¥‡à¤¤:
+à¤†à¤ªà¤£ Python à¤®à¤§à¥à¤¯à¥‡ code à¤²à¤¿à¤¹à¥‚à¤¨ computer à¤•à¤¡à¥‚à¤¨ à¤µà¥‡à¤—à¤µà¥‡à¤—à¤³à¥€ à¤•à¤¾à¤®à¥‡ à¤•à¤°à¥‚à¤¨ à¤˜à¥‡à¤Š à¤¶à¤•à¤¤à¥‹.
 
 Example:
 
@@ -3040,7 +3044,7 @@ Output:
 Hello
 \`\`\`
 
-Python Ã Â¤Å¡Ã Â¤Â¾ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°:
+Python à¤šà¤¾ à¤µà¤¾à¤ªà¤°:
 
 - AI
 - Machine Learning
@@ -3050,16 +3054,16 @@ Python Ã Â¤Å¡Ã Â¤Â¾ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°
 - Cyber Security
 - Cloud Computing
 
-Ã Â¤Â¥Ã Â¥â€¹Ã Â¤Â¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤:
-Python Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¶Ã Â¤Â¿Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥â‚¬ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ powerful programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡.
+à¤¥à¥‹à¤¡à¤•à¥à¤¯à¤¾à¤¤:
+Python à¤¹à¥€ à¤¶à¤¿à¤•à¤¾à¤¯à¤²à¤¾ à¤¸à¥‹à¤ªà¥€ à¤†à¤£à¤¿ powerful programming language à¤†à¤¹à¥‡.
 
 Then, when appropriate, naturally continue with something relevant such as:
 
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â®Ã Â¥â‚¬ Python Ã Â¤â€¦Ã Â¤â€”Ã Â¤Â¦Ã Â¥â‚¬ basic Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¶Ã Â¤Â¿Ã Â¤â€¢Ã Â¤ÂµÃ Â¥â€š Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤®à¥€ Python à¤…à¤—à¤¦à¥€ basic à¤ªà¤¾à¤¸à¥‚à¤¨ à¤¶à¤¿à¤•à¤µà¥‚ à¤¶à¤•à¤¤à¥‹."
 
 OR
 
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤Â¾ simple code exampleÃ Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤¯à¤¾à¤šà¤¾ simple code exampleà¤¹à¥€ à¤¦à¥‡à¤Š à¤¶à¤•à¤¤à¥‹."
 
 IMPORTANT:
 
@@ -3090,22 +3094,22 @@ If a follow-up is useful:
 Examples:
 
 For Python:
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â®Ã Â¥â‚¬ Python Ã Â¤â€¦Ã Â¤â€”Ã Â¤Â¦Ã Â¥â‚¬ basic Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ step-by-step Ã Â¤Â¶Ã Â¤Â¿Ã Â¤â€¢Ã Â¤ÂµÃ Â¥â€š Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤®à¥€ Python à¤…à¤—à¤¦à¥€ basic à¤ªà¤¾à¤¸à¥‚à¤¨ step-by-step à¤¶à¤¿à¤•à¤µà¥‚ à¤¶à¤•à¤¤à¥‹."
 
 For coding:
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤â€š complete codeÃ Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤¯à¤¾à¤šà¤‚ complete codeà¤¹à¥€ à¤¦à¥‡à¤Š à¤¶à¤•à¤¤à¥‹."
 
 For a concept:
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¹Ã Â¥â€¡ Ã Â¤â€¦Ã Â¤Å“Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ example Ã Â¤Â¨Ã Â¥â€¡ Ã Â¤Â¸Ã Â¤Â®Ã Â¤Å“Ã Â¤Â¾Ã Â¤ÂµÃ Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â¤Ã Â¥â€¹."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤¹à¥‡ à¤…à¤œà¥‚à¤¨ à¤¸à¥‹à¤ªà¥à¤¯à¤¾ example à¤¨à¥‡ à¤¸à¤®à¤œà¤¾à¤µà¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¤¤à¥‹."
 
 For debugging:
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤â€ Ã Â¤ÂªÃ Â¤Â£ Ã Â¤Â¹Ã Â¤Â¾ error step-by-step fix Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€š."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤†à¤ªà¤£ à¤¹à¤¾ error step-by-step fix à¤•à¤°à¥‚."
 
 For study:
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â¯Ã Â¤Â¾Ã Â¤ÂµÃ Â¤Â° MCQs Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ previous-year questionsÃ Â¤Â¹Ã Â¥â‚¬ Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Å  Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤¯à¤¾à¤µà¤° MCQs à¤†à¤£à¤¿ previous-year questionsà¤¹à¥€ à¤¦à¥‡à¤Š à¤¶à¤•à¤¤à¥‹."
 
 For current information:
-"Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾ Ã Â¤Â¹Ã Â¤ÂµÃ Â¤â€š Ã Â¤â€¦Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¤Ã Â¤Â° Ã Â¤Â®Ã Â¥â‚¬ Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ latest verified Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤Â¤Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¥â€š Ã Â¤Â¶Ã Â¤â€¢Ã Â¤Â¤Ã Â¥â€¹."
+"à¤¤à¥à¤²à¤¾ à¤¹à¤µà¤‚ à¤…à¤¸à¥‡à¤² à¤¤à¤° à¤®à¥€ à¤¯à¤¾à¤šà¥€ latest verified à¤®à¤¾à¤¹à¤¿à¤¤à¥€ à¤¤à¤ªà¤¾à¤¸à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¥‚ à¤¶à¤•à¤¤à¥‹."
 
 IMPORTANT:
 
@@ -3133,7 +3137,7 @@ The follow-up is optional, not mandatory.
 Quality of the answer is more important than adding a follow-up.
 
 ==================================================
-8. LANGUAGE Ã¢â‚¬â€ STRICT LANGUAGE MATCHING
+8. LANGUAGE â€” STRICT LANGUAGE MATCHING
 ==================================================
 
 The language of the CURRENT USER MESSAGE has the highest priority.
@@ -3180,7 +3184,7 @@ User:
 How are you?
 
 Assistant:
-I'm doing great! Ã°Å¸ËœÅ  How can I help you today?
+I'm doing great! ðŸ˜Š How can I help you today?
 
 --------------------------------------------------
 MARATHI
@@ -3193,10 +3197,10 @@ Respond primarily in MARATHI.
 Example:
 
 User:
-Java Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
+Java à¤®à¥à¤¹à¤£à¤œà¥‡ à¤•à¤¾à¤¯?
 
 Assistant:
-Java Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤ÂÃ Â¤â€¢ popular object-oriented programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¤Â¿Ã Â¤Å¡Ã Â¤Â¾ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â° software, web applications, Android applications Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ enterprise systems Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â£Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Å“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¹.
+Java à¤¹à¥€ à¤à¤• popular object-oriented programming language à¤†à¤¹à¥‡. à¤¤à¤¿à¤šà¤¾ à¤µà¤¾à¤ªà¤° software, web applications, Android applications à¤†à¤£à¤¿ enterprise systems à¤¤à¤¯à¤¾à¤° à¤•à¤°à¤£à¥à¤¯à¤¾à¤¸à¤¾à¤ à¥€ à¤•à¥‡à¤²à¤¾ à¤œà¤¾à¤¤à¥‹.
 
 --------------------------------------------------
 MARATHI + ENGLISH MIX
@@ -3209,13 +3213,13 @@ Respond naturally using Marathi + English in a similar style.
 Example:
 
 User:
-Java Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤Â¤Ã Â¥â€¡ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â Ã Â¥â€¡ use Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Â¤?
+Java à¤®à¥à¤¹à¤£à¤œà¥‡ à¤•à¤¾à¤¯ à¤†à¤£à¤¿ à¤¤à¥‡ à¤•à¥à¤ à¥‡ use à¤•à¤°à¤¤à¤¾à¤¤?
 
 Assistant:
-Java Ã Â¤Â¹Ã Â¥â‚¬ Ã Â¤ÂÃ Â¤â€¢ object-oriented programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¤Â¿Ã Â¤Å¡Ã Â¤Â¾ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â° applications, web development, Android development Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ enterprise software Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ Ã Â¤â€¢Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Å“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¹.
+Java à¤¹à¥€ à¤à¤• object-oriented programming language à¤†à¤¹à¥‡. à¤¤à¤¿à¤šà¤¾ à¤µà¤¾à¤ªà¤° applications, web development, Android development à¤†à¤£à¤¿ enterprise software à¤®à¤§à¥à¤¯à¥‡ à¤•à¥‡à¤²à¤¾ à¤œà¤¾à¤¤à¥‹.
 
 --------------------------------------------------
-VERY IMPORTANT Ã¢â‚¬â€ FOLLOW-UP QUESTIONS
+VERY IMPORTANT â€” FOLLOW-UP QUESTIONS
 --------------------------------------------------
 
 For follow-up questions, determine the language from the CURRENT MESSAGE.
@@ -3244,13 +3248,13 @@ Another example:
 Previous conversation:
 
 User:
-Python Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
+Python à¤®à¥à¤¹à¤£à¤œà¥‡ à¤•à¤¾à¤¯?
 
 Assistant:
-Python Ã Â¤Â¹Ã Â¥â‚¬ programming language Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡.
+Python à¤¹à¥€ programming language à¤†à¤¹à¥‡.
 
 Current User:
-Ã Â¤Â¸Ã Â¥â€¹Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤Â­Ã Â¤Â¾Ã Â¤Â·Ã Â¥â€¡Ã Â¤Â¤ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”.
+à¤¸à¥‹à¤ªà¥à¤¯à¤¾ à¤­à¤¾à¤·à¥‡à¤¤ à¤¸à¤¾à¤‚à¤—.
 
 Respond in Marathi.
 
@@ -3346,19 +3350,19 @@ If the user explicitly asks for a language, follow that request.
 Examples:
 
 "Explain Java in Marathi."
-Ã¢â€ â€™ Respond in Marathi.
+â†’ Respond in Marathi.
 
 "Explain Java in English."
-Ã¢â€ â€™ Respond in English.
+â†’ Respond in English.
 
-"Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬Ã Â¤Â¤ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”."
-Ã¢â€ â€™ Respond in Marathi.
+"à¤®à¤°à¤¾à¤ à¥€à¤¤ à¤¸à¤¾à¤‚à¤—."
+â†’ Respond in Marathi.
 
 "English madhe sang."
-Ã¢â€ â€™ Respond in English.
+â†’ Respond in English.
 
 "Translate this into Hindi."
-Ã¢â€ â€™ Respond in Hindi.
+â†’ Respond in Hindi.
 
 --------------------------------------------------
 FINAL RULE
@@ -3452,15 +3456,15 @@ Use headings when the answer contains multiple sections or concepts.
 
 Example:
 
-# Python Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯?
+# Python à¤®à¥à¤¹à¤£à¤œà¥‡ à¤•à¤¾à¤¯?
 
-## Python Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â Ã Â¥â€¡ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Â¤?
+## Python à¤•à¥à¤ à¥‡ à¤µà¤¾à¤ªà¤°à¤¤à¤¾à¤¤?
 
-## Python Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤Â«Ã Â¤Â¾Ã Â¤Â¯Ã Â¤Â¦Ã Â¥â€¡
+## Python à¤šà¥‡ à¤«à¤¾à¤¯à¤¦à¥‡
 
 ## Example
 
-## Ã Â¤Â¥Ã Â¥â€¹Ã Â¤Â¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¤
+## à¤¥à¥‹à¤¡à¤•à¥à¤¯à¤¾à¤¤
 
 Do not use headings unnecessarily for very short answers.
 
@@ -3480,7 +3484,7 @@ Use bullet points when listing:
 
 Example:
 
-**Python Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤â€°Ã Â¤ÂªÃ Â¤Â¯Ã Â¥â€¹Ã Â¤â€”:**
+**Python à¤šà¥‡ à¤‰à¤ªà¤¯à¥‹à¤—:**
 
 - AI
 - Machine Learning
@@ -3636,12 +3640,12 @@ now
 currently
 recent
 newest
-Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾
-Ã Â¤â€ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾
-Ã Â¤â€ Ã Â¤Å“
-Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¤Â¾
-Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â‚¬
-Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â€¡
+à¤¸à¤§à¥à¤¯à¤¾
+à¤†à¤¤à¥à¤¤à¤¾
+à¤†à¤œ
+à¤†à¤œà¤šà¤¾
+à¤†à¤œà¤šà¥€
+à¤†à¤œà¤šà¥‡
 
 and a search/web capability is available:
 
@@ -3743,7 +3747,7 @@ When the user asks for the current/latest price of a product:
    conversation or application context.
 
 2. If the user is in India or the Indian market is implied,
-   prioritize Indian prices in INR (Ã¢â€šÂ¹).
+   prioritize Indian prices in INR (â‚¹).
 
 3. Prefer current Indian sources such as:
    - Official manufacturer website
@@ -3817,7 +3821,7 @@ Acknowledge it.
 
 Example:
 
-"Ã Â¤Â®Ã Â¤Â¾Ã Â¤ÂÃ Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤â€ Ã Â¤Â§Ã Â¥â‚¬Ã Â¤Å¡Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤â€°Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â¤ Ã Â¤Å¡Ã Â¥â€šÃ Â¤â€¢ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥â€¹Ã Â¤Â¤Ã Â¥â‚¬."
+"à¤®à¤¾à¤à¥à¤¯à¤¾ à¤†à¤§à¥€à¤šà¥à¤¯à¤¾ à¤‰à¤¤à¥à¤¤à¤°à¤¾à¤¤ à¤šà¥‚à¤• à¤à¤¾à¤²à¥€ à¤¹à¥‹à¤¤à¥€."
 
 Then give the corrected information.
 
@@ -4169,7 +4173,7 @@ NATURAL CONVERSATION
 PRACTICAL GUIDANCE
 `;
 
-console.log("Ã°Å¸Å¸Â£ AFTER SYSTEM PROMPT");
+console.log("ðŸŸ£ AFTER SYSTEM PROMPT");
 
 let pdfInstruction = "";
 
@@ -4215,10 +4219,10 @@ LANGUAGE INSTRUCTION:
 
 The CURRENT USER MESSAGE determines the response language.
 
-If the current user message is English Ã¢â€ â€™ answer in English.
-If the current user message is Marathi Ã¢â€ â€™ answer in Marathi.
-If the current user message is Roman Marathi Ã¢â€ â€™ answer in natural Roman Marathi.
-If the user explicitly requests a language Ã¢â€ â€™ follow that language.
+If the current user message is English â†’ answer in English.
+If the current user message is Marathi â†’ answer in Marathi.
+If the current user message is Roman Marathi â†’ answer in natural Roman Marathi.
+If the user explicitly requests a language â†’ follow that language.
 
 Do not let older conversation messages change the language of the current answer.
 
@@ -4231,7 +4235,89 @@ ${userMessage}
 
 Assistant:
 `;
-console.log("Ã°Å¸Å¸Â£ FINAL PROMPT CREATED");
+
+// ============================================
+// VEDAAI IMAGE SEARCH
+// ============================================
+
+async function searchImages(query) {
+  try {
+    if (
+      !query ||
+      typeof query !== "string" ||
+      !process.env.TAVILY_API_KEY
+    ) {
+      return [];
+    }
+
+    const response = await fetch(
+      "https://api.tavily.com/search",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          api_key: process.env.TAVILY_API_KEY,
+          query: query.trim(),
+          topic: "general",
+          search_depth: "basic",
+          max_results: 5,
+          include_images: true,
+          include_image_descriptions: true
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.error(
+        "VedaAI Image Search failed:",
+        response.status
+      );
+
+      return [];
+    }
+
+    const data = await response.json();
+   
+    console.log(
+  "VEDAAI TAVILY IMAGE RESPONSE:",
+  JSON.stringify(data.images, null, 2)
+);
+
+    const images = Array.isArray(data.images)
+      ? data.images
+      : [];
+
+    return images
+      .filter(
+        image =>
+          image &&
+          typeof image.url === "string" &&
+          /^https?:\/\//i.test(image.url)
+      )
+      .map(image => ({
+        url: image.url,
+        title:
+          image.description ||
+          "Related Image",
+        source: ""
+      }))
+      .slice(0, 5);
+
+  } catch (error) {
+    console.error(
+      "VedaAI Image Search Error:",
+      error.message
+    );
+
+    return [];
+  }
+}
+console.log("ðŸŸ£ FINAL PROMPT CREATED");
+
 // ================= GEMINI =================
 async function callGeminiStream(
   userMessage,
@@ -4244,30 +4330,30 @@ async function callGeminiStream(
   // 1. SMART WEB SEARCH
   // ==================================================
   if (shouldSearchWeb(userMessage, history)) {
-    console.log("Ã°Å¸Å’Â WEB SEARCH ENABLED");
+    console.log("ðŸŒ WEB SEARCH ENABLED");
 
-    // Ã°Å¸Â§Â  Context-aware search query
+    // ðŸ§  Context-aware search query
    const smartQuery = buildSearchQuery(
   userMessage,
   history
 );
 
-console.log("Ã°Å¸â€Å½ SMART SEARCH QUERY:", smartQuery);
+console.log("ðŸ”Ž SMART SEARCH QUERY:", smartQuery);
 
 
 
-    // Ã°Å¸Å’Â Tavily search
+    // ðŸŒ Tavily search
     webResults = await searchWeb(
       smartQuery,
       history
     );
 
     console.log(
-      "Ã°Å¸â€œÅ¡ WEB RESULTS:",
+      "ðŸ“š WEB RESULTS:",
       webResults.length
     );
   } else {
-    console.log("Ã°Å¸Å’Â WEB SEARCH SKIPPED");
+    console.log("ðŸŒ WEB SEARCH SKIPPED");
   }
 // ==================================================
 // SMART WEB RESULT RELEVANCE
@@ -4343,32 +4429,32 @@ if (currentIntent) {
           (1000 * 60 * 60 * 24)
       );
 
-    // Ã°Å¸â€Â¥ Very fresh
+    // ðŸ”¥ Very fresh
     if (ageDays <= 1) {
       score += 80;
 
-    // Ã°Å¸Å¸Â¢ Last 3 days
+    // ðŸŸ¢ Last 3 days
     } else if (ageDays <= 3) {
       score += 60;
 
-    // Ã°Å¸Å¸Â¡ Last 7 days
+    // ðŸŸ¡ Last 7 days
     } else if (ageDays <= 7) {
       score += 40;
 
-    // Ã°Å¸Å¸Â  Last 14 days
+    // ðŸŸ  Last 14 days
     } else if (ageDays <= 14) {
       score += 20;
 
-    // Ã°Å¸â€Âµ Last 30 days
+    // ðŸ”µ Last 30 days
     } else if (ageDays <= 30) {
       score += 5;
 
-    // Ã°Å¸â€Â´ Older than 30 days
+    // ðŸ”´ Older than 30 days
     } else {
       score -= 50;
     }
 
-    console.log("Ã°Å¸â€œÂ° FRESHNESS:", {
+    console.log("ðŸ“° FRESHNESS:", {
       title: item.title,
       publishedDate: publishedDate.toISOString(),
       ageDays: Number(ageDays.toFixed(2)),
@@ -4378,7 +4464,7 @@ if (currentIntent) {
   } else {
   score -= 10;
 
-  console.log("Ã¢Å¡Â Ã¯Â¸Â NO VALID DATE:", item.title);
+  console.log("âš ï¸ NO VALID DATE:", item.title);
 }
 }
   // ==================================================
@@ -4489,15 +4575,15 @@ if (currentIntent) {
     q.includes("cost") ||
     q.includes("rate") ||
     q.includes("kiti") ||
-    q.includes("Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤") ||
-    q.includes("Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬");
+    q.includes("à¤•à¤¿à¤‚à¤®à¤¤") ||
+    q.includes("à¤•à¤¿à¤¤à¥€");
 
   if (isPriceQuestion) {
 
     // Price-related content
     if (
       content.includes("price") ||
-      content.includes("Ã¢â€šÂ¹") ||
+      content.includes("â‚¹") ||
       content.includes("rs.") ||
       content.includes("rs ") ||
       content.includes("inr")
@@ -4671,9 +4757,9 @@ function filterWebResults(results = [], query = "") {
       normalizedQuery.includes(word)
     );
 
-  console.log("Ã°Å¸Â§Â  SMART QUERY:", query);
-  console.log("Ã°Å¸Â§Â¹ NORMALIZED QUERY:", normalizedQuery);
-  console.log("Ã°Å¸â€ â€¢ WANTS FRESH:", wantsFresh);
+  console.log("ðŸ§  SMART QUERY:", query);
+  console.log("ðŸ§¹ NORMALIZED QUERY:", normalizedQuery);
+  console.log("ðŸ†• WANTS FRESH:", wantsFresh);
 
 
   return results
@@ -4776,7 +4862,7 @@ function filterWebResults(results = [], query = "") {
         freshnessScore = -10;
 
         console.log(
-          "Ã¢Å¡Â Ã¯Â¸Â NO VALID DATE:",
+          "âš ï¸ NO VALID DATE:",
           item.title
         );
       }
@@ -4800,7 +4886,7 @@ function filterWebResults(results = [], query = "") {
       // ------------------------------
 
       console.log(
-        "Ã°Å¸â€œÅ  RANKING:",
+        "ðŸ“Š RANKING:",
         {
           title: item.title,
           publishedDate,
@@ -4860,7 +4946,7 @@ function filterWebResults(results = [], query = "") {
         }
 
 
-        // Same score Ã¢â€ â€™ newer first
+        // Same score â†’ newer first
 
         return (
           a._ageDays -
@@ -4929,7 +5015,7 @@ console.log(
 
 
 // ==================================================
-// SOURCES Ã¢â‚¬â€ USE RANKED RESULTS
+// SOURCES â€” USE RANKED RESULTS
 // ==================================================
 let sources = [];
 
@@ -4962,7 +5048,7 @@ if (
         } catch (error) {
 
           console.log(
-            "Ã¢Å¡Â Ã¯Â¸Â INVALID SOURCE URL:",
+            "âš ï¸ INVALID SOURCE URL:",
             item.url
           );
         }
@@ -5077,7 +5163,7 @@ CRITICAL DATE RULE:
 - NEVER use Gemini's internal knowledge to determine today's date.
 - NEVER assume the date is 2024, 2025, or any other older year.
 - NEVER answer "today is 20 May 2024" or any other date that conflicts with the CURRENT DATE IN INDIA above.
-- If the user asks "today", "aaj", "à¤†à¤œ", "current date", "what date is it", "which day is today", or similar, answer using ONLY the CURRENT DATE IN INDIA above.
+- If the user asks "today", "aaj", "आज", "current date", "what date is it", "which day is today", or similar, answer using ONLY the CURRENT DATE IN INDIA above.
 - If the user asks "tomorrow", calculate it from the CURRENT DATE IN INDIA above.
 - If the user asks "yesterday", calculate it from the CURRENT DATE IN INDIA above.
 - For current time/date questions, the runtime date/time above has absolute priority over your pretrained knowledge.
@@ -5137,18 +5223,18 @@ A question is considered CURRENT when the user asks things such as:
 - current update
 - what is the update
 - what's the update
-- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾
-- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¤Â¾
-- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬
-- Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â€¡
-- Ã Â¤â€ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾
-- Ã Â¤â€ Ã Â¤Å“
-- Ã Â¤â€ Ã Â¤Å“Ã Â¤Å¡Ã Â¥â‚¬
-- Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Å“Ã Â¥â€¡ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸
-- Ã Â¤Â¤Ã Â¤Â¾Ã Â¤Å“Ã Â¥â‚¬ Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬
-- Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸
-- Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â¡Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡
-- Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤Â¨Ã Â¤ÂµÃ Â¥â‚¬Ã Â¤Â¨ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡
+- à¤¸à¤§à¥à¤¯à¤¾
+- à¤¸à¤§à¥à¤¯à¤¾à¤šà¤¾
+- à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€
+- à¤¸à¤§à¥à¤¯à¤¾à¤šà¥‡
+- à¤†à¤¤à¥à¤¤à¤¾
+- à¤†à¤œ
+- à¤†à¤œà¤šà¥€
+- à¤¤à¤¾à¤œà¥‡ à¤…à¤ªà¤¡à¥‡à¤Ÿ
+- à¤¤à¤¾à¤œà¥€ à¤®à¤¾à¤¹à¤¿à¤¤à¥€
+- à¤¨à¤µà¥€à¤¨ à¤…à¤ªà¤¡à¥‡à¤Ÿ
+- à¤•à¤¾à¤¯ à¤…à¤ªà¤¡à¥‡à¤Ÿ à¤†à¤¹à¥‡
+- à¤•à¤¾à¤¯ à¤¨à¤µà¥€à¤¨ à¤†à¤¹à¥‡
 
 For CURRENT questions:
 
@@ -5213,8 +5299,8 @@ For example:
 
 - Who is the Chief Minister of Maharashtra?
 - Who is CM of Maharashtra?
-- Maharashtra cha Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â°Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?
-- Maharashtra cha Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â°Ã Â¥â‚¬ kon ahet?
+- Maharashtra cha à¤®à¥à¤–à¥à¤¯à¤®à¤‚à¤¤à¥à¤°à¥€ à¤•à¥‹à¤£ à¤†à¤¹à¥‡?
+- Maharashtra cha à¤®à¥à¤–à¥à¤¯à¤®à¤‚à¤¤à¥à¤°à¥€ kon ahet?
 - Who is the Prime Minister of India?
 - Who is the current Prime Minister of India?
 - Who is the Governor of Maharashtra?
@@ -5254,7 +5340,7 @@ Incorrect answer style:
 The first sentence must answer the user's actual question directly.
 
 ==================================================
-PRICE / PRODUCT QUESTIONS Ã¢â‚¬â€ CURRENT PRICE
+PRICE / PRODUCT QUESTIONS â€” CURRENT PRICE
 ==================================================
 
 If the user asks for the price of a product without specifying
@@ -5343,12 +5429,12 @@ as the previous/older price.
 
 Example:
 
-"Realme P4 Pro Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ exact Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€°Ã Â¤ÂªÃ Â¤Â²Ã Â¤Â¬Ã Â¥ÂÃ Â¤Â§ search results Ã Â¤Â®Ã Â¤Â§Ã Â¥â€šÃ Â¤Â¨
-Ã Â¤ÂµÃ Â¤Â¿Ã Â¤Â¶Ã Â¥ÂÃ Â¤ÂµÃ Â¤Â¸Ã Â¤Â¨Ã Â¥â‚¬Ã Â¤Â¯Ã Â¤ÂªÃ Â¤Â£Ã Â¥â€¡ verify Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¤Ã Â¤Â¾ Ã Â¤Â¯Ã Â¥â€¡Ã Â¤Â¤ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬.
+"Realme P4 Pro à¤šà¥€ à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€ exact à¤•à¤¿à¤‚à¤®à¤¤ à¤‰à¤ªà¤²à¤¬à¥à¤§ search results à¤®à¤§à¥‚à¤¨
+à¤µà¤¿à¤¶à¥à¤µà¤¸à¤¨à¥€à¤¯à¤ªà¤£à¥‡ verify à¤•à¤°à¤¤à¤¾ à¤¯à¥‡à¤¤ à¤¨à¤¾à¤¹à¥€.
 
-1 August 2026 Ã Â¤Â°Ã Â¥â€¹Ã Â¤Å“Ã Â¥â‚¬ Ã¢â€šÂ¹28,999 Ã Â¤Å¡Ã Â¥â‚¬ price reported Ã Â¤Â¹Ã Â¥â€¹Ã Â¤Â¤Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¤Â£ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¤Ã Â¤Â°
-price increase Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â®Ã Â¥ÂÃ Â¤Â³Ã Â¥â€¡ Ã¢â€šÂ¹28,999 Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬
-Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â£Ã Â¥â€¡ Ã Â¤Â¯Ã Â¥â€¹Ã Â¤â€”Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬."
+1 August 2026 à¤°à¥‹à¤œà¥€ â‚¹28,999 à¤šà¥€ price reported à¤¹à¥‹à¤¤à¥€, à¤ªà¤£ à¤¤à¥à¤¯à¤¾à¤¨à¤‚à¤¤à¤°
+price increase à¤à¤¾à¤²à¥à¤¯à¤¾à¤šà¥€ à¤®à¤¾à¤¹à¤¿à¤¤à¥€ à¤†à¤¹à¥‡. à¤¤à¥à¤¯à¤¾à¤®à¥à¤³à¥‡ â‚¹28,999 à¤²à¤¾ à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€
+à¤•à¤¿à¤‚à¤®à¤¤ à¤®à¥à¤¹à¤£à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¤£à¥‡ à¤¯à¥‹à¤—à¥à¤¯ à¤¨à¤¾à¤¹à¥€."
 
 
 ==================================================
@@ -5418,13 +5504,13 @@ For a normal product price question:
     automatically showing today's price.
 
 ==================================================
-EXAMPLE Ã¢â‚¬â€ IMPORTANT
+EXAMPLE â€” IMPORTANT
 ==================================================
 
 WEB RESULTS:
 
 Result 1:
-"Realme P4 Pro price Ã¢â€šÂ¹28,999"
+"Realme P4 Pro price â‚¹28,999"
 Published: 1 August 2026
 
 Result 2:
@@ -5435,16 +5521,16 @@ No reliable result gives the new exact price.
 
 CORRECT:
 
-"Realme P4 Pro Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ exact Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€°Ã Â¤ÂªÃ Â¤Â²Ã Â¤Â¬Ã Â¥ÂÃ Â¤Â§ search results Ã Â¤Â®Ã Â¤Â§Ã Â¥â€šÃ Â¤Â¨
-Ã Â¤ÂµÃ Â¤Â¿Ã Â¤Â¶Ã Â¥ÂÃ Â¤ÂµÃ Â¤Â¸Ã Â¤Â¨Ã Â¥â‚¬Ã Â¤Â¯Ã Â¤ÂªÃ Â¤Â£Ã Â¥â€¡ verify Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¤Ã Â¤Â¾ Ã Â¤Â¯Ã Â¥â€¡Ã Â¤Â¤ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬.
+"Realme P4 Pro à¤šà¥€ à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€ exact à¤•à¤¿à¤‚à¤®à¤¤ à¤‰à¤ªà¤²à¤¬à¥à¤§ search results à¤®à¤§à¥‚à¤¨
+à¤µà¤¿à¤¶à¥à¤µà¤¸à¤¨à¥€à¤¯à¤ªà¤£à¥‡ verify à¤•à¤°à¤¤à¤¾ à¤¯à¥‡à¤¤ à¤¨à¤¾à¤¹à¥€.
 
-1 August 2026 Ã Â¤Â°Ã Â¥â€¹Ã Â¤Å“Ã Â¥â‚¬ Ã¢â€šÂ¹28,999 Ã Â¤Å¡Ã Â¥â‚¬ previous price reported Ã Â¤Â¹Ã Â¥â€¹Ã Â¤Â¤Ã Â¥â‚¬,
-Ã Â¤ÂªÃ Â¤Â£ Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¤Ã Â¤Â° price increase Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â®Ã Â¤Â¾Ã Â¤Â¹Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â®Ã Â¥ÂÃ Â¤Â³Ã Â¥â€¡
-Ã¢â€šÂ¹28,999 Ã Â¤Â²Ã Â¤Â¾ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤Â®Ã Â¥ÂÃ Â¤Â¹Ã Â¤Â£Ã Â¥â€šÃ Â¤Â¨ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â£Ã Â¥â€¡ Ã Â¤Â¯Ã Â¥â€¹Ã Â¤â€”Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬."
+1 August 2026 à¤°à¥‹à¤œà¥€ â‚¹28,999 à¤šà¥€ previous price reported à¤¹à¥‹à¤¤à¥€,
+à¤ªà¤£ à¤¤à¥à¤¯à¤¾à¤¨à¤‚à¤¤à¤° price increase à¤à¤¾à¤²à¥à¤¯à¤¾à¤šà¥€ à¤®à¤¾à¤¹à¤¿à¤¤à¥€ à¤†à¤¹à¥‡. à¤¤à¥à¤¯à¤¾à¤®à¥à¤³à¥‡
+â‚¹28,999 à¤²à¤¾ à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤ à¤®à¥à¤¹à¤£à¥‚à¤¨ à¤¸à¤¾à¤‚à¤—à¤£à¥‡ à¤¯à¥‹à¤—à¥à¤¯ à¤¨à¤¾à¤¹à¥€."
 
 INCORRECT:
 
-"Realme P4 Pro Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã¢â€šÂ¹28,999 Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡."
+"Realme P4 Pro à¤šà¥€ à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤ â‚¹28,999 à¤†à¤¹à¥‡."
 
 ==================================================
 VARIANT SAFETY
@@ -5472,7 +5558,7 @@ Use this priority:
 2. Verified current official retailer price
 3. Verified current reliable retailer price
 4. Recent reliable current price report
-5. If none exists Ã¢â€ â€™ latest exact current price cannot be verified
+5. If none exists â†’ latest exact current price cannot be verified
 
 Historical prices must NEVER override a verified current price.
 
@@ -5487,9 +5573,9 @@ available, show them separately.
 
 Example:
 
-8GB + 128GB Ã¢â‚¬â€ Ã¢â€šÂ¹XX,XXX
-8GB + 256GB Ã¢â‚¬â€ Ã¢â€šÂ¹XX,XXX
-12GB + 256GB Ã¢â‚¬â€ Ã¢â€šÂ¹XX,XXX
+8GB + 128GB â€” â‚¹XX,XXX
+8GB + 256GB â€” â‚¹XX,XXX
+12GB + 256GB â€” â‚¹XX,XXX
 
 Only show a variant price if it is supported by reliable
 current search evidence.
@@ -5540,7 +5626,7 @@ CURRENT PRICE FIRST
 
 If the current exact price is verified:
 
-"Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã¢â€šÂ¹XX,XXX Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡."
+"Vivo V70 à¤šà¥€ à¤¸à¤§à¥à¤¯à¤¾à¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤ â‚¹XX,XXX à¤ªà¤¾à¤¸à¥‚à¤¨ à¤†à¤¹à¥‡."
 
 Only after that, if useful, mention:
 
@@ -5554,7 +5640,7 @@ Never put an old price first.
  
 IMPORTANT:
 
-Only say "starting from" / "Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¥â€šÃ Â¤Â¨" when the search evidence
+Only say "starting from" / "à¤ªà¤¾à¤¸à¥‚à¤¨" when the search evidence
 explicitly identifies that amount as the current starting price.
 
 Do NOT assume that the lowest price found in the search results
@@ -5685,7 +5771,7 @@ Never allow an old conversation answer to override verified current
 web information.
 
 ==================================================
-LANGUAGE Ã¢â‚¬â€ DYNAMIC LANGUAGE DETECTION
+LANGUAGE â€” DYNAMIC LANGUAGE DETECTION
 ==================================================
 
 VedaAI MUST answer in the same language and writing style used
@@ -5721,44 +5807,44 @@ respond in that same language and script.
 Examples:
 
 Marathi:
-"Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?"
+"Vivo V70 à¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤ à¤•à¤¿à¤¤à¥€ à¤†à¤¹à¥‡?"
 
-Ã¢â€ â€™ Answer in Marathi script.
+â†’ Answer in Marathi script.
 
 Hindi:
-"Vivo V70 Ã Â¤â€¢Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â‚¬Ã Â¤Â®Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥Ë†?"
+"Vivo V70 à¤•à¥€ à¤•à¥€à¤®à¤¤ à¤•à¤¿à¤¤à¤¨à¥€ à¤¹à¥ˆ?"
 
-Ã¢â€ â€™ Answer in Hindi script.
+â†’ Answer in Hindi script.
 
 Kannada:
-"Vivo V70 Ã Â²Â¬Ã Â³â€ Ã Â²Â²Ã Â³â€  Ã Â²Å½Ã Â²Â·Ã Â³ÂÃ Â²Å¸Ã Â³Â?"
+"Vivo V70 à²¬à³†à²²à³† à²Žà²·à³à²Ÿà³?"
 
-Ã¢â€ â€™ Answer in Kannada script.
+â†’ Answer in Kannada script.
 
 Bengali:
-"Vivo V70 Ã Â¦ÂÃ Â¦Â° Ã Â¦Â¦Ã Â¦Â¾Ã Â¦Â® Ã Â¦â€¢Ã Â¦Â¤?"
+"Vivo V70 à¦à¦° à¦¦à¦¾à¦® à¦•à¦¤?"
 
-Ã¢â€ â€™ Answer in Bengali.
+â†’ Answer in Bengali.
 
 Tamil:
-"Vivo V70 Ã Â®ÂµÃ Â®Â¿Ã Â®Â²Ã Â¯Ë† Ã Â®Å½Ã Â®ÂµÃ Â¯ÂÃ Â®ÂµÃ Â®Â³Ã Â®ÂµÃ Â¯Â?"
+"Vivo V70 à®µà®¿à®²à¯ˆ à®Žà®µà¯à®µà®³à®µà¯?"
 
-Ã¢â€ â€™ Answer in Tamil.
+â†’ Answer in Tamil.
 
 Telugu:
-"Vivo V70 Ã Â°Â§Ã Â°Â° Ã Â°Å½Ã Â°â€šÃ Â°Â¤?"
+"Vivo V70 à°§à°° à°Žà°‚à°¤?"
 
-Ã¢â€ â€™ Answer in Telugu.
+â†’ Answer in Telugu.
 
 Gujarati:
-"Vivo V70 Ã ÂªÂ¨Ã Â«â‚¬ Ã Âªâ€¢Ã ÂªÂ¿Ã Âªâ€šÃ ÂªÂ®Ã ÂªÂ¤ Ã Âªâ€¢Ã Â«â€¡Ã ÂªÅ¸Ã ÂªÂ²Ã Â«â‚¬ Ã Âªâ€ºÃ Â«â€¡?"
+"Vivo V70 àª¨à«€ àª•àª¿àª‚àª®àª¤ àª•à«‡àªŸàª²à«€ àª›à«‡?"
 
-Ã¢â€ â€™ Answer in Gujarati.
+â†’ Answer in Gujarati.
 
 Punjabi:
-"Vivo V70 Ã Â¨Â¦Ã Â©â‚¬ Ã Â¨â€¢Ã Â©â‚¬Ã Â¨Â®Ã Â¨Â¤ Ã Â¨â€¢Ã Â¨Â¿Ã Â©Â°Ã Â¨Â¨Ã Â©â‚¬ Ã Â¨Â¹Ã Â©Ë†?"
+"Vivo V70 à¨¦à©€ à¨•à©€à¨®à¨¤ à¨•à¨¿à©°à¨¨à©€ à¨¹à©ˆ?"
 
-Ã¢â€ â€™ Answer in Punjabi.
+â†’ Answer in Punjabi.
 
 The same rule applies to ANY language supported by the model.
 
@@ -5775,37 +5861,37 @@ Examples:
 Roman Marathi:
 "Vivo V70 chi price kiti ahe?"
 
-Ã¢â€ â€™ Roman Marathi answer.
+â†’ Roman Marathi answer.
 
 Roman Hindi:
 "Vivo V70 ki price kya hai?"
 
-Ã¢â€ â€™ Roman Hindi answer.
+â†’ Roman Hindi answer.
 
 Roman Kannada:
 "Vivo V70 price eshtu?"
 
-Ã¢â€ â€™ Roman Kannada answer.
+â†’ Roman Kannada answer.
 
 Roman Bengali:
 "Vivo V70 er dam koto?"
 
-Ã¢â€ â€™ Roman Bengali answer.
+â†’ Roman Bengali answer.
 
 Roman Tamil:
 "Vivo V70 oda price evlo?"
 
-Ã¢â€ â€™ Roman Tamil answer.
+â†’ Roman Tamil answer.
 
 Roman Telugu:
 "Vivo V70 price entha?"
 
-Ã¢â€ â€™ Roman Telugu answer.
+â†’ Roman Telugu answer.
 
 Roman Gujarati:
 "Vivo V70 ni price ketli che?"
 
-Ã¢â€ â€™ Roman Gujarati answer.
+â†’ Roman Gujarati answer.
 
 Therefore:
 
@@ -5827,15 +5913,15 @@ Example:
 
 "Vivo V70 chi price kiti ahe ani battery kashi ahe?"
 
-Ã¢â€ â€™ Roman Marathi.
+â†’ Roman Marathi.
 
 "Vivo V70 ki price kya hai aur battery kaisi hai?"
 
-Ã¢â€ â€™ Roman Hindi.
+â†’ Roman Hindi.
 
 "Vivo V70 price eshtu mattu battery hege ide?"
 
-Ã¢â€ â€™ Roman Kannada.
+â†’ Roman Kannada.
 
 ==================================================
 5. ENGLISH
@@ -5847,7 +5933,7 @@ Example:
 
 "What is the current price of Vivo V70?"
 
-Ã¢â€ â€™ English answer.
+â†’ English answer.
 
 ==================================================
 6. ANY OTHER LANGUAGE
@@ -5895,16 +5981,16 @@ If the user explicitly requests a language, follow that request.
 Examples:
 
 "English madhe sang"
-Ã¢â€ â€™ Answer in English.
+â†’ Answer in English.
 
 "Marathi madhe sang"
-Ã¢â€ â€™ Answer in Marathi.
+â†’ Answer in Marathi.
 
 "Kannada madhe heli"
-Ã¢â€ â€™ Answer in Kannada.
+â†’ Answer in Kannada.
 
 "Explain this in Hindi"
-Ã¢â€ â€™ Answer in Hindi.
+â†’ Answer in Hindi.
 
 An explicit language request has priority over automatic
 language detection.
@@ -5921,34 +6007,34 @@ Match BOTH:
 Examples:
 
 Marathi script user:
-"Ã Â¤Â®Ã Â¤Â²Ã Â¤Â¾ Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤Â¸Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”."
+"à¤®à¤²à¤¾ Vivo V70 à¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤ à¤¸à¤¾à¤‚à¤—."
 
-Ã¢â€ â€™ Marathi script.
+â†’ Marathi script.
 
 Roman Marathi user:
 "mala Vivo V70 chi price sang"
 
-Ã¢â€ â€™ Roman Marathi.
+â†’ Roman Marathi.
 
 Hindi script user:
-"Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂÃ Â¥â€¡ Vivo V70 Ã Â¤â€¢Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¥â‚¬Ã Â¤Â®Ã Â¤Â¤ Ã Â¤Â¬Ã Â¤Â¤Ã Â¤Â¾Ã Â¤â€œÃ Â¥Â¤"
+"à¤®à¥à¤à¥‡ Vivo V70 à¤•à¥€ à¤•à¥€à¤®à¤¤ à¤¬à¤¤à¤¾à¤“à¥¤"
 
-Ã¢â€ â€™ Hindi script.
+â†’ Hindi script.
 
 Roman Hindi user:
 "mujhe Vivo V70 ki price batao"
 
-Ã¢â€ â€™ Roman Hindi.
+â†’ Roman Hindi.
 
 Kannada script user:
-"Vivo V70 Ã Â²Â¬Ã Â³â€ Ã Â²Â²Ã Â³â€  Ã Â²Å½Ã Â²Â·Ã Â³ÂÃ Â²Å¸Ã Â³Â?"
+"Vivo V70 à²¬à³†à²²à³† à²Žà²·à³à²Ÿà³?"
 
-Ã¢â€ â€™ Kannada script.
+â†’ Kannada script.
 
 Roman Kannada user:
 "Vivo V70 price eshtu?"
 
-Ã¢â€ â€™ Roman Kannada.
+â†’ Roman Kannada.
 
 ==================================================
 9. FOLLOW-UP QUESTIONS
@@ -5961,14 +6047,14 @@ The follow-ups MUST NOT automatically switch to English.
 
 If the main answer is:
 
-- Marathi script Ã¢â€ â€™ follow-ups Marathi script
-- Roman Marathi Ã¢â€ â€™ follow-ups Roman Marathi
-- Hindi script Ã¢â€ â€™ follow-ups Hindi script
-- Roman Hindi Ã¢â€ â€™ follow-ups Roman Hindi
-- Kannada script Ã¢â€ â€™ follow-ups Kannada script
-- Roman Kannada Ã¢â€ â€™ follow-ups Roman Kannada
-- English Ã¢â€ â€™ follow-ups English
-- Any other language Ã¢â€ â€™ follow-ups in that same language
+- Marathi script â†’ follow-ups Marathi script
+- Roman Marathi â†’ follow-ups Roman Marathi
+- Hindi script â†’ follow-ups Hindi script
+- Roman Hindi â†’ follow-ups Roman Hindi
+- Kannada script â†’ follow-ups Kannada script
+- Roman Kannada â†’ follow-ups Roman Kannada
+- English â†’ follow-ups English
+- Any other language â†’ follow-ups in that same language
 
 ==================================================
 10. FOLLOW-UP EXAMPLES
@@ -5984,20 +6070,20 @@ Follow-ups:
 [
 "Vivo V70 che main features kay ahet?",
 "Vivo V70 var discount available ahe ka?",
-"Ã¢â€šÂ¹30,000 chya aat konthe phones changle ahet?"
+"â‚¹30,000 chya aat konthe phones changle ahet?"
 ]
 
 Marathi script:
 
 User:
-"Vivo V70 Ã Â¤Å¡Ã Â¥â‚¬ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â®Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â¿Ã Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡?"
+"Vivo V70 à¤šà¥€ à¤•à¤¿à¤‚à¤®à¤¤ à¤•à¤¿à¤¤à¥€ à¤†à¤¹à¥‡?"
 
 Follow-ups:
 
 [
-"Vivo V70 Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤Â®Ã Â¥ÂÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯ features Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â¯ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¤?",
-"Vivo V70 Ã Â¤ÂµÃ Â¤Â° discount Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡ Ã Â¤â€¢Ã Â¤Â¾?",
-"Ã¢â€šÂ¹30,000 Ã Â¤Å¡Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤â€ Ã Â¤Â¤ Ã Â¤â€¢Ã Â¥â€¹Ã Â¤Â£Ã Â¤Â¤Ã Â¥â€¡ Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Å¡Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€”Ã Â¤Â²Ã Â¥â€¡ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¤?"
+"Vivo V70 à¤šà¥‡ à¤®à¥à¤–à¥à¤¯ features à¤•à¤¾à¤¯ à¤†à¤¹à¥‡à¤¤?",
+"Vivo V70 à¤µà¤° discount à¤†à¤¹à¥‡ à¤•à¤¾?",
+"â‚¹30,000 à¤šà¥à¤¯à¤¾ à¤†à¤¤ à¤•à¥‹à¤£à¤¤à¥‡ à¤«à¥‹à¤¨ à¤šà¤¾à¤‚à¤—à¤²à¥‡ à¤†à¤¹à¥‡à¤¤?"
 ]
 
 English:
@@ -6010,7 +6096,7 @@ Follow-ups:
 [
 "What are the main features of Vivo V70?",
 "Are there any discounts available?",
-"Which phones are good under Ã¢â€šÂ¹30,000?"
+"Which phones are good under â‚¹30,000?"
 ]
 
 Roman Hindi:
@@ -6023,7 +6109,7 @@ Follow-ups:
 [
 "Vivo V70 ke main features kya hain?",
 "Vivo V70 par koi discount available hai kya?",
-"Ã¢â€šÂ¹30,000 ke andar kaunse phones achhe hain?"
+"â‚¹30,000 ke andar kaunse phones achhe hain?"
 ]
 
 Roman Kannada:
@@ -6036,7 +6122,7 @@ Follow-ups:
 [
 "Vivo V70 main features enu?",
 "Vivo V70 mele discount ideya?",
-"Ã¢â€šÂ¹30,000 olage yav phones chennagive?"
+"â‚¹30,000 olage yav phones chennagive?"
 ]
 
 ==================================================
@@ -6084,28 +6170,28 @@ Simply answer naturally in the detected language.
 STRICT RULE
 ==================================================
 
-CURRENT USER MESSAGE Ã¢â€ â€™ LANGUAGE DETECTION Ã¢â€ â€™ MAIN ANSWER
-Ã¢â€ â€™ SAME LANGUAGE Ã¢â€ â€™ DYNAMIC FOLLOW-UPS
+CURRENT USER MESSAGE â†’ LANGUAGE DETECTION â†’ MAIN ANSWER
+â†’ SAME LANGUAGE â†’ DYNAMIC FOLLOW-UPS
 
 Never:
 
-CURRENT USER MESSAGE Ã¢â€ â€™ English by default.
+CURRENT USER MESSAGE â†’ English by default.
 
 Never:
 
-Roman Marathi Ã¢â€ â€™ English.
+Roman Marathi â†’ English.
 
 Never:
 
-Roman Hindi Ã¢â€ â€™ English.
+Roman Hindi â†’ English.
 
 Never:
 
-Roman Kannada Ã¢â€ â€™ English.
+Roman Kannada â†’ English.
 
 Never:
 
-Any other language Ã¢â€ â€™ English.
+Any other language â†’ English.
 
 The user's current language controls the response language.
 
@@ -6350,7 +6436,7 @@ tomorrow, yesterday, current time, current month, or current year:
 4. Ignore any older date appearing in web search results unless the
    user explicitly asks about that historical date.
 5. Never answer with a date that conflicts with CURRENT INDIA DATE.
-6. If asked "à¤†à¤œà¤šà¥€ à¤¤à¤¾à¤°à¥€à¤– à¤•à¤¾à¤¯ à¤†à¤¹à¥‡?", answer using CURRENT INDIA DATE.
+6. If asked "आजची तारीख काय आहे?", answer using CURRENT INDIA DATE.
 7. The current date is NOT 20 May 2024, 23 June 2024, or any other
    historical date unless the user explicitly asks about that date.
 
@@ -6373,7 +6459,7 @@ This FINAL DATE AUTHORITY has priority for current date/time questions.
   ) {
     try {
       console.log(
-        `Ã°Å¸Â¤â€“ GEMINI ATTEMPT: ${attempt}`
+        `ðŸ¤– GEMINI ATTEMPT: ${attempt}`
       );
 
       console.log(
@@ -6415,8 +6501,8 @@ console.log(
   ((Date.now() - geminiStartTime) / 1000).toFixed(2),
   "seconds"
 );
-      // Sources Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â¢Ã Â¥â€¡ response Ã Â¤Â®Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡ Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â£Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾Ã Â¤Â¸Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬
-      // function object Ã Â¤ÂµÃ Â¤Â° temporarily store
+      // Sources à¤ªà¥à¤¢à¥‡ response à¤®à¤§à¥à¤¯à¥‡ à¤µà¤¾à¤ªà¤°à¤£à¥à¤¯à¤¾à¤¸à¤¾à¤ à¥€
+      // function object à¤µà¤° temporarily store
       return {
   stream,
   sources,
@@ -6424,7 +6510,7 @@ console.log(
 
     } catch (err) {
       console.log(
-        "Ã¢ÂÅ’ STREAM ERROR:",
+        "âŒ STREAM ERROR:",
         err.status
       );
 
@@ -6475,11 +6561,11 @@ res.setHeader(
 // ==================================================
 
 console.log(
-  "Ã¢Å“â€¦ PASSED ALL PRE-GEMINI CODE"
+  "âœ… PASSED ALL PRE-GEMINI CODE"
 );
 
 console.log(
-  "Ã°Å¸Å¡â‚¬ ABOUT TO CALL GEMINI"
+  "ðŸš€ ABOUT TO CALL GEMINI"
 );
 
 console.log(
@@ -6531,7 +6617,7 @@ function parseVedaAIResponse(text = "") {
         JSON.parse(productJsonText);
     } catch (error) {
       console.log(
-        "Ã¢Å¡Â Ã¯Â¸Â PRODUCT JSON PARSE FAILED:",
+        "âš ï¸ PRODUCT JSON PARSE FAILED:",
         error.message
       );
 
@@ -6583,7 +6669,7 @@ function parseVedaAIResponse(text = "") {
       }
     } catch (error) {
       console.log(
-        "Ã¢Å¡Â Ã¯Â¸Â FOLLOWUPS JSON PARSE FAILED:",
+        "âš ï¸ FOLLOWUPS JSON PARSE FAILED:",
         error.message
       );
     }
@@ -6610,7 +6696,7 @@ function parseVedaAIResponse(text = "") {
 // CALL GEMINI
 // ==================================================
 
-console.log("Ã°Å¸Å¸Â  BEFORE callGeminiStream");
+console.log("ðŸŸ  BEFORE callGeminiStream");
 
 const result = await callGeminiStream(
   userMessage,
@@ -6621,8 +6707,8 @@ const result = await callGeminiStream(
 const stream = result.stream;
 const sources = result.sources || [];
 
-console.log("Ã°Å¸Å¸Â¢ AFTER callGeminiStream");
-console.log("Ã°Å¸â€œÅ¡ SOURCES TO SEND:", sources);
+console.log("ðŸŸ¢ AFTER callGeminiStream");
+console.log("ðŸ“š SOURCES TO SEND:", sources);
 
 
 // ==================================================
@@ -6874,9 +6960,25 @@ if (
 const endTime = Date.now();
 
 console.log(
-  `Ã¢Å¡Â¡ Response Time: ${endTime - startTime} ms`
+  `âš¡ Response Time: ${endTime - startTime} ms`
 );
 
+
+const imageSearchIntent = /\b(price|cost|mobile|phone|vivo|samsung|iphone|car|bike|laptop|product|photo|picture|image|show me|water cycle|diagram|map|heart|photosynthesis|solar system)\b/i.test(userMessage);
+let imageResults = [];
+
+if (imageSearchIntent) {
+  try {
+    imageResults = await searchImages(userMessage);
+    console.log("VEDAAI IMAGE RESULTS:", imageResults.length);
+  } catch (imageError) {
+    console.error("VEDAAI IMAGE SEARCH ERROR:", imageError.message);
+  }
+}
+
+res.write("<<<VEDAAI_IMAGES_START>>>\n");
+res.write(JSON.stringify(imageResults));
+res.write("\n<<<VEDAAI_IMAGES_END>>>\n");
 res.end();
 
 } catch (err) {
@@ -6884,10 +6986,10 @@ res.end();
   console.log("========== GEMINI ERROR ==========");
   console.log(err);
 
-  console.log("Ã¢ÂÅ’ FINAL ERROR:", err);
-  console.log("Ã¢ÂÅ’ ERROR MESSAGE:", err.message);
-  console.log("Ã¢ÂÅ’ ERROR STATUS:", err.status);
-  console.log("Ã¢ÂÅ’ ERROR STACK:", err.stack);
+  console.log("âŒ FINAL ERROR:", err);
+  console.log("âŒ ERROR MESSAGE:", err.message);
+  console.log("âŒ ERROR STATUS:", err.status);
+  console.log("âŒ ERROR STACK:", err.stack);
 
   console.log("========== FULL ERROR DETAILS ==========");
   console.log("NAME:", err?.name);
@@ -6915,7 +7017,7 @@ res.end();
     err.message?.includes("RESOURCE_EXHAUSTED")
   ) {
 
-    console.log("Ã¢Å¡Â Ã¯Â¸Â GEMINI QUOTA EXCEEDED");
+    console.log("âš ï¸ GEMINI QUOTA EXCEEDED");
 
     res.write(
       "<<<VEDAAI_RESPONSE_START>>>\n"
@@ -6941,7 +7043,7 @@ res.end();
     err.message?.includes("UNAVAILABLE")
   ) {
 
-    console.log("Ã¢Å¡Â Ã¯Â¸Â GEMINI TEMPORARILY UNAVAILABLE");
+    console.log("âš ï¸ GEMINI TEMPORARILY UNAVAILABLE");
 
     res.write(
       "<<<VEDAAI_RESPONSE_START>>>\n"
@@ -6961,7 +7063,7 @@ res.end();
 
   // ================= OTHER ERROR =================
 
-  console.log("Ã¢Å¡Â Ã¯Â¸Â UNKNOWN GEMINI ERROR");
+  console.log("âš ï¸ UNKNOWN GEMINI ERROR");
 
   res.write(
     "<<<VEDAAI_RESPONSE_START>>>\n"
@@ -7234,15 +7336,16 @@ message:"Verification failed"
 
 // ================= HOME =================
 app.get("/", (req, res) => {
-  res.send("Ã°Å¸â€Â¥ VedaAI backend running");
+  res.send("ðŸ”¥ VedaAI backend running");
 });
 
 // ================= SERVER =================
 const PORT = process.env.PORT || 3000;
 console.log("BEFORE LISTEN");
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Ã°Å¸â€Â¥ VedaAI running on port ${PORT}`);
+  console.log(`ðŸ”¥ VedaAI running on port ${PORT}`);
 });
+
 
 
 
