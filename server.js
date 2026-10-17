@@ -6432,21 +6432,19 @@ console.log(
         err.message
       );
 
-      // Retry 503
+            // Retry temporary Gemini availability errors
       if (
-        err.status === 503 &&
+        (err.status === 503 || err.status === 429) &&
         attempt < 2
       ) {
+        const delay = 3000;
+
         console.log(
-          "Ã¢ÂÂ³ Gemini busy. Retrying..."
+          `Gemini temporarily unavailable (${err.status}). Retrying in ${delay / 1000}s...`
         );
 
-        await new Promise(
-          resolve =>
-            setTimeout(
-              resolve,
-              1000
-            )
+        await new Promise(resolve =>
+          setTimeout(resolve, delay)
         );
 
         continue;
