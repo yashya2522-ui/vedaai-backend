@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -383,6 +383,7 @@ Future<void> uploadPdf() async {
     }
 
     final data = jsonDecode(responseBody);
+    final pdfId = data["pdfId"]?.toString();
 
     final reply =
         data["reply"]?.toString() ??
@@ -392,6 +393,8 @@ Future<void> uploadPdf() async {
       allChats[currentChatIndex]["messages"].add({
         "role": "ai",
         "text": reply,
+        "pdfId": pdfId,
+        "pdfName": pdfFile.uri.pathSegments.last,
         "pinned": false,
       });
 
@@ -5679,11 +5682,3 @@ class _VedaLiveClockState extends State<VedaLiveClock> {
     );
   }
 }
-
-
-
-
-
-
-
-

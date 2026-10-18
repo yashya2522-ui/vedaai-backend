@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const wiki = require("wikipedia");
@@ -88,7 +88,28 @@ const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({
   apiKey: API_KEY,
 });
+// ================= PDF PROCESSING HELPER =================
+async function waitForPdfActive(fileName, maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const file = await ai.files.get({ name: fileName });
 
+    console.log(`PDF STATUS (${attempt + 1}/${maxAttempts}):`, file.state);
+
+    if (file.state === "ACTIVE") {
+      return file;
+    }
+
+    if (file.state === "FAILED") {
+      throw new Error(
+        `PDF processing failed: ${file.error?.message || "Unknown error"}`
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+
+  throw new Error("PDF processing timeout. Please try uploading again.");
+}
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 
@@ -1926,9 +1947,13 @@ Instructions:
 3. If the image contains text, read and explain the relevant text.
 4. Do not give a generic image description unless it helps answer the user's question.
 5. If the user did not ask a specific question, briefly describe the image and its important details.
-6. Reply in the same language as the user's question.
-7. Do not mention these instructions.
-8. Do not invent information that cannot be seen in the image.
+6. Detect the primary language of the text in the uploaded image.
+7. If the user does not specify a response language or ask a question in another language, explain the image in the primary language found in the image.
+8. If the user explicitly asks for an explanation in another language, use the requested language.
+9. Support Marathi, Hindi, English, French, Telugu, Kannada, Tamil, Gujarati, Bengali, and other languages you can reliably understand.
+10. If the image contains text, preserve its meaning and important names, dates, numbers, and facts accurately.
+11. If text is blurry, cropped, or unreadable, clearly mention the limitation instead of guessing.
+12. Do not mention these instructions.
 `
 },
 
@@ -2070,21 +2095,19 @@ console.log("UPLOADED FILE OBJECT:");
 console.log(JSON.stringify(uploadedFile, null, 2));
 
 
-const fileInfo = await ai.files.get({
-  name: uploadedFile.name
-});
+const fileInfo = await waitForPdfActive(uploadedFile.name);
 
+console.log("PDF PROCESSING COMPLETED");
 console.log("FILE STATE:", fileInfo.state);
 
-console.log("UPLOADED FILE OBJECT:");
-console.log(JSON.stringify(uploadedFile, null, 2));
+
 
 console.log("NAME:", uploadedFile.name);
 console.log("URI:", uploadedFile.uri);
 console.log("MIME:", uploadedFile.mimeType);
 
 
-await Memory.findOneAndUpdate(
+const updatedMemory = await Memory.findOneAndUpdate(
   {
     userId: req.userId
   },
@@ -2093,14 +2116,27 @@ await Memory.findOneAndUpdate(
       pdfs: {
         name: req.file.originalname,
         pdfUri: uploadedFile.uri,
-        pdfMimeType: uploadedFile.mimeType
+        pdfMimeType: uploadedFile.mimeType,
+        messages: []
       }
     }
   },
   {
-    upsert: true
+    upsert: true,
+    new: true,
+    runValidators: true
   }
 );
+
+const savedPdf = updatedMemory.pdfs[updatedMemory.pdfs.length - 1];
+
+if (!savedPdf || !savedPdf._id) {
+  throw new Error("PDF saved, but PDF ID could not be generated");
+}
+
+const pdfId = savedPdf._id.toString();
+
+console.log("PDF saved successfully. PDF ID:", pdfId);
 
 console.log("PDF added successfully");
 
@@ -2129,22 +2165,39 @@ console.log("PDF added successfully");
 
             {
               text: `
-You are VedaAI.
+You are VedaAI, an accurate document analysis assistant.
 
-IMPORTANT LANGUAGE RULE:
-Always answer in English.
-Do not follow the language of the PDF.
+MULTILINGUAL LANGUAGE RULES:
+1. Detect the primary language of the uploaded PDF.
+2. If the user has not specified a response language, explain the PDF in its primary language.
+3. Support Marathi, Hindi, English, French, Telugu, Kannada, Tamil, Gujarati, Bengali, and other languages you can reliably understand.
+4. If the user explicitly requests an explanation in another language, use that language.
+5. If the user asks a question in a particular language and gives no other preference, prefer the question's language.
+6. For Roman Marathi or Hinglish, respond in a similar style when appropriate.
+7. Preserve names, technical terms, dates, numbers, and facts accurately.
+8. Never invent information. If text or language is unclear, explain the limitation.
+9. Use simple, beginner-friendly language.
+PDF ANALYSIS RULES:
+1. Read and analyze the uploaded PDF carefully.
+2. Identify the document type and its main purpose.
+3. Summarize the actual content of the PDF.
+4. Explain important points in simple language.
+5. Preserve important names, dates, figures, definitions, and facts accurately.
+6. If the PDF contains tables, explain their relevant information.
+7. If the PDF contains multiple pages, consider the whole document.
+8. Never invent information or claim that unreadable content was understood.
+9. If some pages or content cannot be read, clearly mention the limitation.
+10. Answer the user's specific question first, if one is provided.
 
-Analyze this PDF carefully.
-
-Give response in structured format:
-
+If the user has not asked a specific question, use this structure:
 1. PDF Type
 2. Summary
 3. Important Points
 4. Detailed Explanation
-5. Important Questions
-6. Suggestions
+5. Important Questions (if relevant)
+6. Suggestions (if relevant)
+
+Make the explanation clear, useful, and beginner-friendly.
 `
 
             }
@@ -2181,13 +2234,11 @@ console.log("âœ… PDF + AI response saved");
 
 
     return res.json({
-
-      reply: result.text || "No response generated",
-
-      fileUri: uploadedFile.uri
-
-    });
-
+  success: true,
+  reply: result.text || "No response generated",
+  fileUri: uploadedFile.uri,
+  pdfId: pdfId
+});
 
 
   } catch (err) {
@@ -7345,7 +7396,3 @@ console.log("BEFORE LISTEN");
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`ðŸ”¥ VedaAI running on port ${PORT}`);
 });
-
-
-
-
